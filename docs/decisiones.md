@@ -61,6 +61,7 @@
 | D50 | Red del piloto | ✅ Vigente | El piloto se ancla en **Stellar testnet**. El reporte lo indica, y al cierre se guarda una copia de la evidencia por si testnet se reinicia. Mainnet recién con los clientes pagos, con auditoría externa del contrato y la cuenta admin con multifirma | 2026-11-13 |
 | D51 | Entornos del piloto | ✅ Vigente | **Sin staging en el piloto:** desarrollo, un entorno temporal en el CI para cada PR y producción. Despliegue a producción con aprobación manual y copia de la base antes de cada migración. Staging vuelve con los clientes pagos | 2026-11-13 |
 | D52 | Organización demo | ✅ Vigente | Producción tiene una **organización demo con dos eventos demo** (uno en curso y otro cerrado con su reporte), con datos inventados. Los eventos `demo` y `prueba` no salen en *Eventos*, en reportes públicos ni en métricas | 2026-11-13 |
+| D53 | Intervalo de anclaje | ✅ Vigente | **5 minutos por defecto, configurable por evento** (1, 2, 5, 10, 15 o 30 min) por un administrador de Pasitos. Cada ciclo ancla **un solo lote con todos los movimientos del evento**, en una sola transacción, sin importar cuántas salas o stands tenga. Ajusta D22 | 2026-11-13 |
 
 ## Notas
 

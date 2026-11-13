@@ -6,7 +6,7 @@
 
 ## 1. La idea en una frase
 
-> El servidor lleva un **libro de movimientos** donde solo se agregan líneas, y cada 5 minutos **sella en Stellar una huella** de las líneas nuevas. Una página sellada no se puede arrancar ni corregir sin que se note.
+> El servidor lleva un **libro de movimientos** donde solo se agregan líneas, y cada 5 minutos (configurable por evento, D53) **sella en Stellar una huella** de las líneas nuevas de todo el evento, en una sola transacción. Una página sellada no se puede arrancar ni corregir sin que se note.
 
 **Por qué así y no una transacción por acción:**
 - **Costo fijo:** se pagan unas 12 transacciones por hora de evento, sin importar si hay 50 o 50 000 personas.
