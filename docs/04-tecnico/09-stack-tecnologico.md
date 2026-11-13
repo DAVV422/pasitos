@@ -131,8 +131,8 @@
 | Raíz de Merkle | Implementación propia con SHA-256 (`node:crypto`), con la misma función en la página de verificación (WebCrypto) | Tiene que dar el mismo resultado en los dos lados |
 | Cola y tareas programadas | **pg-boss** | Usa la misma base. El sellador corre como **un solo trabajador** para anclar en orden |
 | Avisos en vivo | SSE de NestJS + `LISTEN/NOTIFY` | Sin Redis mientras haya un solo servidor |
-| Correo | Proveedor transaccional por API (Postmark, Resend o Amazon SES) + plantillas MJML | 🔍 Elegir según precio y entrega en Bolivia |
-| Archivos (logos, planos, lotes públicos) | **Volumen en el VPS**, servido por Caddy y cacheado por Cloudflare. Validación con `file-type`, `sharp` y **ClamAV** | D48 · [Subida de archivos](10-subida-de-archivos.md) |
+| Correo | **Resend** (D55), por API, + plantillas MJML | Dominio verificado con SPF, DKIM y DMARC; rebotes por *webhook* |
+| Archivos (logos, planos, lotes públicos) | **Volumen en el VPS**, servido por Caddy y cacheado por Cloudflare. Validación propia con `file-type` y `sharp`, con reencodeo a WebP (sin antivirus, D54) | D48 · [Subida de archivos](10-subida-de-archivos.md) |
 | Mapas | Google Maps: *Places Autocomplete* en el panel y *Static Maps* desde el servidor | D48. Sin JavaScript de Google en `/app` |
 | Logs | `pino` (JSON) | Liviano, compatible con Fastify |
 
@@ -171,14 +171,13 @@ flowchart LR
     K --> ST[Stellar RPC]
     A --> O[(Archivos<br/>volumen del VPS)]
     K --> O
-    A --> AV[ClamAV]
 ```
 
 | Pieza | Elección | Nota |
 |---|---|---|
 | Proveedor | Un VPS en **São Paulo** (por ejemplo, Vultr o AWS Lightsail en esa región) | Menos latencia hacia Bolivia que en EE. UU. o Europa. 🔍 Medir desde La Paz y Santa Cruz antes de elegir |
-| Tamaño para el piloto | 2 vCPU, **8 GB de RAM** (ClamAV ocupa ~1,5 GB) y 80 GB de disco | Se valida con la prueba de carga (T-501) |
-| Contenedores | Docker Compose: `caddy`, `api`, `trabajador`, `sitio`, `postgres`, `clamav` | **Sin staging en el piloto** (D51): cada PR se prueba en un entorno temporal del CI, y producción tiene una organización demo (D52) |
+| Tamaño para el piloto | 2 vCPU, **8 GB de RAM** (recomendado; con 6 GB alcanza) y 80 GB de disco | Se valida con la prueba de carga (T-501) |
+| Contenedores | Docker Compose: `caddy`, `api`, `trabajador`, `sitio`, `postgres` | **Sin staging en el piloto** (D51): cada PR se prueba en un entorno temporal del CI, y producción tiene una organización demo (D52) |
 | Proxy y HTTPS | Caddy | Certificados automáticos, HTTP/2 y 3, y archivos precomprimidos |
 | CDN y DNS | Cloudflare (plan gratuito) | Cachea los archivos estáticos y protege de ataques |
 | Copias de seguridad | ⏳ **No se implementan por ahora** (D44). Opción cuando se definan: `pg_dump` cada noche + respaldo continuo con WAL (`pgBackRest`) hacia el almacenamiento de objetos | Se definen más adelante |
@@ -225,6 +224,6 @@ pasitos/
 |---|---|---|
 | 1 | Budgets definitivos de cada app, según la verificación de peso (T-008) | Primera semana de la fase 0 |
 | 2 | Proveedor del VPS, según la latencia medida desde Bolivia | Fase 0 |
-| 3 | Proveedor de correo | Fase 0 |
+| 3 | ~~Proveedor de correo~~ | ✅ Resend (D55) |
 | 4 | Proveedor de RPC para mainnet | Antes de pasar a mainnet (después del piloto) |
 | 5 | Dominio | Antes de la fase 4 |

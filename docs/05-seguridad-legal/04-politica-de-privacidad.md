@@ -100,7 +100,8 @@ Para que nadie pueda inflar los números del evento, Pasitos guarda cada 5 minut
 - **Sponsors y financiadores:** solo los totales del reporte, nunca tus datos personales.
 - **Proveedores que nos ayudan a operar:** solo usan los datos para darnos su servicio.
   - Alojamiento de servidores: [Completar: proveedor y país donde están los servidores].
-  - Envío de correos: [Completar: proveedor de correo transaccional].
+  - Red de distribución y protección del sitio: Cloudflare. Todo el tráfico pasa por sus servidores, que ven tu dirección IP para entregar el contenido y frenar ataques. También lo usamos para comprobar que quien completa el formulario de contacto no es un robot.
+  - Envío de correos: Resend. [Completar: región donde Resend guarda los datos].
   - Monitoreo de errores: [Completar: proveedor de monitoreo].
   - Mapas: Google Maps. La app muestra una imagen del mapa que genera Pasitos, así que Google no recibe tus datos; solo si tocas *Cómo llegar* se abre Google Maps, con sus propias condiciones.
   - [Completar: indicar si algún proveedor guarda datos fuera de Bolivia].

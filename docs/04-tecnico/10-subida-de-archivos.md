@@ -1,6 +1,6 @@
 # Subida y validación de archivos
 
-> **Estado:** ✅ vigente (D48) · **Última revisión:** 2026-11-13
+> **Estado:** ✅ vigente (D48, D54) · **Última revisión:** 2026-11-13
 > Cómo se reciben, validan, guardan y sirven los archivos que sube el equipo: logos, portadas, el plano del lugar, logos de sponsors, imágenes de premios y la lista de invitados en CSV. Los archivos se guardan **en el VPS**.
 > Relacionados: [Stack tecnológico](09-stack-tecnologico.md) · [Amenazas y pruebas](../05-seguridad-legal/01-amenazas-y-pruebas.md) · [Backend](../09-desarrollo/02-backend.md)
 
@@ -24,12 +24,10 @@ flowchart LR
     L --> Q[(Cuarentena)]
     Q --> T[2 · Tipo real<br/>bytes mágicos]
     T --> D[3 · Decodificar<br/>archivo sano]
-    D --> AV[4 · Antivirus<br/>ClamAV]
-    AV --> P[5 · Procesar<br/>reencodear y limpiar]
+    D --> P[4 · Procesar<br/>reencodear y limpiar]
     P --> OK[(Públicos)]
     T -. falla .-> R[Rechazado]
     D -. falla .-> R
-    AV -. falla .-> R
 ```
 
 | Paso | Qué se comprueba | Cómo | Si falla |
@@ -38,10 +36,13 @@ flowchart LR
 | **Cuarentena** | El archivo se guarda con un nombre aleatorio en una carpeta que **nunca se sirve** | Fuera de la carpeta pública, sin permisos de ejecución | — |
 | **2 · Tipo real** | Que el contenido sea de verdad lo que dice la extensión (por ejemplo, que un `.png` empiece con la firma de PNG) | Librería `file-type`, que lee los bytes del inicio | `ARCHIVO_TIPO_NO_PERMITIDO` |
 | **3 · Archivo sano** | Que la imagen se pueda abrir completa y no esté corrupta ni truncada. Que no sea una "bomba" (una imagen chica que al abrirla ocupa gigas) | `sharp` la decodifica entera, con límite de píxeles y de medidas. El CSV se lee como UTF-8 y se validan sus columnas | `ARCHIVO_CORRUPTO` o `ARCHIVO_MUY_GRANDE` |
-| **4 · Antivirus** | Virus, gusanos, troyanos y otros programas maliciosos conocidos | **ClamAV** (contenedor `clamav` en el VPS), con sus firmas actualizadas cada día | `ARCHIVO_INFECTADO`. Se registra en la bitácora y avisa a los administradores |
-| **5 · Procesar** | Neutralizar lo que se haya escapado | Las imágenes se **vuelven a codificar** a WebP: se descartan los metadatos (EXIF, ubicación GPS de la foto) y cualquier contenido escondido dentro del archivo. Se generan los tamaños que usan las apps | — |
+| **4 · Procesar** | Neutralizar cualquier contenido escondido | Las imágenes se **vuelven a codificar** a WebP: se descartan los metadatos (EXIF, ubicación GPS de la foto) y cualquier contenido escondido dentro del archivo. Se generan los tamaños que usan las apps | — |
 
-**Por qué reencodear:** un archivo puede ser al mismo tiempo una imagen válida y otra cosa (un *políglota*). Como Pasitos sirve solo la imagen que **generó él mismo**, el archivo original nunca llega a nadie.
+**Por qué reencodear:** un archivo puede ser al mismo tiempo una imagen válida y otra cosa (un *políglota*), o llevar un programa escondido. Pasitos lee **solo los píxeles** y crea un archivo nuevo; el original se descarta y **nunca llega a nadie**. Una imagen generada así es solo una grilla de colores: no puede llevar un virus.
+
+**Sin antivirus en el piloto (D54).** Un antivirus como ClamAV detecta virus conocidos por su firma. Sirve sobre todo cuando se guardan o reparten los archivos originales, o cuando se aceptan documentos (PDF, Word, ZIP). Pasitos no hace ninguna de las dos cosas: solo acepta imágenes, que reencodea, y CSV, que lee como texto y borra. Por eso los cuatro pasos de arriba alcanzan, y se ahorra el 1,5 GB de memoria que ocupa ClamAV. **Si algún día se aceptan PDF, documentos o archivos comprimidos, se suma un antivirus** con una nueva decisión.
+
+**Qué no se usa:** servicios externos de análisis como VirusTotal. Lo que se sube ahí lo pueden ver terceros.
 
 **Lista de invitados (CSV):** no se guarda como archivo público. Se valida (UTF-8, columnas esperadas, correos con formato válido, duplicados), se importa a la tabla `asistentes` y el archivo se borra. Al **exportar** listas, las celdas que empiezan con `=`, `+`, `-` o `@` se escapan para que Excel no las ejecute como fórmulas.
 
@@ -74,7 +75,6 @@ En un volumen del VPS:
 | `mime`, `tamano_bytes`, `ancho`, `alto`, `sha256` | Del archivo procesado. El `sha256` permite detectar el mismo archivo subido dos veces |
 | `estado` | `cuarentena` · `aprobado` · `rechazado` |
 | `motivo_rechazo` | El código de error |
-| `antivirus` | Resultado y versión de las firmas de ClamAV |
 | `variantes` | Tamaños generados y sus rutas |
 | `subido_por`, `created_at`, `reemplazado_at` | |
 
@@ -104,14 +104,14 @@ Se suman al [catálogo de códigos](../09-desarrollo/04-respuestas-y-errores.md#
 | `ARCHIVO_MUY_GRANDE` | 413 | El archivo supera el tamaño máximo (por ejemplo, 2 MB). |
 | `ARCHIVO_TIPO_NO_PERMITIDO` | 422 | Este tipo de archivo no está permitido. Usa PNG, JPEG o WebP. |
 | `ARCHIVO_CORRUPTO` | 422 | No pudimos abrir el archivo. Puede estar dañado. |
-| `ARCHIVO_INFECTADO` | 422 | El archivo no pasó el control de seguridad. |
 | `ARCHIVO_INVALIDO` | 400 | El archivo no cumple los requisitos. |
 
 ## 7. Pruebas
 
 - Un archivo de cada tipo permitido pasa; uno de cada tipo prohibido se rechaza.
 - Un `.png` que en realidad es otra cosa, una imagen truncada y una "bomba" de descompresión se rechazan.
-- El archivo de prueba **EICAR** (un falso virus estándar) se rechaza con `ARCHIVO_INFECTADO`.
+- Un archivo con un programa pegado al final de una imagen válida (políglota): la imagen servida es nueva y no contiene ese programa.
+- Un ejecutable renombrado a `.jpg` se rechaza con `ARCHIVO_TIPO_NO_PERMITIDO`.
 - La imagen servida no tiene metadatos EXIF.
 - Nada de la carpeta de cuarentena se puede descargar por HTTP.
 - Un CSV con `=HYPERLINK(...)` en un nombre se exporta escapado.
