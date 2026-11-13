@@ -1,6 +1,7 @@
 # Setup en testnet
 
-> **Estado:** vigente · **Última revisión:** 2026-11-03
+> **Estado:** 📦 histórico (MVP del hackathon) · **Última revisión:** 2026-11-06
+> ⚠️ Setup del contrato `challenges` y del token de puntos del MVP. Se reescribe cuando exista el contrato de la v1 (D22).
 
 ## 1. Orden obligatorio
 

@@ -1,109 +1,124 @@
 # Arquitectura
 
-> **Estado:** vigente (MVP en testnet) · **Última revisión:** 2026-11-03
-> Relacionados: [Contrato `challenges`](02-contrato-challenges.md) · [Datos on-chain](03-datos-on-chain.md) · [Herramientas](05-herramientas.md) · [Setup de testnet](06-setup-testnet.md)
+> **Estado:** ✅ vigente para la v1 · **Última revisión:** 2026-11-06
+> Reemplaza la arquitectura del MVP del hackathon (una transacción por acción, wallets custodiadas). Lo que cambió y por qué está en D22 y D24 ([decisiones](../decisiones.md)).
+> Relacionados: [Flujos de la v1](../01-producto/07-flujos-v1.md) · [Libro y anclaje](07-libro-y-anclaje.md) · [Rendimiento](08-rendimiento.md) · [Datos on-chain](03-datos-on-chain.md) · [Herramientas](05-herramientas.md)
 
 ## 1. Vista general
 
 ```mermaid
 flowchart LR
   subgraph Usuarios
-    A[Asistente<br/>web móvil]
-    S[Pantalla de sala o stand<br/>QR rotativo]
-    M[Mesa de canje / comercio<br/>tablet o celular]
-    O[Organizador<br/>panel]
-    R[Sponsor / financiador<br/>reporte público]
+    A[Asistente<br/>/app · celular]
+    S[Pantalla de sala o stand<br/>/sala · QR firmado en la tablet]
+    M[Mesa de canje<br/>/mesa · tablet o celular]
+    O[Panel del organizador<br/>/admin]
+    PL[Consola de plataforma<br/>/plataforma]
+    R[Reporte público<br/>/reporte/:evento]
   end
 
-  subgraph Backend [Backend Node/TS]
-    API[API REST]
-    QR[Generador de QR<br/>firmado, TTL 30 s]
-    W[Gestor de wallets<br/>custodial, solo demo]
-    IDX[Indexador de eventos<br/>Stellar RPC getEvents]
-    DB[(Base de datos<br/>datos personales, off-chain)]
+  CDN[CDN<br/>apps y archivos estáticos]
+
+  subgraph Backend [Backend]
+    API[API<br/>respuestas mínimas]
+    SSE[Avisos en vivo<br/>SSE]
+    AUTH[Acceso<br/>correo y contraseña · dispositivos]
+    LIB[Libro de movimientos<br/>solo se agregan filas]
+    BIT[Bitácora]
+    SEL[Sellador<br/>cada 5 min]
+    MAIL[Correo transaccional]
+    DB[(Base de datos<br/>PostgreSQL)]
+    FILES[(Archivos<br/>lotes públicos, imágenes)]
   end
 
-  subgraph Stellar [Stellar Testnet]
-    CH[Contrato challenges<br/>Soroban]
-    PTS[Puntos del evento<br/>asset clásico + SAC<br/>AUTH_REQUIRED · REVOCABLE · CLAWBACK]
-    USDC[USDC testnet<br/>SAC · solo Feria]
+  subgraph Stellar
+    CT[Contrato del evento<br/>huellas, topes, llaves de pantallas<br/>⏳ a diseñar]
   end
 
-  A --> API
-  S --> QR
-  M --> API
-  O --> API
-  R --> API
-  API --> W
-  API --> CH
-  CH -- admin del SAC: mint / set_authorized / clawback --> PTS
-  CH -- transfer --> USDC
-  IDX --> CH
-  IDX --> DB
-  API --> DB
+  A & S & M & O & PL & R --> CDN
+  A & S & M & O & PL & R --> API
+  S & M & O --> SSE
+  API --> AUTH & LIB & BIT & MAIL
+  LIB & BIT & AUTH --> DB
+  SEL --> LIB
+  SEL --> CT
+  SEL --> FILES
+  R --> FILES
+  R -. verifica .-> CT
 ```
 
-**Principio:** on-chain va solo lo que alguien necesita verificar sin confiar en nosotros (puntos, reglas, participaciones, cierre). Todo lo demás, incluidos los datos personales, queda off-chain. Detalle en [Datos on-chain](03-datos-on-chain.md).
+## 2. Principios
 
-## 2. Componentes
+1. **Durante el evento, el servidor decide; Stellar sella.** Cada reclamo y cada canje se valida y se registra en el libro al instante. Cada 5 minutos se ancla una huella en Stellar, y el contrato rechaza el lote si se pasó un tope.
+2. **On-chain va solo lo que alguien necesita verificar sin confiar en nosotros:** los topes, las llaves públicas de las pantallas, las huellas y el cierre. Ningún dato personal ([Datos on-chain](03-datos-on-chain.md)).
+3. **Respuestas livianas y rápidas:** presupuesto de rendimiento en [Rendimiento](08-rendimiento.md).
+4. **Todo cambio administrativo deja rastro** en la bitácora. Todo movimiento de puntos queda en el libro.
 
-| Componente | Tecnología | Responsabilidad |
+## 3. Componentes
+
+| Componente | Tecnología ([Stack](09-stack-tecnologico.md), D38) | Responsabilidad |
 |---|---|---|
-| Frontend | React + Vite (Scaffold Stellar) + Tailwind | Una sola app web con rutas por perfil |
-| Backend | Node / TypeScript + `@stellar/stellar-sdk` | API, QR rotativo, wallets demo, verificación automática de retos, indexador |
-| Contrato `challenges` | Soroban (Rust) | Reglas del evento: retos, límites, canjes, cierre |
-| Puntos | Asset clásico + Stellar Asset Contract (SAC) | Saldo de puntos con circuito cerrado |
-| USDC | SAC de USDC | Saldo en dólares (solo en la variante Feria) |
-| Base de datos | A definir | Datos personales, catálogo, eventos indexados, tarifas y facturación |
+| Frontend | Angular (zoneless, signals) + Tailwind. Una aplicación por perfil, con límites de peso. Plan B para `/app` si no entra en el presupuesto | Apps del asistente, de la pantalla, de la mesa, panel, consola y reporte |
+| API | NestJS sobre Fastify (Node.js LTS, TypeScript) | Acceso, eventos, inscripciones, check-in, reclamos, canjes, ajustes, reportes |
+| Avisos en vivo | Server-Sent Events | Contador de pantallas, confirmaciones de la mesa, panel en vivo |
+| Libro de movimientos | Tabla de PostgreSQL donde solo se agregan filas, más el saldo actual por asistente | Puntos ([Libro y anclaje](07-libro-y-anclaje.md)) |
+| Bitácora | Tabla de PostgreSQL donde solo se agregan filas | Acciones administrativas ([Flujos §4.4](../01-producto/07-flujos-v1.md#44-bitácora)) |
+| Sellador | Trabajador con pg-boss + `@stellar/stellar-sdk` | Calcular la huella de cada lote, anclarla y publicar el lote |
+| Base de datos | PostgreSQL + Drizzle ORM | Todo lo off-chain. Las transacciones de la base garantizan que saldo, stock y movimiento cambien juntos |
+| Archivos | Almacenamiento de objetos + CDN | Lotes públicos, logos, mapas, fotos del catálogo |
+| Correo | Proveedor transaccional (SPF, DKIM, DMARC) | Códigos, invitaciones, confirmaciones, avisos |
+| Llaves del servidor | En el VPS: cifradas con `sops` + `age`; KMS o HSM más adelante | La llave del operador que ancla nunca está en el repositorio ni en los logs, y su cuenta tiene poco XLM ([Stack §5](09-stack-tecnologico.md#llaves-en-un-vps-ajuste-a-d22)) |
+| Contrato | Soroban (Rust) · ⏳ | Requisitos en [Libro y anclaje §8](07-libro-y-anclaje.md#8-qué-tendrá-que-hacer-el-contrato) |
 
-## 3. Wallets de los asistentes
+## 4. Identidad y llaves
 
-| | MVP | Producción |
+| Quién | Cómo se identifica | Llaves |
 |---|---|---|
-| Tipo | Cuenta clásica creada por el backend para cada asistente (**custodial, solo demo**) | Smart wallet con passkey (`smart-account-kit`); el asistente firma con huella o Face ID |
-| Comisiones | Las paga la cuenta del organizador (fee bump) | OpenZeppelin Relayer (fee sponsorship) |
-| Fondos iniciales | Friendbot en testnet | Reservas patrocinadas por el organizador |
-| Trustlines | El backend crea las trustlines de puntos (y de USDC en ferias) | Las smart wallets no necesitan trustlines para los SAC |
+| Personas (asistentes, equipo, administradores) | Correo verificado y contraseña (Argon2id); segundo factor en la consola de plataforma (D25, D26). En cada evento, un código de asistente | El celular del asistente crea una llave (WebCrypto P-256, no exportable) para firmar sus reclamos |
+| Pantallas de sala | Dispositivo conectado con QR o enlace de un solo uso (D18) | Llave propia, creada en la tablet. La pública se registra en Stellar antes del evento |
+| Mesas de canje | Dispositivo conectado con QR o enlace de un solo uso (D18) | Credencial del dispositivo, revocable desde el panel |
+| Servidor | — | Llave del operador del contrato, cifrada en el VPS. Se puede cambiar (rotar). La llave de administración del contrato vive fuera del servidor |
 
-> Hay que decirlo con claridad: **"en el MVP el backend custodia las llaves; en producción cada asistente firma con passkey"**.
+**En la v1 no hay wallets de Stellar para los asistentes.** Si un plan Programa quiere onboarding a Stellar, será un módulo opcional ([roadmap](../01-producto/06-roadmap.md)).
 
-## 4. Backend: endpoints
+## 5. API por área
 
-| Endpoint | Descripción |
+Rutas orientativas. El detalle se escribe junto con el plan de implementación.
+
+| Área | Rutas |
 |---|---|
-| `POST /attendees` | Recibe el código de la entrada, crea la wallet y llama `register_attendee` |
-| `GET /stands/:challengeId/qr` | Devuelve el QR firmado vigente (rota cada 30 s) |
-| `POST /claims` | Valida el QR y ejecuta `claim` |
-| `POST /redeem` | Firma `redeem` en nombre del asistente (demo custodial) |
-| `POST /pay` | Firma `pay` (solo Feria) |
-| `POST /refund` | Firma `refund` y registra la devolución (solo Feria) |
-| `GET /balances/:attendee` | Saldo de puntos (y de USDC en ferias) |
-| `GET /stats/event` | Asistentes activos por franja horaria, participaciones por reto, canjes |
-| `GET /stats/sponsor/:sponsor` | Participaciones en los retos de un sponsor |
-| `GET /reporte/:evento` | Datos del reporte público verificable, con enlaces a Stellar Expert |
+| Acceso | `POST /auth/registro` · `POST /auth/verificar-correo` · `POST /auth/entrar` · `POST /auth/recuperar` · `POST /auth/restablecer` · `GET/DELETE /auth/sesiones` |
+| Plataforma | `/plataforma/solicitudes` · `/organizaciones` · `/planes` · `/suscripciones` · `/pagos` · `/dashboard` · `/reportes` |
+| Eventos | `/eventos` (crear, configurar, publicar, pausar, cerrar) · `/eventos/:id/agenda` · `/mapa` · `/lugares` · `/sponsors` · `/retos` · `/productos` |
+| Equipo | `/eventos/:id/equipo` (invitar, cambiar rol, quitar) |
+| Dispositivos | `POST /eventos/:id/dispositivos/vinculo` (QR o enlace de un solo uso) · `POST /dispositivos/conectar` · `DELETE /dispositivos/:id` |
+| Inscripciones | `/eventos/:id/invitados` (importar, enviar invitaciones) · `POST /eventos/:slug/registro` · `POST /inscripciones/:id/checkin` |
+| Asistente | `GET /app/estado` (una sola llamada, con `ETag`) · `POST /reclamos` · `POST /encuestas/:id` |
+| Pantallas | `POST /pantallas/:id/estado` (pausa, generar otro, mostrar QR) · SSE `/pantallas/:id/vivo` |
+| Canje | `POST /mesa/cobros` · `POST /cobros/:id/confirmar` · `DELETE /mesa/cobros/:id` · SSE `/mesa/vivo` |
+| Gestión | `POST /ajustes` · `POST /canjes/:id/anular` · `GET /bitacora` · SSE `/eventos/:id/vivo` |
+| Público | `GET /reporte/:evento` · `GET /reporte/:evento/lotes/:n` · `GET /reporte/:evento/verificar` |
 
-**No existe ningún endpoint para transferir puntos entre asistentes** (decisión D3).
+**Reglas de la API:**
+- Todo `POST` que mueve puntos o stock lleva un **ID de envío** (clave de idempotencia).
+- **No existe ninguna ruta para transferir puntos entre asistentes** (D3).
+- Los permisos se revisan en el servidor en cada ruta, según el rol y el alcance de la persona en ese evento ([Flujos §2.4](../01-producto/07-flujos-v1.md#24-roles-y-permisos-d19)).
 
-**Indexador:** un proceso que llama a `getEvents` de Stellar RPC cada pocos segundos, filtrando por el ID del contrato `challenges`, y guarda los eventos en la base de datos para el panel y el reporte.
+## 6. Vistas
 
-**Verificación automática:** para retos como "haz tu primera transacción en Stellar", el backend observa la red y, cuando detecta la transacción de la wallet del asistente, ejecuta `claim` como `verifier`. No hace falta QR.
+| Vista | Ruta | Dispositivo |
+|---|---|---|
+| Sitio público y solicitud del plan Comunidad | `/` | Cualquiera |
+| Asistente | `/app` | Celular |
+| Pantalla de sala o stand | `/sala` | Tablet o monitor |
+| Mesa de canje | `/mesa` | Tablet o celular |
+| Panel del organizador | `/admin` | Computadora (el registrador, en celular) |
+| Consola de plataforma | `/plataforma` | Computadora |
+| Reporte público y verificación | `/reporte/:evento` | Cualquiera |
 
-## 5. Frontend: vistas
+## 7. Más adelante
 
-| Vista | Ruta | Dispositivo | Contenido |
-|---|---|---|---|
-| Asistente | `/app` | Móvil | Saldo de puntos, botón "Escanear", retos, canje, historial |
-| Sala / stand | `/stand/:id` | Tablet o monitor | QR rotativo grande y contador de asistencia en vivo |
-| Mesa de canje | `/merchant` | Tablet o móvil | Generar QR de cobro y ver los canjes recibidos |
-| Panel | `/admin` | Desktop | Resumen, retos, reporte para compartir, estadísticas avanzadas (bloqueadas), cierre del evento |
-| Reporte público | `/reporte/:evento` | Web responsiva | Reporte simple verificable |
-
-El detalle de pantallas y estados está en [UX y pantallas](../06-diseno/03-ux-y-pantallas.md).
-
-## 6. Escalabilidad (producción)
-
-- **Picos** (la fila del café a las 10:30): relayer con *channel accounts* para enviar transacciones en paralelo y fee bump del organizador.
-- **Menos transacciones:** `claim_batch(Vec<(Address, u32)>)` para enviar los retos completados en lotes cada 5–10 s.
-- **Wifi malo en el lugar:** vouchers firmados en el teléfono que se liquidan on-chain al recuperar la conexión.
-- **Varios eventos:** un contrato *factory* que despliega un `challenges` y un asset por evento, más un panel para organizadores.
-- **Reputación entre eventos:** un badge intransferible de "asistente frecuente"; los puntos siguen siendo locales.
+- **Modo sin conexión:** cola de reclamos en el celular y sincronización a través de la mesa (D23, fuera de la v1).
+- **Feria:** saldo en dólares con USDC on-chain. Ahí sí conviene una transacción por pago, porque es dinero real y la comisión del plan la cubre.
+- **Onboarding a Stellar** (plan Programa): wallets opcionales con passkey, retos on-chain e insignias.
+- **Eventos grandes:** réplicas de lectura, colas para el sellador, más regiones.

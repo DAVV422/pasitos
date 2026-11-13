@@ -1,6 +1,7 @@
 # Contrato `challenges` y token de puntos
 
-> **Estado:** vigente (MVP en testnet) · **Última revisión:** 2026-11-03
+> **Estado:** 📦 histórico (MVP del hackathon) · **Última revisión:** 2026-11-06
+> ⚠️ **Ya no es el diseño vigente.** Con D22, los puntos viven en el [libro de movimientos](07-libro-y-anclaje.md) y el contrato nuevo solo guarda huellas, topes y llaves de pantallas. Su diseño se define después de los [flujos de la v1](../01-producto/07-flujos-v1.md). Este documento queda como referencia, sobre todo para la variante Feria (USDC, `pay`, `refund`).
 
 ## 1. Decisión: token de puntos
 

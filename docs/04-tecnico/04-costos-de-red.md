@@ -1,67 +1,62 @@
 # Costos de red
 
-> **Estado:** vigente · la tabla de costos medidos está 🔍 pendiente · **Última revisión:** 2026-11-03
-> La cobertura de estos costos con cada plan está en [Economía unitaria](../02-negocio/05-economia-unitaria.md).
+> **Estado:** ✅ vigente para la v1 (D22) · la tabla de costos medidos está 🔍 pendiente · **Última revisión:** 2026-11-06
+> La cobertura de estos costos con cada plan está en Economía unitaria *(interno)*.
 
 ## 1. Cómo cobra Stellar
 
-| Concepto | Qué es | Orden de magnitud | ¿Se recupera? |
-|---|---|---|---|
-| **Comisión base** (operaciones clásicas: pagos, trustlines) | 100 stroops por operación | 0,00001 XLM | No |
-| **Comisión de recursos** (Soroban: llamadas a contratos) | Según CPU, lecturas y escrituras, tamaño y eventos | De milésimas a centésimas de XLM por llamada | No |
-| **Rent** (Soroban) | Cada dato guardado en un contrato paga por el tiempo que vive (TTL) | Se cobra al crear o extender un dato | No |
-| **Reservas de cuenta** (cuentas clásicas `G…`) | Saldo mínimo bloqueado: 1 XLM por cuenta + 0,5 XLM por trustline | ~1,5 XLM por asistente con puntos; 2 XLM si además tiene USDC | ✅ **Sí**, al cerrar la cuenta |
-
-> **Los números exactos hay que medirlos**, no suponerlos. `simulateTransaction` devuelve el costo de cada llamada antes de enviarla.
-
-## 2. Estimación para un evento de 400 asistentes
-
-Supuestos: unas 12 transacciones por asistente → **~4 800 transacciones**. Precio del XLM: **variable, verificarlo el día del cálculo**. Ejemplo con $0,30:
-
-| Escenario de costo por transacción | Costo por evento | Por asistente |
+| Concepto | Qué es | Orden de magnitud |
 |---|---|---|
-| Bajo: 0,001 XLM ($0,0003) | ~$1,50 | < $0,01 |
-| Alto: 0,05 XLM ($0,015) | ~$72 | $0,18 |
+| **Comisión base** | 100 stroops por operación | 0,00001 XLM |
+| **Comisión de recursos** (llamadas a contratos) | Según CPU, lecturas, escrituras, tamaño y eventos | De milésimas a centésimas de XLM por llamada |
+| **Rent** | Cada dato guardado en un contrato paga por el tiempo que vive (TTL) | Se cobra al crear o extender un dato |
 
-**Reservas:** 400 × 2 XLM = **800 XLM bloqueados** (~$240 a $0,30). Es el número más grande, **pero no es un gasto**: se recupera después del evento al quitar las trustlines y fusionar las cuentas de vuelta a la del organizador (`account merge`).
+Con el libro anclado (D22) **no hay cuentas de asistentes, así que tampoco hay reservas ni trustlines.**
 
-**Conclusión:** el costo no es el problema. El problema sería **no medirlo y no controlarlo**.
+> **Los números exactos hay que medirlos,** no suponerlos. `simulateTransaction` devuelve el costo de cada llamada antes de enviarla.
+
+## 2. El costo ya no depende de la cantidad de asistentes
+
+| Momento | Transacciones |
+|---|---|
+| Publicación (evento + retos) | ~1–10 |
+| Llaves de las pantallas | 1 por pantalla, o 1 en total si se registran en lote |
+| Anclaje | **12 por hora de evento** (una cada 5 min, solo si hubo movimientos) |
+| Cierre | 1–2 |
+
+**Ejemplo: un evento de 1 día con 10 horas de actividad** → unas **135 transacciones**, sean 50 o 5 000 asistentes. Con un precio de ejemplo de $0,30 por XLM:
+
+| Escenario de costo por transacción | Costo por evento |
+|---|---|
+| Bajo: 0,001 XLM | ~$0,04 |
+| Alto: 0,05 XLM | ~$2 |
+
+Comparado con el modelo del MVP (unas 4 800 transacciones para 400 asistentes, más ~800 XLM bloqueados en reservas), la diferencia es de dos órdenes de magnitud. Además, deja de crecer con el evento.
 
 ## 3. Costos medidos en testnet
 
-🔍 **Pendiente de completar** con `simulateTransaction` sobre el contrato desplegado.
+🔍 **Pendiente**, cuando exista el contrato nuevo.
 
 | Operación | Comisión de recursos (stroops) | ¿Crea datos nuevos (rent)? | Costo en XLM | Notas |
 |---|---|---|---|---|
-| `register_attendee` | | Sí (`Attendee`) | | |
-| `claim` (primera vez) | | Sí (`Claims`) | | |
-| `redeem` | | No | | |
-| `pay` | | No | | Solo Feria |
-| `refund` | | No | | Solo Feria |
-| `payment` clásico de USDC | 100 | No | 0,00001 | Referencia |
+| Registrar evento y retos | | Sí | | |
+| Registrar llaves de pantallas | | Sí | | |
+| `anclar` | | Poco (actualiza la última huella y los conteos) | | La más frecuente |
+| Cierre | | Sí | | |
 
 ## 4. Cómo controlamos el costo
 
-| # | Medida | Ahorro | ¿Cuándo? |
-|---|---|---|---|
-| 1 | **Nosotros o el organizador pagamos todas las comisiones con fee bump.** El asistente nunca necesita XLM. Tope de comisión por transacción en el backend | Control total del gasto | MVP |
-| 2 | **Presupuesto de red por evento:** la cuenta que paga comisiones se fondea con un monto fijo y el panel muestra el consumo. Alerta al 80 % | Evita sorpresas | Producción |
-| 3 | **Recuperar las reservas** al cerrar: quitar trustlines y fusionar las cuentas de los asistentes | ~2 XLM por asistente | Producción |
-| 4 | **Claims en lote:** el backend junta los retos completados y los envía cada 5–10 s en una sola transacción (`claim_batch`) | 10–30 veces menos transacciones de retos | Producción |
-| 5 | **Datos pequeños en el contrato:** guardar solo contadores, no textos | Menos rent | MVP |
-| 6 | **Smart wallets con passkey** en lugar de cuentas clásicas: no requieren reservas por cuenta ni trustlines para los SAC | Elimina las reservas bloqueadas | Producción |
-| 7 | **No poner on-chain lo que no necesita confianza** ([Datos on-chain](03-datos-on-chain.md)) | Elimina transacciones innecesarias | Siempre |
-
-**Sobre los claims en lote:** el asistente ve *"Verificando…"* unos segundos más, pero sigue siendo on-chain. Cada transacción de Soroban tiene límites de recursos, así que el tamaño máximo del lote se mide en testnet (empezar con 20).
-
-**Por qué no hacemos todo off-chain:** sería más barato, pero perderíamos lo que justifica usar Stellar. El financiador no podría auditar las participaciones, el circuito cerrado dependería de nuestra palabra y el saldo en dólares no tendría reservas verificables.
-
-## 5. MVP frente a producción
-
-| Tema | MVP | Producción |
+| # | Medida | Cuándo |
 |---|---|---|
-| Transacciones | Una por acción (simple y demostrable) | Claims en lote |
-| Cuentas de asistentes | Clásicas, fondeadas con Friendbot | Smart wallets con passkey, sin reservas |
-| Comisiones | Fee bump del organizador | Igual, con presupuesto, alertas y OpenZeppelin Relayer |
-| Medición de costos | Tabla de la sección 3 | Panel de consumo de red por evento |
-| Reservas | No se recuperan (testnet) | `account merge` al cierre |
+| 1 | Nosotros pagamos todas las comisiones; los asistentes y organizadores nunca necesitan XLM | v1 |
+| 2 | Tope de comisión por transacción en el sellador | v1 |
+| 3 | No se ancla si en esos 5 minutos no hubo movimientos | v1 |
+| 4 | Datos mínimos en el contrato: huellas y contadores, nunca textos | v1 |
+| 5 | Presupuesto de red mensual y alerta al 80 %, en la consola de plataforma | v1 |
+| 6 | Si un evento muy grande lo pide, anclar cada 10 minutos en lugar de 5 | Después |
+
+**Por qué no hacemos todo off-chain:** sería todavía más barato, pero el financiador tendría que confiar en nuestra base de datos. La huella en Stellar es lo que hace que el reporte se pueda comprobar.
+
+## 5. Variante Feria (fuera de la v1)
+
+Los pagos con saldo en dólares (USDC) sí serían una transacción por pago, porque es dinero real que tiene que estar on-chain. Ese costo lo cubre la comisión del plan Feria (2–3 % de las ventas).
