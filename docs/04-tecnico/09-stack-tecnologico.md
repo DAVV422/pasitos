@@ -1,6 +1,6 @@
 # Stack tecnológico
 
-> **Estado:** ⏳ propuesta para confirmar (D38) · **Última revisión:** 2026-11-13
+> **Estado:** ✅ vigente (D38) · **Última revisión:** 2026-11-13
 > Con qué se construye Pasitos desde la versión piloto en adelante, y por qué. Se eligió pensando en todo el proyecto, no solo en el piloto, y en lo que el equipo ya domina: **Angular, NestJS y TypeScript**.
 > Relacionados: [Arquitectura](01-arquitectura.md) · [Rendimiento](08-rendimiento.md) · [Libro y anclaje](07-libro-y-anclaje.md) · [Herramientas](05-herramientas.md)
 
@@ -68,9 +68,9 @@
   - **`@defer` y carga diferida** para la cámara, el lector de QR y las pantallas secundarias.
   - **Budgets estrictos** en `angular.json`: el build falla si `/app` pasa su límite (T-006).
 
-**Prueba de peso al empezar (T-008, nueva en la fase 0):** una app Angular mínima con router, service worker, WebCrypto y el lector de QR, medida en un Android de gama baja en 4G.
-- Si queda **por debajo de ~150 KB** comprimida, se sigue con Angular para todo.
-- Si no, **solo `/app`** se hace con un framework más liviano (Preact o Solid) y el resto sigue en Angular. El API y los tipos compartidos no cambian, así que el costo de este plan B es acotado.
+**Verificación de peso al empezar (T-008, fase 0):** una app Angular mínima con router, service worker, WebCrypto y el lector de QR, medida en un Android de gama baja en 4G. Sirve para fijar los budgets reales y detectar a tiempo qué hay que diferir.
+
+**Alternativas evaluadas (2026-11-13):** SvelteKit (el más liviano, ~15–25 KB de base), Nuxt/Vue (~40–50 KB) y Next.js/React (~60–80 KB, más pesado que Angular). Angular (~50–60 KB) entra en el presupuesto de 250 KB con disciplina; se eligió por el dominio del equipo, por lo que trae incluido para los paneles y por su estabilidad. Cambiar de framework requiere una nueva decisión.
 
 ### 3.3 Sitio público
 
@@ -179,7 +179,7 @@ flowchart LR
 | Contenedores | Docker Compose: `caddy`, `api`, `trabajador`, `sitio`, `postgres` | Un solo archivo por entorno; **staging** en el mismo VPS o en uno más chico |
 | Proxy y HTTPS | Caddy | Certificados automáticos, HTTP/2 y 3, y archivos precomprimidos |
 | CDN y DNS | Cloudflare (plan gratuito) | Cachea los archivos estáticos y protege de ataques |
-| Copias de seguridad | `pg_dump` cada noche + respaldo continuo con WAL (por ejemplo, `pgBackRest`) hacia el almacenamiento de objetos | **Probar una restauración** antes del piloto |
+| Copias de seguridad | ⏳ **No se implementan por ahora** (D44). Opción cuando se definan: `pg_dump` cada noche + respaldo continuo con WAL (`pgBackRest`) hacia el almacenamiento de objetos | Se definen más adelante |
 | Monitoreo | Sentry (errores, nube gratuita o GlitchTip propio) + Uptime Kuma (disponibilidad) + logs de `pino` | Alertas por errores, anclajes atrasados, disco y copias de seguridad fallidas |
 | CI/CD | GitHub Actions: tests y build → imágenes en GHCR → despliegue por SSH con `docker compose pull && up` | Staging automático y producción con aprobación |
 | Secretos | `sops` + `age`, nunca en el repositorio | `.env` en `.gitignore` |
@@ -221,7 +221,7 @@ pasitos/
 
 | # | Tema | Cuándo |
 |---|---|---|
-| 1 | Resultado de la prueba de peso (T-008): Angular para todo o un framework liviano para `/app` | Primera semana de la fase 0 |
+| 1 | Budgets definitivos de cada app, según la verificación de peso (T-008) | Primera semana de la fase 0 |
 | 2 | Proveedor del VPS, según la latencia medida desde Bolivia | Fase 0 |
 | 3 | Proveedor de correo | Fase 0 |
 | 4 | Proveedor de RPC para mainnet | Antes de T-506 |
