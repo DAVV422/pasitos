@@ -14,12 +14,12 @@ Durante el hackathon el proyecto se llamó primero *Ticket Events* y después *S
 | Tema | Durante el hackathon | Hoy |
 |---|---|---|
 | Nombre | Ticket Events → Stayr | **Pasitos** |
-| Modelo de negocio | Empezó con el sponsor pagando por lead verificado (tarifa por reto) | Gratis para comunidades, pagan los financiadores, ferias por uso ([modelo de ingresos](../02-negocio/03-modelo-de-ingresos.md)) |
+| Modelo de negocio | Empezó con el sponsor pagando por lead verificado (tarifa por reto) | Gratis para comunidades, pagan los financiadores, ferias por uso (modelo de ingresos *(interno)*) |
 | Saldo en dólares | Parte central de la demo | Solo variante Feria, desactivado por defecto |
 | Design system | Inter, ámbar sobre azul medianoche | [Tokens oscuro y claro](../06-diseno/02-design-system.md) basados en el logo |
 
 ## Pendiente
 
 - [ ] Cargar los resultados del hackathon (premios, feedback del jurado).
-- [ ] Cargar los resultados de las entrevistas en [Hipótesis y resultados](../03-validacion/02-hipotesis-y-resultados.md).
+- [ ] Cargar los resultados de las entrevistas en Hipótesis y resultados *(interno)*.
 - [ ] Enlazar el repositorio del código, el video de demo y el deck.

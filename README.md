@@ -47,7 +47,7 @@ Y del lado de quien pone el dinero (una empresa, una fundación, una universidad
 
 <table>
 <tr>
-<td width="25%" align="center"><h3>1 · Entra</h3>El asistente abre el link o escanea el QR de su entrada. <b>No instala nada ni crea una contraseña.</b></td>
+<td width="25%" align="center"><h3>1 · Entra</h3>El asistente abre el link de su invitación o escanea el QR del evento. <b>No instala nada.</b></td>
 <td width="25%" align="center"><h3>2 · Participa</h3>Cumple <b>retos</b>: ir a una charla, visitar un stand, quedarse al cierre, responder la encuesta.</td>
 <td width="25%" align="center"><h3>3 · Canjea</h3>Cambia sus puntos por café, meriendas o merch en la <b>mesa de canje</b> del evento.</td>
 <td width="25%" align="center"><h3>4 · Comprueba</h3>El organizador comparte un <b>reporte público</b> que el sponsor puede verificar por sí mismo.</td>
@@ -58,7 +58,7 @@ Hay tres reglas que no cambian nunca:
 
 - ✅ **Los puntos solo valen dentro del evento.** No se pueden transferir a otras personas ni sacar del evento.
 - ✅ **Los puntos vencen al cierre y nunca se convierten en dinero.** Así nadie tiene motivos para hacer trampa.
-- ✅ **No hay datos personales en la blockchain.** Ahí solo quedan números anónimos.
+- ✅ **No hay datos personales en la blockchain.** Ahí solo queda una huella de los números.
 
 ---
 
@@ -77,7 +77,7 @@ Hay tres reglas que no cambian nunca:
 
 ### Ganar puntos con un QR
 
-Cada sala o stand muestra en una tablet un **código QR que cambia cada pocos segundos**. Por eso no sirve sacarle una foto y mandarla por WhatsApp.
+Cada sala o stand muestra en una tablet un **código QR que cambia cada pocos segundos**, o que sirve una sola vez. Por eso no sirve sacarle una foto y mandarla por WhatsApp.
 
 ```mermaid
 sequenceDiagram
@@ -85,16 +85,17 @@ sequenceDiagram
     participant S as Tablet de la sala
     participant P as Pasitos
     participant R as Red Stellar
-    S->>S: Muestra un QR que cambia solo
+    S->>S: Muestra un QR firmado que cambia solo
     A->>S: Escanea el QR con su celular
     A->>P: "Estuve en esta charla"
-    P->>R: Verifica y registra la participación
-    R-->>P: Confirmado en unos 5 segundos
-    P-->>A: ¡+20 puntos!
+    P->>P: Verifica y lo anota en el libro del evento
+    P-->>A: ¡+20 puntos! (en menos de 1 segundo)
     P-->>S: Asistencia +1
+    P->>R: Cada 5 minutos, sella una huella del libro
+    R-->>P: Sello registrado: nadie puede cambiar esos números
 ```
 
-Algunos retos se **verifican solos**, sin QR. Por ejemplo, "Haz tu primera transacción en Stellar" se confirma automáticamente cuando la transacción aparece en la red.
+Algunos retos no necesitan QR: por ejemplo, la encuesta se responde dentro de la app.
 
 ### Canjear puntos
 
@@ -104,11 +105,11 @@ sequenceDiagram
     actor M as Mesa de canje
     participant P as Pasitos
     M->>P: Nuevo canje: café, 30 puntos
-    P-->>M: Muestra un QR de cobro
+    P-->>M: Muestra un QR de cobro (como un pago con QR)
     A->>M: Escanea el QR
     A->>P: Confirma el canje
-    P-->>A: Canje hecho, quedan 50 puntos
-    P-->>M: Canje confirmado, entrega el café
+    P-->>A: Canje hecho, quedan 50 puntos · comprobante C-4821
+    P-->>M: Canje confirmado · C-4821, entrega el café
 ```
 
 ### El evento de punta a punta
@@ -117,7 +118,7 @@ sequenceDiagram
 flowchart LR
     O1["🛠️ El organizador<br/>crea el evento,<br/>los retos y el catálogo"] --> E["🎟️ Día del evento<br/>los asistentes ganan<br/>y canjean puntos"]
     E --> C["🔒 Cierre<br/>los puntos vencen"]
-    C --> R["📊 Reporte público<br/>verificable"]
+    C --> R["📊 Reporte público<br/>sellado en Stellar"]
     R --> S["🏢 El sponsor<br/>lo comprueba<br/>por sí mismo"]
 ```
 
@@ -125,14 +126,14 @@ flowchart LR
 
 ## ¿Por qué blockchain y por qué Stellar?
 
-No usamos blockchain por moda: es lo que hace que el reporte sea creíble.
+No usamos blockchain por moda: es lo que hace que el reporte sea creíble. Pasitos lleva un **libro de movimientos** y cada 5 minutos **sella en Stellar una huella** de lo nuevo, como un notario que pone su sello en cada página.
 
 | | |
 |---|---|
-| 🔍 **Nadie puede alterar los números** | Cada participación queda en un registro público. El sponsor no tiene que confiar en nosotros ni en el organizador. |
-| 🔒 **La red hace cumplir las reglas** | Los puntos solo pueden estar en cuentas autorizadas por el evento. No es una regla de nuestra app que se pueda saltar: es una regla del propio activo. |
-| ⚡ **Rápido y barato** | Cada movimiento se confirma en unos 5 segundos y cuesta una fracción de centavo. Pasitos paga esas comisiones, así que el asistente no paga nada. |
-| 🌱 **Onboarding real** | Cada asistente sale con una wallet y sus primeras transacciones en Stellar, sin darse cuenta de la complejidad. |
+| 🔍 **Nadie puede alterar los números** | Si alguien cambiara un movimiento después, su huella dejaría de coincidir con la sellada en Stellar. El sponsor lo comprueba con un botón, sin confiar en nosotros ni en el organizador. |
+| 🔒 **La red hace cumplir los topes** | El contrato rechaza cualquier sello que entregue más premios de los previstos para un reto. |
+| ⚡ **Rápido y casi gratis** | El asistente recibe sus puntos al instante, y sellar un evento completo cuesta unos centavos, sea de 50 o de 5 000 personas. |
+| 🌱 **Onboarding a Stellar, cuando se pide** | Con el plan Programa, un ecosistema puede sumar un módulo para que los asistentes creen su wallet y hagan sus primeras transacciones (después de la v1). |
 
 ¿Nunca usaste blockchain? Lee [Blockchain explicado fácil](docs/01-producto/04-blockchain-explicado-facil.md).
 
@@ -142,13 +143,11 @@ No usamos blockchain por moda: es lo que hace que el reporte sea creíble.
 
 **Gratis para las comunidades → pagan los financiadores que necesitan reportar → las ferias pagan por uso.**
 
-| Plan | Para quién | Precio (a validar) | Qué incluye |
-|---|---|---|---|
-| **Comunidad** | Meetups, GDG y comunidades aprobadas | **Gratis** | App, retos, puntos, canje y reporte simple verificable. Estadísticas avanzadas opcionales por $25 por evento |
-| **Programa** | Ecosistemas, fundaciones y empresas que financian eventos | **$300–1 500** por evento | Todo lo anterior, más retos on-chain a medida, métricas de onboarding, reporte de impacto y soporte el día del evento |
-| **Feria** | Ferias y eventos con venta | **2–3 %** de las ventas | Pagos en dólares digitales en los stands y reembolso del saldo que sobra |
-
-Más detalle en [Modelo de ingresos](docs/02-negocio/03-modelo-de-ingresos.md).
+| Plan | Para quién | Qué incluye |
+|---|---|---|
+| **Comunidad** | Meetups, GDG y comunidades aprobadas | **Gratis.** App, retos, puntos, canje y reporte simple verificable. Estadísticas avanzadas opcionales |
+| **Programa** | Ecosistemas, fundaciones y empresas que financian eventos | Todo lo anterior, más retos a medida, métricas de impacto, reporte con marca y soporte el día del evento |
+| **Feria** | Ferias y eventos con venta | Pagos en dólares digitales en los stands y reembolso del saldo que sobra (después de la v1) |
 
 ---
 
@@ -166,7 +165,7 @@ El camino completo está en el [Roadmap](docs/01-producto/06-roadmap.md).
 
 ## Diseño
 
-- **Mockup inicial:** [docs/06-diseno/mockups/nivel-1.html](docs/06-diseno/mockups/nivel-1.html) muestra las 11 pantallas esenciales en tema oscuro y claro. Para verlo, descarga el archivo y ábrelo en el navegador.
+- **Mockups:** [nivel 1](docs/06-diseno/mockups/nivel-1.html) (las 11 pantallas esenciales) y [nivel 2](docs/06-diseno/mockups/nivel-2.html) (estados, errores, gestión del evento y sitio público), en tema oscuro y claro. Para verlos, descarga los archivos y ábrelos en el navegador.
 - **Pensado para todos:** botones grandes, una sola acción principal por pantalla, textos claros y pocas animaciones. En los eventos también hay personas mayores.
 - **Reglas de diseño:** [Design system](docs/06-diseno/02-design-system.md) · [Inventario de vistas](docs/06-diseno/05-inventario-de-vistas.md) · [Marca](docs/06-diseno/01-marca.md)
 
@@ -178,10 +177,9 @@ Toda la documentación está en español, en [docs/](docs/README.md). Por dónde
 
 | Si eres… | Empieza por |
 |---|---|
-| **Nuevo en el equipo** | [Visión](docs/01-producto/01-vision.md) → [Cómo funciona](docs/01-producto/02-como-funciona.md) → [Decisiones](docs/decisiones.md) |
-| **Desarrollador** | [Arquitectura](docs/04-tecnico/01-arquitectura.md) → [Contrato `challenges`](docs/04-tecnico/02-contrato-challenges.md) → [Setup en testnet](docs/04-tecnico/06-setup-testnet.md) |
+| **Nuevo en el equipo** | [Visión](docs/01-producto/01-vision.md) → [Cómo funciona](docs/01-producto/02-como-funciona.md) → [Flujos de la v1](docs/01-producto/07-flujos-v1.md) → [Decisiones](docs/decisiones.md) |
+| **Desarrollador** | [Flujos de la v1](docs/01-producto/07-flujos-v1.md) → [Arquitectura](docs/04-tecnico/01-arquitectura.md) → [Libro y anclaje](docs/04-tecnico/07-libro-y-anclaje.md) → [Rendimiento](docs/04-tecnico/08-rendimiento.md) |
 | **Diseñador** | [UX y pantallas](docs/06-diseno/03-ux-y-pantallas.md) → [Design system](docs/06-diseno/02-design-system.md) |
-| **Negocio y ventas** | [Clientes y segmentos](docs/02-negocio/02-clientes-y-segmentos.md) → [Modelo de ingresos](docs/02-negocio/03-modelo-de-ingresos.md) |
 
 ¿Una palabra que no conoces? Está en el [Glosario](docs/glosario.md).
 
@@ -191,10 +189,8 @@ Toda la documentación está en español, en [docs/](docs/README.md). Por dónde
 assets/brand/            Logo y recursos de marca
 docs/
 ├── 01-producto/         Visión, cómo funciona, casos de uso, roadmap
-├── 02-negocio/          Mercado, clientes, modelo de ingresos, economía
-├── 03-validacion/       Entrevistas, hipótesis y resultados
-├── 04-tecnico/          Arquitectura, contrato, datos, costos, setup
-├── 05-seguridad-legal/  Amenazas, pruebas y cumplimiento
+├── 04-tecnico/          Arquitectura, libro y anclaje, rendimiento, stack, costos
+├── 05-seguridad-legal/  Amenazas, pruebas, cumplimiento, términos y privacidad
 ├── 06-diseno/           Marca, design system, pantallas y mockups
 ├── 07-hackathon/        Material del hackathon (histórico)
 ├── decisiones.md        Registro de decisiones

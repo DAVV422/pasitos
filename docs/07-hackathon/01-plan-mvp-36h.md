@@ -19,7 +19,7 @@
 | Hora | Persona 1 | Persona 2 | Persona 3 |
 |---|---|---|---|
 | **H0–H1** | **Todos juntos:** leer la documentación de producto; congelar alcance; acordar la interfaz del contrato ([contrato](../04-tecnico/02-contrato-challenges.md)) y los endpoints | | |
-| H1–H3 | **Spike del SAC:** emisor con flags, desplegar SAC, `set_admin` a un contrato de prueba, `mint` desde el contrato. Decide opción A o B | Scaffold Stellar, estructura del backend, `@stellar/stellar-sdk`, cuentas de testnet | **Entrevistas:** llamadas a organizadores y sponsors, enviar formulario a asistentes ([guía de entrevistas](../03-validacion/01-guia-de-entrevistas.md)) |
+| H1–H3 | **Spike del SAC:** emisor con flags, desplegar SAC, `set_admin` a un contrato de prueba, `mint` desde el contrato. Decide opción A o B | Scaffold Stellar, estructura del backend, `@stellar/stellar-sdk`, cuentas de testnet | **Entrevistas:** llamadas a organizadores y sponsors, enviar formulario a asistentes (guía de entrevistas *(interno)*) |
 | H3–H8 | `challenges`: storage, `init`, `register_attendee`, `add_merchant`, `create_challenge`, `claim` + tests C1–C8 | QR rotativo con HMAC, `POST /attendees`, `POST /claims` contra un mock del contrato | Vista asistente (saldo, escanear, retos) y vista stand (QR rotativo) con datos falsos |
 | H8–H9 | **Checkpoint 1 (todos, 30 min):** ¿`claim` funciona en testnet de punta a punta? Si no, Persona 2 ayuda a Persona 1 | | |
 | H9–H13 | `redeem`, `pay`, `refund`, `close_event`, `expire`, `pause` + tests C9–C17 | Wallets demo (crear cuenta, trustlines, fee bump), `/redeem`, `/pay`, `/refund`, `/balances` | Vista comercio (QR de cobro) y catálogo de canje |
