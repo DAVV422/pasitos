@@ -85,6 +85,12 @@ Estos documentos **no se publican en GitHub** (están en `.gitignore`). El equip
 
 En los documentos públicos, las referencias a estos documentos aparecen como texto marcado *(interno)*.
 
+**Protección antes de cada commit.** El repositorio trae una revisión automática (`.githooks/pre-commit`) que frena el commit si se intenta subir documentación interna, archivos de secretos (`.env`, `.pem`, `.key`, `.stellar/`) o texto que parece una llave de Stellar, una contraseña o un correo personal. Cada persona la activa **una vez** en su copia:
+
+```
+git config core.hooksPath .githooks
+```
+
 ## Convenciones
 
 - Cada documento empieza con su **estado** y la **fecha de la última revisión**.

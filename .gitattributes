@@ -1,0 +1,24 @@
+# Finales de línea: en el repositorio todo se guarda con LF (el formato de Linux),
+# aunque se edite en Windows. Así los scripts y los Dockerfile funcionan en el VPS.
+* text=auto eol=lf
+
+# Archivos que solo funcionan con CRLF en Windows
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binarios: Git no los modifica ni intenta mostrar diferencias
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.woff  binary
+*.woff2 binary
+*.wasm binary
+
+# Archivos generados: se colapsan en los diffs de GitHub
+pnpm-lock.yaml linguist-generated=true -diff
+Cargo.lock     linguist-generated=true

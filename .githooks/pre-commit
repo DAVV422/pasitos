@@ -1,0 +1,44 @@
+#!/bin/sh
+# Pasitos · revisión antes de cada commit
+# Frena el commit si se intenta subir documentación interna, archivos de secretos
+# o texto que parece una llave o un correo personal.
+# Activar una vez por copia del repositorio:  git config core.hooksPath .githooks
+
+fallo=0
+
+# 1. Rutas que nunca se suben (aunque se agreguen con git add -f)
+bloqueadas='^(docs/INTERNO\.md|docs/02-negocio/|docs/03-validacion/|docs/version-piloto/|docs/08-financiamiento/|secrets/|\.stellar/|\.soroban/)|(^|/)\.env($|\.)|\.(pem|key|p12|pfx)$|\.dec\.'
+permitidas='(^|/)\.env\.example$'
+
+rutas=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "$bloqueadas" | grep -v -E "$permitidas")
+if [ -n "$rutas" ]; then
+  echo "✋ Estos archivos no se suben al repositorio público:"
+  echo "$rutas" | sed 's/^/   - /'
+  fallo=1
+fi
+
+# 2. Contenido que parece secreto o dato personal (solo líneas agregadas)
+agregadas=$(git diff --cached -U0 --diff-filter=ACMR -- . ':(exclude).githooks/*' | grep -E '^\+[^+]')
+
+revisar() {
+  encontrado=$(echo "$agregadas" | grep -n -E "$2" | grep -v -E "${3:-^$}" | head -5)
+  if [ -n "$encontrado" ]; then
+    echo "✋ $1:"
+    echo "$encontrado" | cut -c1-160 | sed 's/^/   /'
+    fallo=1
+  fi
+}
+
+revisar "Llave secreta de Stellar"        'S[A-Z2-7]{55}'
+revisar "Llave privada"                    'BEGIN [A-Z ]*PRIVATE KEY'
+revisar "Llave de AWS"                     'AKIA[0-9A-Z]{16}'
+revisar "Posible contraseña o token"       '(password|passwd|secret|token|api[_-]?key)["'"'"' ]*[:=] *["'"'"'][^"'"'"' ]{8,}' 'example|ejemplo|\[Completar'
+revisar "Correo personal"                  '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' '@example\.(com|org)|@pasitos\.app|noreply@|\[Completar'
+
+if [ "$fallo" -ne 0 ]; then
+  echo ""
+  echo "Commit detenido. Quita esos archivos o líneas (git restore --staged <archivo>)."
+  echo "Si es un falso positivo y estás seguro, puedes usar: git commit --no-verify"
+  exit 1
+fi
+exit 0
