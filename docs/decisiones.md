@@ -54,6 +54,9 @@
 | D43 | Sesiones y segundo factor | ✅ Vigente | Segundo factor obligatorio en la consola de plataforma y para dueño y coorganizadores; opcional para registradores y financiadores. Sesión del asistente hasta 30 días después del cierre (solo lectura desde el cierre). Panel: 12 h sin uso. Consola: segundo factor cada 8 h. Ver [Flujos §2.2](01-producto/07-flujos-v1.md#22-inicio-de-sesión-con-contraseña-d26) | 2026-11-13 |
 | D44 | Copias de seguridad | ⏳ Pendiente | **No se implementan por ahora.** Se definen más adelante (cuántos datos se pueden perder y en cuánto tiempo se vuelve a estar en línea) | — |
 | D45 | Licencia del código | ✅ Vigente | **Apache-2.0** para todo el repositorio. Ver [LICENSE](../LICENSE) | 2026-11-13 |
+| D46 | Puntos por check-in | ✅ Vigente | Cada evento configura **puntos de bienvenida** que se suman en el mismo check-in (0 por defecto). No hace falta un QR aparte: el check-in ya lo hace un registrador. Un reto de llegada con QR sigue siendo posible como cualquier otro reto | 2026-11-13 |
+| D47 | Aislamiento entre organizaciones | ✅ Vigente | Además del filtro en el código, **Row Level Security** en PostgreSQL desde el piloto: sin organización definida, una consulta no devuelve nada. El trabajador y la consola usan un rol aparte | 2026-11-13 |
+| D48 | Archivos y mapas | ✅ Vigente | Archivos **en el VPS**, con un servicio de validación (peso, tipo real, archivo sano, antivirus ClamAV y reencodeo a WebP). Plano del lugar como imagen; ubicación con Google Maps (buscador en el panel e imagen estática en la app). Ver [Subida de archivos](04-tecnico/10-subida-de-archivos.md) | 2026-11-13 |
 
 ## Notas
 

@@ -21,7 +21,7 @@ Pasitos convierte la participación en un evento en **puntos que solo valen dent
 ### Transversales
 | Documento | Para qué sirve | Estado |
 |---|---|---|
-| [Decisiones](decisiones.md) | Registro único de decisiones (D1…D45) | Vigente · D16, D17 y D44 ⏳ |
+| [Decisiones](decisiones.md) | Registro único de decisiones (D1…D48) | Vigente · D16, D17 y D44 ⏳ |
 | [Glosario](glosario.md) | Términos de producto, negocio y blockchain | Vigente |
 
 ### 01 · Producto
@@ -42,6 +42,7 @@ Pasitos convierte la participación en un evento en **puntos que solo valen dent
 | [Libro y anclaje](04-tecnico/07-libro-y-anclaje.md) | Cómo se registran los puntos y cómo se sellan en Stellar (D22) | Vigente · contrato ⏳ |
 | [Rendimiento](04-tecnico/08-rendimiento.md) | Presupuesto de peso y velocidad, y cómo se mide (D24) | Vigente |
 | [Stack tecnológico](04-tecnico/09-stack-tecnologico.md) | Con qué se construye, por qué y cómo se despliega en el VPS | Vigente (D38) |
+| [Subida de archivos](04-tecnico/10-subida-de-archivos.md) | Validación de imágenes y CSV (tipo real, antivirus, reencodeo), almacenamiento en el VPS y Google Maps | Vigente (D48) |
 | [Datos on-chain](04-tecnico/03-datos-on-chain.md) | Qué va on-chain, qué no y cuándo | Vigente (v1) |
 | [Costos de red](04-tecnico/04-costos-de-red.md) | Cómo cobra Stellar, estimaciones y controles | Vigente · medición pendiente |
 | [Contrato `challenges`](04-tecnico/02-contrato-challenges.md) | Contrato y token del MVP del hackathon | 📦 Histórico |

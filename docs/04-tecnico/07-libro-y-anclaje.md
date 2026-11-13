@@ -32,7 +32,7 @@
 | Campo | Ejemplo | Nota |
 |---|---|---|
 | `n` | 1834 | Número correlativo dentro del evento |
-| `tipo` | `reto` | `checkin` · `reto` · `canje` · `anulacion` · `ajuste` · `vencimiento` |
+| `tipo` | `reto` | `checkin` (con los puntos de bienvenida del evento, 0 por defecto, D46) · `reto` · `canje` · `anulacion` · `ajuste` · `vencimiento` |
 | `asistente` | `a7f3…` | **ID anónimo:** un hash de la cuenta con una sal propia del evento. Nunca el nombre ni el correo |
 | `puntos` | +20 | Negativo en canjes y vencimientos |
 | `ref` | reto 7 · pantalla Sala A | O el producto y la mesa, en un canje |

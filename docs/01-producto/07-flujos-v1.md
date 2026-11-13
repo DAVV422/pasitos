@@ -224,7 +224,7 @@ Borrador ──Publicar──▶ Publicado ──llega la hora / Abrir──▶ 
 | **Mesa de canje** | Dispositivos conectados, catálogo (precio, stock, máximo por persona) |
 | **Registro** | Modo de registro (4.5), campos del formulario, cupo, fecha límite, aprobación, check-in (4.6) |
 | **Equipo** | Colaboradores y roles (4.3) |
-| **Reglas** | *Los retos requieren check-in* (activado por defecto, D30), tope de puntos que puede ganar una persona (opcional) |
+| **Reglas** | *Los retos requieren check-in* (activado por defecto, D30), **puntos de bienvenida** al hacer el check-in (0 por defecto, D46), tope de puntos que puede ganar una persona (opcional) |
 
 ### 4.3 Equipo y colaboradores
 1. El dueño o un coorganizador elige **Invitar**: correo, rol y alcance (qué mesas o pantallas, si el rol lo pide).

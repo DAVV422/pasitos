@@ -71,7 +71,7 @@ Un nombre combina las dos partes en ese orden: **verbo técnico + sustantivo del
 | Movimiento del libro | `movimiento` | `movimientos` |
 | Lote anclado | `lote` | `lotes` |
 | Huella (hash) | `huella` | — |
-| Sello en Stellar (anclaje) | `anclaje` (verbo: `anchor`) | `anclajes` |
+| Sello en Stellar (anclaje) | `anclaje` (verbo: `anchor`) | columnas de `lotes` |
 | Asistente | `asistente` | `asistentes` |
 | Invitado (antes de vincular) | `invitacion` | `invitaciones` |
 | Código de asistente (`A-0231`) | `codigoAsistente` | columna `codigo_asistente` |
@@ -81,6 +81,9 @@ Un nombre combina las dos partes en ese orden: **verbo técnico + sustantivo del
 | Pantalla de sala o stand | `pantalla` | `pantallas` |
 | Mesa de canje | `mesa` | `mesas` |
 | Asistencia (check-in) | `checkIn` | `check_ins` |
+| Participación en un reto | `participacion` | `participaciones` |
+| Escaneo de un QR de reto | `escaneo` | `escaneos` |
+| Saldo | `saldo` | `saldos` |
 | Alerta de seguridad | `alerta` | `alertas` |
 | Bitácora | `bitacora` | `bitacora` |
 | Reporte | `reporte` | `reportes` |
