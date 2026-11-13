@@ -13,15 +13,15 @@ Pasitos convierte la participación en un evento en **puntos que solo valen dent
 |---|---|
 | **Nuevo en el equipo** (cualquier rol) | [Visión](01-producto/01-vision.md) → [Cómo funciona](01-producto/02-como-funciona.md) → [Flujos de la v1](01-producto/07-flujos-v1.md) → [Blockchain explicado fácil](01-producto/04-blockchain-explicado-facil.md) → [Decisiones](decisiones.md) |
 | **Desarrollador de contratos** | [Libro y anclaje](04-tecnico/07-libro-y-anclaje.md) → [Arquitectura](04-tecnico/01-arquitectura.md) → [Datos on-chain](04-tecnico/03-datos-on-chain.md) → [Amenazas y pruebas](05-seguridad-legal/01-amenazas-y-pruebas.md) |
-| **Desarrollador de backend** | [Flujos de la v1](01-producto/07-flujos-v1.md) → [Stack tecnológico](04-tecnico/09-stack-tecnologico.md) → [Arquitectura](04-tecnico/01-arquitectura.md) → [Libro y anclaje](04-tecnico/07-libro-y-anclaje.md) → [Rendimiento](04-tecnico/08-rendimiento.md) |
-| **Desarrollador de frontend / diseño** | [Flujos de la v1](01-producto/07-flujos-v1.md) → [Rendimiento](04-tecnico/08-rendimiento.md) → [UX y pantallas](06-diseno/03-ux-y-pantallas.md) → [Design system](06-diseno/02-design-system.md) → [Marca](06-diseno/01-marca.md) → [Brief de mockups](06-diseno/04-brief-mockups-ia.md) |
+| **Desarrollador de backend** | [Flujos de la v1](01-producto/07-flujos-v1.md) → [Stack tecnológico](04-tecnico/09-stack-tecnologico.md) → [Reglas de desarrollo](09-desarrollo/README.md) → [Arquitectura](04-tecnico/01-arquitectura.md) → [Libro y anclaje](04-tecnico/07-libro-y-anclaje.md) → [Rendimiento](04-tecnico/08-rendimiento.md) |
+| **Desarrollador de frontend / diseño** | [Flujos de la v1](01-producto/07-flujos-v1.md) → [Reglas de desarrollo](09-desarrollo/README.md) → [Rendimiento](04-tecnico/08-rendimiento.md) → [UX y pantallas](06-diseno/03-ux-y-pantallas.md) → [Design system](06-diseno/02-design-system.md) → [Marca](06-diseno/01-marca.md) → [Brief de mockups](06-diseno/04-brief-mockups-ia.md) |
 
 ## Índice
 
 ### Transversales
 | Documento | Para qué sirve | Estado |
 |---|---|---|
-| [Decisiones](decisiones.md) | Registro único de decisiones (D1…D38) | Vigente · D16 y D17 ⏳ |
+| [Decisiones](decisiones.md) | Registro único de decisiones (D1…D45) | Vigente · D16, D17 y D44 ⏳ |
 | [Glosario](glosario.md) | Términos de producto, negocio y blockchain | Vigente |
 
 ### 01 · Producto
@@ -41,7 +41,7 @@ Pasitos convierte la participación en un evento en **puntos que solo valen dent
 | [Arquitectura](04-tecnico/01-arquitectura.md) | Componentes, identidad y llaves, API por área, vistas | Vigente (v1) |
 | [Libro y anclaje](04-tecnico/07-libro-y-anclaje.md) | Cómo se registran los puntos y cómo se sellan en Stellar (D22) | Vigente · contrato ⏳ |
 | [Rendimiento](04-tecnico/08-rendimiento.md) | Presupuesto de peso y velocidad, y cómo se mide (D24) | Vigente |
-| [Stack tecnológico](04-tecnico/09-stack-tecnologico.md) | Con qué se construye, por qué y cómo se despliega en el VPS | ⏳ Propuesta (D38) |
+| [Stack tecnológico](04-tecnico/09-stack-tecnologico.md) | Con qué se construye, por qué y cómo se despliega en el VPS | Vigente (D38) |
 | [Datos on-chain](04-tecnico/03-datos-on-chain.md) | Qué va on-chain, qué no y cuándo | Vigente (v1) |
 | [Costos de red](04-tecnico/04-costos-de-red.md) | Cómo cobra Stellar, estimaciones y controles | Vigente · medición pendiente |
 | [Contrato `challenges`](04-tecnico/02-contrato-challenges.md) | Contrato y token del MVP del hackathon | 📦 Histórico |
@@ -67,6 +67,15 @@ Pasitos convierte la participación en un evento en **puntos que solo valen dent
 | [Mockup · nivel 2](06-diseno/mockups/nivel-2.html) | Estados, errores, gestión del evento y sitio público (36 vistas) | Vigente |
 | [Brief de mockups para IA](06-diseno/04-brief-mockups-ia.md) | Documento autocontenido para una IA de diseño: pantallas, textos y datos exactos | Vigente |
 | [tokens/DESIGN-dark.md](06-diseno/tokens/DESIGN-dark.md) · [tokens/DESIGN-light.md](06-diseno/tokens/DESIGN-light.md) | Fuente de verdad de los temas oscuro y claro | Vigente |
+
+### 09 · Desarrollo
+| Documento | Para qué sirve | Estado |
+|---|---|---|
+| [Índice de desarrollo](09-desarrollo/README.md) | Cómo usar estas reglas | 📝 Propuesta |
+| [Reglas generales](09-desarrollo/01-reglas-generales.md) | Principios, nomenclatura (D39), TypeScript, código limpio, git, tests | 📝 Propuesta · nomenclatura ✅ |
+| [Backend](09-desarrollo/02-backend.md) | Estructura NestJS, capas, patrones, libro de movimientos, base de datos, logs | 📝 Propuesta |
+| [Frontend](09-desarrollo/03-frontend.md) | Estructura Angular, componentes, estado, manejo de errores, accesibilidad | 📝 Propuesta |
+| [Respuestas y errores del API](09-desarrollo/04-respuestas-y-errores.md) | Formato de éxito y error, catálogo de códigos, idempotencia (D40) | Vigente (D40) |
 
 ### 07 · Hackathon (histórico)
 | Documento | Para qué sirve | Estado |

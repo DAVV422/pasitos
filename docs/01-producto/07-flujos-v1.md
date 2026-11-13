@@ -71,12 +71,13 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 - **En pleno evento,** quien no recuerda su contraseña no tiene que esperar el correo: después del check-in, el registrador le muestra un **QR de un solo uso** que abre la sesión en su celular (4.6).
 
 **Segundo factor:**
-- **Obligatorio** en la consola de plataforma: passkey (huella o Face ID) o una app de códigos.
-- **Opcional** en el panel del organizador, y se le recomienda al dueño.
+- **Obligatorio** en la consola de plataforma y para el **dueño y los coorganizadores** del evento: passkey (huella o Face ID) o una app de códigos (D43).
+- **Opcional** para registradores y financiadores.
 - Los asistentes no lo usan.
 
 **Sesiones:**
-- El asistente queda conectado 30 días en ese celular. El panel del organizador pide volver a entrar cada 12 horas sin uso. La consola de plataforma pide el segundo factor cada 8 horas.
+- El asistente queda conectado **hasta 30 días después del cierre** del evento. Desde el cierre, la app queda en solo lectura (saldo final y resumen); a los 30 días la sesión se borra junto con los datos del dispositivo (D35, D43).
+- El panel del organizador pide volver a entrar cada 12 horas sin uso. La consola de plataforma pide el segundo factor cada 8 horas.
 - En **Mi cuenta**, cada persona ve en qué dispositivos tiene la sesión abierta y puede cerrarlas, y puede cambiar su contraseña (pide la actual).
 
 **Correos que llegan:** se usa un proveedor de correo transaccional con SPF, DKIM y DMARC configurados. La pantalla dice *"Revisa también tu carpeta de spam"* y permite reenviar a los 60 segundos.
@@ -543,7 +544,7 @@ Confirmadas el 2026-11-06. El detalle está en [decisiones.md](../decisiones.md)
 | # | Tema | Decisión |
 |---|---|---|
 | D25 | Identificador de la persona | Correo verificado, con invitados sin correo dentro de un evento, y un código de asistente por evento (2.1) |
-| D26 | Inicio de sesión | Correo y contraseña, con el correo verificado. Segundo factor obligatorio en la consola de plataforma (2.2) |
+| D26 | Inicio de sesión | Correo y contraseña, con el correo verificado. Segundo factor obligatorio en la consola de plataforma y para dueño y coorganizadores (2.2, D43) |
 | D27 | Modos de registro | Lista, abierto o mixto, más registro en la puerta activable. Piloto: lista + puerta (4.5) |
 | D28 | Modos de QR | Por tiempo, de un solo uso, bajo demanda y usos limitados. Sin QR impreso (6.2) |
 | D29 | Rol *Operador de stand* | Se agrega a D19 (2.4) |

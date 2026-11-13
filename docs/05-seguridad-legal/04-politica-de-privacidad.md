@@ -37,6 +37,10 @@ Contacto para temas de privacidad: **[Completar: correo de contacto de privacida
 
 Nombre, correo, rol, contraseña (guardada cifrada, nunca la vemos) y el registro de las acciones que haces en la plataforma (bitácora).
 
+### Si nos escribes desde el formulario de contacto
+
+Nombre, correo, organización, datos del evento que nos cuentes y tu mensaje. Solo los usamos para responderte.
+
 ### Lo que no usamos
 
 - Tu ubicación GPS, tus contactos ni nada fuera de Pasitos.
