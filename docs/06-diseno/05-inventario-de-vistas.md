@@ -1,7 +1,8 @@
 # Inventario de vistas
 
-> **Estado:** vigente · **Última revisión:** 2026-11-03
-> **Mockup del nivel 1:** [mockups/nivel-1.html](mockups/nivel-1.html), en tema oscuro y claro. Es un solo archivo HTML que se edita directamente.
+> **Estado:** vigente · **Última revisión:** 2026-11-04
+> **Mockups:** [nivel 1](mockups/nivel-1.html) (11 pantallas) y [nivel 2](mockups/nivel-2.html) (36 vistas), en tema oscuro y claro. Cada nivel es un solo archivo HTML que se edita directamente.
+> ⚠️ **Pendiente:** con D22 y los [flujos de la v1](../01-producto/07-flujos-v1.md) cambian A7 (ya no hay espera de Stellar), el historial (*Registrado en Stellar ✓*), A17 (sin la acción de demo) y se suman pantallas de la consola de plataforma, el equipo, los invitados y los modos de QR. Los mockups se actualizan después de cerrar los flujos.
 > Lista única de todas las pantallas de Pasitos, por perfil y por nivel de prioridad. El detalle de cada pantalla (textos y datos exactos) está en el [Brief de mockups](04-brief-mockups-ia.md); el número entre paréntesis es su sección en el brief.
 
 ## 1. Niveles
@@ -17,8 +18,8 @@
 | Perfil | Ruta | Dispositivo de diseño |
 |---|---|---|
 | Asistente | `/app` | Móvil 390 × 844 |
-| Sala o stand | `/stand/:id` | Tablet horizontal 1194 × 834 (también monitor 1920 × 1080) |
-| Mesa de canje | `/merchant` | Tablet vertical 834 × 1194 (también móvil) |
+| Sala o stand | `/sala` | Tablet horizontal 1194 × 834 (también monitor 1920 × 1080) |
+| Mesa de canje | `/mesa` | Tablet vertical 834 × 1194 (también móvil) |
 | Organizador | `/admin` | Desktop 1440 × 900 |
 | Reporte público | `/reporte/:evento` | Web responsiva (desktop 1440 y móvil 390) |
 | Sitio público | `/` | Web responsiva |
@@ -69,7 +70,7 @@
 ### Mesa de canje
 | ID | Pantalla | Brief |
 |---|---|---|
-| M2 | Ingreso de la mesa (código de 6 dígitos) | 7.0 |
+| M2 | Conectar la tablet: escanear QR · conectada · enlace ya usado (sin código de 6 dígitos, D18) | 7.0 |
 | M3 | Canje recibido + últimos canjes | 7.3 |
 | M4 | Canje vencido o cancelado | 7.4 |
 
@@ -78,7 +79,7 @@
 |---|---|---|
 | O3 | Configurar evento: datos generales | 8.6 |
 | O4 | Configurar evento: sponsors | 8.6 |
-| O5 | Configurar evento: mesa de canje y catálogo | 8.6 |
+| O5 | Configurar evento: conectar dispositivos de la mesa, dispositivos conectados y catálogo | 8.6 |
 | O6 | Entradas y asistentes (cargar lista, links y QR de entrada) | 8.7 |
 | O7 | Pantallas de salas (links para abrir en cada tablet) | 8.8 |
 | O8 | Reporte: compartir | 8.3 |
@@ -88,9 +89,12 @@
 ### Sitio público
 | ID | Pantalla | Brief |
 |---|---|---|
-| P1 | Landing de Pasitos (qué es, cómo funciona, planes, solicitar) | 11.0 |
-| P2 | Solicitud del plan Comunidad | 11.1 |
-| P3 | Solicitud enviada | 11.2 |
+| P1 | Landing de Pasitos (qué es, cómo funciona, por qué es verificable, eventos destacados, contacto) | 11.0 |
+| P2 | Solicitud del plan Comunidad *(P3 en el piloto)* | 11.1 |
+| P3 | Solicitud enviada *(P3 en el piloto)* | 11.2 |
+| P4 | Eventos: listado de próximos, en curso y pasados (D37) | ⏳ por agregar al brief |
+| P5 | Página pública del evento, con *Cómo entrar* e *Ir a mi entrada* (D37) | ⏳ por agregar al brief |
+| P6 | Términos y política de privacidad | ⏳ por agregar al brief |
 
 ## 5. Nivel 3 · Variantes y extras
 
@@ -103,10 +107,19 @@
 | F2 | Feria: confirmar pago en USD | 10.2 |
 | F3 | Feria: reembolso | 10.3 |
 | F4 | Feria: mesa con selector de moneda | 10.4 |
-| O11 | Organizador: equipo y permisos | 8.9 |
+| O11 | Organizador: equipo y permisos (roles de D19) | 8.9 |
+| O13 | Registrador: check-in manual buscando por nombre (D20) | 8.9 |
+| O14 | Registrador: revincular la entrada de alguien que cambió de celular | 8.9 |
 | O12 | Organizador: pausa de emergencia | 8.9 |
 | I1 | Interno: bandeja de solicitudes del plan Comunidad | 12.1 |
 | E1 | Página no encontrada / link inválido | 12.2 |
+
+### Decisiones tomadas al diseñar el nivel 2
+- **Código corto bajo el QR** (S1 y S2): cada pantalla de sala muestra también un código de 6 caracteres (ej. `7K2 Q9`) que cambia junto con el QR. Es lo que el asistente escribe en A16 si no puede usar la cámara.
+- **A8 · código vencido:** la acción principal es *Escanear de nuevo*, no *Entendido*.
+- **A17 · tema:** selector *Oscuro / Claro* en lugar de un interruptor, para que se vea cuál está activo.
+- **O10:** la confirmación pide escribir `CERRAR` y explica por qué el botón está desactivado.
+- **M2 y O5 (2026-11-05):** se eliminó el código de 6 dígitos de la mesa. La tablet se conecta con un QR o un enlace de un solo uso, y el organizador ve y puede desconectar cada dispositivo (D18).
 
 ## 6. Flujos principales
 

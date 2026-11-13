@@ -1,17 +1,22 @@
 # Design system
 
-> **Estado:** vigente · **Última revisión:** 2026-11-03
+> **Estado:** vigente · **Última revisión:** 2026-11-13
 > **Fuente de verdad:** [tokens/DESIGN-dark.md](tokens/DESIGN-dark.md) (tema oscuro) y [tokens/DESIGN-light.md](tokens/DESIGN-light.md) (tema claro). Este documento resume las reglas que aplican a los dos temas y cómo se resolvieron las diferencias entre ellos.
 
 ## 1. Cuándo se usa cada tema
 
-| Vista | Tema |
-|---|---|
-| App del asistente (`/app`) | **Oscuro** por defecto: es lo habitual en eventos y ahorra batería en OLED |
-| Pantalla QR de sala o stand (`/stand/:id`) | Oscuro en tablet; **claro** cuando se proyecta |
-| Mesa de canje (`/merchant`) | Oscuro |
-| Panel del organizador (`/admin`) | Oscuro, con la opción **clara** para proyectar |
-| Reporte público (`/reporte/:evento`) y PDF | **Claro** |
+**Desde la versión piloto (D36), todas las vistas usan el tema claro por defecto:** sitio público, app del asistente, salas, mesas, paneles, consola y reporte.
+
+- Los tokens de los **dos** temas se implementan desde el inicio como variables CSS. Ningún componente usa colores fijos.
+- El **tema oscuro** será una preferencia de cada persona: el equipo la guarda en su cuenta y el asistente en su navegador, con la opción *Automático (según el sistema)*. Queda para después del piloto.
+
+| Vista | Tema en el piloto | Después |
+|---|---|---|
+| Sitio público, eventos y reporte (`/`, `/eventos`, `/reporte/:evento`) | Claro | Claro, o según la preferencia del sistema |
+| App del asistente (`/app`) | Claro | Preferencia del asistente |
+| Pantalla de sala o stand (`/sala`) | Claro | Configurable por pantalla |
+| Mesa de canje (`/mesa`) | Claro | Configurable por dispositivo |
+| Panel del organizador y consola (`/admin`, `/plataforma`) | Claro | Preferencia de cada persona del equipo |
 
 **Ojo con los proyectores:** muchos lavan los colores oscuros y los bordes sutiles desaparecen. Hay que probar el tema elegido en el proyector real.
 
@@ -55,7 +60,7 @@ A los eventos va gente de todas las edades. **Diseñamos pensando en una persona
 | **Zoom** | La interfaz soporta zoom de texto al 200 % sin romperse. Nunca se desactiva el zoom del navegador |
 | **Densidad** | En móvil, como máximo unas 5 o 6 tarjetas visibles. Las listas largas se agrupan (Pendientes · Completados) |
 | **Ayuda** | Siempre a un toque: enlace *"¿Cómo funciona?"* en el inicio del asistente |
-| **Ajustes** | En *Mi cuenta*: **texto más grande** y **tema claro**, para quien vea mejor así |
+| **Ajustes** | En *Mi cuenta*: **texto más grande** y, después del piloto, **tema oscuro** (D36) |
 
 ### 3.3 Cómo revisar una pantalla
 

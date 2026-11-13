@@ -238,7 +238,7 @@ El organizador (Comunidad Dev La Paz) usa el avatar `CD` en ámbar.
 - **Lugar:** Centro de Convenciones Illimani (ficticio) · Av. 6 de Agosto 2100, La Paz
 - **Entradas:** 412 cargadas desde una planilla · 287 activadas · formato `TICK-001` a `TICK-412`
 - **Pantallas de salas:** *Entrada principal* (reto Llegada temprana) · *Sala A* (charla de Nimbora Cloud y check-in de cierre) · *Stand Kodara Academy* (clase de 2 minutos)
-- **Código de la mesa de canje:** `482 913`
+- **Conexión de la mesa de canje:** QR de un solo uso que vence en 2 min, o enlace de un solo uso que vence a las 24 h. Dispositivos conectados: *Tablet de la mesa* (Ana Mamani, 08:41) y *Celular de respaldo* (Luis Condori, 08:55). Ya no hay código de 6 dígitos (D18)
 - **Encuesta (Quillu Pay):** 3 preguntas: *"¿Qué tan útil te resultó el evento?"* (1 a 5) · *"¿Qué charla te gustó más?"* (opciones) · *"¿Volverías el próximo año?"* (Sí / No)
 - **Solicitudes del plan Comunidad (interno):** *Club de Robótica UMSA* (pendiente) · *Meetup JS Cochabamba* (pendiente) · *Comunidad Dev La Paz* (aprobada)
 
@@ -400,10 +400,11 @@ Cada una con ícono grande, título, texto y botón **Entendido**:
 
 ## 7. MESA DE CANJE (tablet vertical 834 × 1194 px; debe funcionar también en móvil 390 × 844)
 
-### 7.0 Ingreso de la mesa
-- Pantalla simple con el logo, el título *"Mesa de canje"* y el texto *"Ingresa el código que te dio el organizador"*.
-- 6 casillas grandes para el código (sección 4.10) y teclado numérico.
-- Botón primario **Entrar**.
+### 7.0 Conectar la tablet de la mesa
+Sin usuario, contraseña ni código para dictar (D18). Tres estados:
+- **Escanear:** cámara a pantalla completa con *"Escanea el QR que te muestra el organizador"*. Abajo: *"¿Te enviaron un enlace? Ábrelo en esta tablet y se conecta sola."*
+- **Conectada:** check verde, *"Tablet conectada"*, tarjeta con evento, mesa y quién la conectó, nota *"Si pierdes la tablet, avisa al organizador: la desconecta desde su panel"*. Botón primario **Empezar a cobrar**.
+- **Enlace ya usado o vencido:** *"Este enlace ya no sirve"*, explica por qué y pide uno nuevo. Botón primario **Escanear un QR nuevo**.
 
 ### 7.1 Nuevo canje
 - Header: *"Mesa de canje Foro Tech"* (H1), chip `TESTNET`, y a la derecha *"Canjes hoy: 318"*.
@@ -457,7 +458,7 @@ Cada una con ícono grande, título, texto y botón **Entendido**:
 ### 8.4 Estadísticas avanzadas (bloqueada)
 - Fondo con una vista previa **borrosa** de gráficos (curva por hora, embudo de retención, barras por charla).
 - Encima, una tarjeta centrada con el ícono `lock`, el título *"Estadísticas avanzadas"* y la lista: *Asistencia por hora* · *Embudo de retención* · *Asistencia por charla* · *Reporte con la marca de cada sponsor* · *Comparación con ediciones anteriores* · *Resultados de la encuesta* · *Exportar CSV*.
-- Botón primario **Desbloquear por $25 este evento** y nota en muted: *"Puedes incluirlo en tu propuesta de patrocinio."*
+- Botón primario **Desbloquear para este evento** y nota en muted: *"Puedes incluirlo en tu propuesta de patrocinio."*
 
 ### 8.5 Cerrar evento
 - Tarjeta de advertencia con borde `danger`: *"Cerrar Foro Tech 2026"* y la lista: *"Se desactivan todos los retos y canjes"* · *"Los 7 280 puntos sin usar vencen"* · *"El reporte final queda listo para compartir"*.
@@ -469,7 +470,7 @@ Cada una con ícono grande, título, texto y botón **Entendido**:
 Página con pestañas horizontales con texto: `Datos` · `Sponsors` · `Mesa de canje` · `Ajustes`. Botón primario **Guardar cambios** abajo a la derecha.
 - **Datos:** nombre, fecha, horario, lugar (sección 4.10), logo del evento (zona para subir imagen) y nombre del asset de puntos `FORO26` (solo lectura, con ayuda *"Se crea al publicar el evento"*).
 - **Sponsors:** lista de los 3 sponsors con su avatar, nombre y retos asociados. Botón secundario **+ Agregar sponsor**.
-- **Mesa de canje:** código de acceso `482 913` con botón **Copiar**, y la tabla del catálogo (sección 4.4) con producto, puntos y stock opcional. Botón secundario **+ Agregar producto**.
+- **Mesa de canje:** panel *Conectar un dispositivo* con el QR de un solo uso (*"Vence en 1:45 · sirve una sola vez"*), los botones **Copiar enlace de un solo uso** y **Generar QR nuevo**; lista *Dispositivos conectados* con quién los conectó y el botón **Desconectar**; y la tabla del catálogo (sección 4.4) con producto, puntos y stock opcional. Botón secundario **+ Agregar producto**.
 - **Ajustes:** interruptor *"Saldo en dólares (variante Feria)"* apagado, con la nota *"Desactivado en el plan Comunidad"*.
 
 ### 8.7 Entradas y asistentes
@@ -482,7 +483,8 @@ Página con pestañas horizontales con texto: `Datos` · `Sponsors` · `Mesa de 
 - Nota: *"Abre cada link en la tablet o el monitor de esa sala. No necesita iniciar sesión."*
 
 ### 8.9 Equipo y pausa de emergencia (nivel 3)
-- **Equipo:** lista de personas con acceso al panel y su rol (*Organizadora principal*, *Ayudante de mesa*). Botón **+ Invitar**.
+- **Equipo:** lista de personas con acceso y su rol, según D19: *Dueño*, *Coorganizador*, *Registrador*, *Operador de mesa*, *Financiador (lector)*. Las *Pantallas de sala* son dispositivos y se listan aparte. Botón **+ Invitar** (por enlace de un solo uso o por email).
+- **Check-in en la puerta (rol Registrador):** buscador por nombre, email o código de entrada; resultado con nombre, entrada y estado; botón **Marcar como presente**. Para homónimos se muestra parte del email. Después del check-in se ofrece *"Vincular su celular"* (QR de un solo uso) o *"Imprimir tarjeta"* para quien no tiene celular (D20).
 - **Pausa de emergencia:** tarjeta con borde `danger`: *"Pausar todos los retos y canjes"* y botón peligro **Pausar el evento**, con confirmación.
 ---
 
@@ -535,7 +537,7 @@ Página simple, en tema claro, con una sola idea por bloque:
 - **Portada:** título *"Cada paso cuenta."* (headline-xl), subtítulo *"Puntos por quedarse, reportes que se pueden comprobar."*, botón primario **Solicitar plan Comunidad** y botón secundario **Ver un reporte de ejemplo**. Al lado, una captura del celular con la pantalla 5.2.
 - **El problema:** 3 frases cortas con ícono: *"La gente se va antes del cierre"* · *"El merch se lo llevan unos pocos"* · *"Al sponsor solo le llegan fotos"*.
 - **Cómo funciona:** 3 pasos numerados (Retos → Puntos → Reporte verificable).
-- **Planes:** 3 tarjetas: *Comunidad* (gratis, con aprobación) · *Programa* (desde $300 por evento) · *Feria* (comisión por venta).
+- **Planes:** 3 tarjetas: *Comunidad* (gratis, con aprobación) · *Programa* (a medida, por evento) · *Feria* (comisión por venta).
 - **Pie:** *"Hecho en Bolivia sobre la red Stellar"* y contacto.
 
 ### 11.1 Formulario de solicitud
