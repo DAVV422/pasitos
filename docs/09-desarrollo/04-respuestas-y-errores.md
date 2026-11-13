@@ -171,6 +171,12 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | **Puerta** | | |
 | `LIMITE_REGISTRO_ALCANZADO` | 422 | Se alcanzó el límite de registros en puerta. |
 | `ASISTENTE_YA_REGISTRADO` | 409 | Esta persona ya está registrada en el evento. |
+| **Archivos** ([Subida de archivos §6](../04-tecnico/10-subida-de-archivos.md#6-errores)) | | |
+| `ARCHIVO_MUY_GRANDE` | 413 | El archivo supera el tamaño máximo. |
+| `ARCHIVO_TIPO_NO_PERMITIDO` | 422 | Este tipo de archivo no está permitido. Usa PNG, JPEG o WebP. |
+| `ARCHIVO_CORRUPTO` | 422 | No pudimos abrir el archivo. Puede estar dañado. |
+| `ARCHIVO_INFECTADO` | 422 | El archivo no pasó el control de seguridad. |
+| `ARCHIVO_INVALIDO` | 400 | El archivo no cumple los requisitos. |
 | **Retos y puntos** | | |
 | `QR_VENCIDO` | 422 | Este QR ya venció. Escanea el que se ve ahora en la pantalla. |
 | `QR_INVALIDO` | 422 | Este QR no es de Pasitos o no es de este evento. |

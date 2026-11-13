@@ -36,7 +36,8 @@ apps/api/src/
    ├─ premios/
    ├─ alertas/
    ├─ bitacora/
-   └─ reportes/
+   ├─ reportes/
+   └─ archivos/            # Subida y validación (D48)
 ```
 
 ### 1.2 Dentro de un módulo
@@ -120,18 +121,21 @@ Es la parte más delicada del sistema ([Libro y anclaje](../04-tecnico/07-libro-
 1. **Solo se agregan filas.** La tabla `movimientos` no admite `UPDATE` ni `DELETE`: lo impiden un *trigger* y los permisos del usuario de la base.
 2. **Las correcciones son movimientos nuevos** de tipo `ajuste`, con motivo y autor, que quedan en la bitácora.
 3. **El saldo se calcula, no se guarda a mano.** Si se guarda en caché, se actualiza en la misma transacción que el movimiento.
-4. **Sin carreras:** antes de gastar puntos se bloquea al asistente dentro de la transacción (`pg_advisory_xact_lock` sobre su id). Dos canjes simultáneos nunca dejan el saldo en negativo.
-5. **Topes en la base:** restricciones `UNIQUE` (un reto por asistente) y verificaciones en la transacción, no solo en el código.
+4. **Sin carreras:** toda operación que cambia puntos bloquea primero la fila del saldo del asistente (`SELECT … FOR UPDATE` sobre `saldos`). Dos canjes simultáneos se ejecutan uno detrás del otro y el saldo nunca queda negativo (`CHECK (puntos >= 0)`).
+5. **Topes en la base:** restricciones `UNIQUE` (por ejemplo, en `participaciones`) y verificaciones dentro de la transacción, no solo en el código.
 6. **Cada movimiento lleva:** id, evento, asistente, tipo, puntos (entero con signo), referencia (reto, canje, ajuste), firma del dispositivo cuando corresponde, `created_at` y `created_by`.
+7. **La asignación a un lote no modifica el movimiento:** se agrega en `movimientos_lote`, que también es de solo agregar.
 
 ## 5. Seguridad en el código
 
+- **Aislamiento por organización (D47):** además del filtro en el código, la base aplica RLS. Toda transacción del API empieza fijando la organización (`set_config('app.organizacion_id', …, true)`) con el helper `withOrganizacion()`; sin eso, las consultas no devuelven nada (Modelo de datos *(interno)*).
 - **Toda consulta va filtrada por evento.** El `eventoId` sale de la ruta y se verifica que el usuario o el asistente pertenezca a ese evento (guard). Nunca se confía en un `eventoId` que viene en el cuerpo.
 - **Guards:** `SessionGuard` para el equipo, `DispositivoGuard` para el asistente (verifica la sesión y la firma P-256), `RolesGuard` con `@Roles('registrador')`.
 - **Sin SQL armado a mano** con texto concatenado. Drizzle o `sql` con parámetros.
 - **Logs sin datos personales:** pino con `redact` para `email`, `nombre`, `ip`, `password`, `cookie`, `authorization`.
 - **Límites de uso** (`@fastify/rate-limit`) en login, vinculación y canje.
 - **Secretos** solo por variables de entorno validadas; nunca en el código ni en logs.
+- **Archivos subidos:** siempre por el módulo `archivos`, que valida y reencodea ([Subida de archivos](../04-tecnico/10-subida-de-archivos.md)). Ningún otro módulo guarda archivos del usuario.
 
 ## 6. Configuración
 

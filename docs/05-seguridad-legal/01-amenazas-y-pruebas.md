@@ -30,6 +30,8 @@ Con el libro anclado (D22), los puntos viven en el servidor y Stellar guarda las
 | T20 | Captura de pantalla vieja de "canje hecho" para llevarse otro producto | Merch perdido | La mesa entrega solo si ve el comprobante en su propia pantalla | ✅ |
 | T21 | Robo de cuenta con el enlace de *Olvidé mi contraseña* | Cuenta tomada | Enlace de un solo uso que vence en 30 min; al usarlo se cierran las demás sesiones y se avisa por correo; la respuesta no revela si el correo existe | ✅ |
 | T22 | *(Piloto, D33)* Una persona junta varias entradas, o un registrador vincula entradas ajenas a su celular | Puntos y canjes falsos | Un dispositivo por invitado y una identidad por navegador; registro del dispositivo y alertas A1 a A8; historial visible para el asistente con *No fui yo* (Acceso del asistente *(interno)*) | ✅ |
+| T23 | Subir un archivo malicioso (virus, imagen que es otra cosa, SVG con scripts, bomba de descompresión) | Infectar equipos o atacar el servidor | Lista cerrada de formatos sin SVG; tipo real por bytes; decodificación completa con límites; ClamAV; reencodeo a WebP; cuarentena que no se sirve ([Subida de archivos](../04-tecnico/10-subida-de-archivos.md)) | ✅ |
+| T24 | Una organización ve o modifica datos de otra por un error en el código | Filtración de datos personales | RLS en PostgreSQL además del filtro en el código; sin organización definida no se devuelve nada (D47) | ✅ |
 
 ## 2. Pruebas obligatorias
 
@@ -59,6 +61,8 @@ Con el libro anclado (D22), los puntos viven en el servidor y Stellar guarda las
 | V20 | *(Piloto)* Abrir el enlace dentro del navegador de Gmail o WhatsApp | No vincula y pide abrirlo en Chrome o Safari |
 | V21 | *(Piloto)* 30 días después del cierre | Los datos técnicos del dispositivo ya no existen; el nombre, el correo, la asistencia y los movimientos siguen |
 | V22 | *(Piloto)* Registro en la puerta con correo | Llega el aviso *Te registraste* con el código de asistente; si rebota, se marca en la lista |
+| V23 | Subir el archivo de prueba EICAR, un `.png` que es un ejecutable, una imagen truncada y un SVG | Todos rechazados con su código; nada queda en la carpeta pública |
+| V24 | Con la organización A definida, leer o escribir cualquier tabla con datos de la organización B | Cero filas; la escritura falla |
 
 ### 2.2 Tests del contrato `challenges` (MVP del hackathon, histórico)
 

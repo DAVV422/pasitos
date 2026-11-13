@@ -102,6 +102,7 @@ Para que nadie pueda inflar los números del evento, Pasitos guarda cada 5 minut
   - Alojamiento de servidores: [Completar: proveedor y país donde están los servidores].
   - Envío de correos: [Completar: proveedor de correo transaccional].
   - Monitoreo de errores: [Completar: proveedor de monitoreo].
+  - Mapas: Google Maps. La app muestra una imagen del mapa que genera Pasitos, así que Google no recibe tus datos; solo si tocas *Cómo llegar* se abre Google Maps, con sus propias condiciones.
   - [Completar: indicar si algún proveedor guarda datos fuera de Bolivia].
 - **Autoridades,** solo si una ley u orden judicial lo exige.
 

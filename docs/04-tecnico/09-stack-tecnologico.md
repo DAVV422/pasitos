@@ -132,7 +132,8 @@
 | Cola y tareas programadas | **pg-boss** | Usa la misma base. El sellador corre como **un solo trabajador** para anclar en orden |
 | Avisos en vivo | SSE de NestJS + `LISTEN/NOTIFY` | Sin Redis mientras haya un solo servidor |
 | Correo | Proveedor transaccional por API (Postmark, Resend o Amazon SES) + plantillas MJML | 🔍 Elegir según precio y entrega en Bolivia |
-| Archivos (logos, mapas, lotes públicos) | Almacenamiento de objetos compatible con S3 (Cloudflare R2 o Backblaze B2) | Barato y servido por la CDN |
+| Archivos (logos, planos, lotes públicos) | **Volumen en el VPS**, servido por Caddy y cacheado por Cloudflare. Validación con `file-type`, `sharp` y **ClamAV** | D48 · [Subida de archivos](10-subida-de-archivos.md) |
+| Mapas | Google Maps: *Places Autocomplete* en el panel y *Static Maps* desde el servidor | D48. Sin JavaScript de Google en `/app` |
 | Logs | `pino` (JSON) | Liviano, compatible con Fastify |
 
 **¿Y Redis?** No hace falta en el piloto. Se suma cuando haya más de un servidor del API, para repartir los avisos en vivo y los límites de intentos entre instancias.
@@ -168,15 +169,16 @@ flowchart LR
     A --> P[(PostgreSQL)]
     K[Trabajador<br/>sellador y tareas] --> P
     K --> ST[Stellar RPC]
-    A --> O[Almacenamiento de objetos<br/>R2 o B2]
+    A --> O[(Archivos<br/>volumen del VPS)]
     K --> O
+    A --> AV[ClamAV]
 ```
 
 | Pieza | Elección | Nota |
 |---|---|---|
 | Proveedor | Un VPS en **São Paulo** (por ejemplo, Vultr o AWS Lightsail en esa región) | Menos latencia hacia Bolivia que en EE. UU. o Europa. 🔍 Medir desde La Paz y Santa Cruz antes de elegir |
-| Tamaño para el piloto | 2 vCPU, 4 GB de RAM y 80 GB de disco | Se valida con la prueba de carga (T-501) |
-| Contenedores | Docker Compose: `caddy`, `api`, `trabajador`, `sitio`, `postgres` | Un solo archivo por entorno; **staging** en el mismo VPS o en uno más chico |
+| Tamaño para el piloto | 2 vCPU, **8 GB de RAM** (ClamAV ocupa ~1,5 GB) y 80 GB de disco | Se valida con la prueba de carga (T-501) |
+| Contenedores | Docker Compose: `caddy`, `api`, `trabajador`, `sitio`, `postgres`, `clamav` | Un solo archivo por entorno; **staging** en el mismo VPS o en uno más chico |
 | Proxy y HTTPS | Caddy | Certificados automáticos, HTTP/2 y 3, y archivos precomprimidos |
 | CDN y DNS | Cloudflare (plan gratuito) | Cachea los archivos estáticos y protege de ataques |
 | Copias de seguridad | ⏳ **No se implementan por ahora** (D44). Opción cuando se definan: `pg_dump` cada noche + respaldo continuo con WAL (`pgBackRest`) hacia el almacenamiento de objetos | Se definen más adelante |
@@ -185,7 +187,7 @@ flowchart LR
 | Secretos | `sops` + `age`, nunca en el repositorio | `.env` en `.gitignore` |
 | Seguridad del VPS | Solo SSH con llave, firewall (80/443 y SSH), actualizaciones automáticas y `fail2ban` | |
 
-**Costo estimado del piloto** 🔍: VPS USD 20–40, almacenamiento de objetos y correo USD 0–20, dominio y Sentry en sus planes gratuitos. Total: **unos USD 20–60 al mes**.
+**Costo estimado del piloto** 🔍: VPS de 8 GB USD 30–50, correo USD 0–20, Google Maps dentro del crédito mensual gratuito, dominio y Sentry en sus planes gratuitos. Total: **unos USD 30–70 al mes**.
 
 ## 7. Estructura del repositorio
 
