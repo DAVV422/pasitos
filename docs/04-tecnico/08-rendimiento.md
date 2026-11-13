@@ -27,7 +27,7 @@ Para dar una idea del tamaño: un evento de 400 personas suma unos 200 MB en tod
 | 3 | **Una app por perfil** | `/app`, `/sala`, `/mesa`, `/admin` y `/plataforma` se compilan por separado. El asistente nunca descarga el panel |
 | 4 | **Lector de QR bajo demanda** | Se carga al abrir la cámara. Primero se intenta el lector nativo del navegador (`BarcodeDetector`); la librería se descarga solo si falta |
 | 5 | **App guardada en el celular** | Service worker con la app en caché. Las imágenes del evento (mapa, logos) se guardan la primera vez que se ven |
-| 6 | **Una llamada al abrir** | `GET /app/estado` devuelve saldo, retos, agenda, catálogo e historial reciente en 2–4 KB. Con `ETag`, si nada cambió, la respuesta es "sin cambios" (304) |
+| 6 | **Una llamada al abrir** | `GET /app/estado` devuelve saldo, estado de los retos, stock e historial reciente en 2–4 KB. El contenido que casi no cambia (agenda, lugares, sponsors) va en `GET /app/evento`, que el service worker guarda. Las dos usan `ETag`: si nada cambió, la respuesta es "sin cambios" (304) |
 | 7 | **Respuestas mínimas** | Por ejemplo, `{"ok":true,"pts":20,"saldo":80,"n":1834}`, unos 150 bytes. Sin campos que la pantalla no usa |
 | 8 | **QR generado en la pantalla** | La tablet firma el QR ella misma. El servidor solo se entera de los cambios de estado (pausa, generar otro, mostrar QR) |
 | 9 | **Avisos en vivo con SSE** | El contador de la pantalla, el "canje confirmado" de la mesa y el panel reciben mensajes pequeños solo cuando algo cambia, sin consultar cada pocos segundos |

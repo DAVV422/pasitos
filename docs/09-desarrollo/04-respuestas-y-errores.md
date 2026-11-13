@@ -160,6 +160,9 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `SESION_VENCIDA` | 401 | Tu sesión venció. Inicia sesión de nuevo. |
 | `CREDENCIALES_INVALIDAS` | 401 | El correo o la contraseña no son correctos. |
 | `SIN_PERMISO` | 403 | No tienes permiso para esto. |
+| `SEGUNDO_FACTOR_REQUERIDO` | 401 | Confirma tu identidad con tu segundo factor. |
+| `AJUSTE_PROPIO` | 403 | No puedes ajustar tus propios puntos. |
+| `PIN_INVALIDO` | 403 | El PIN no es correcto. |
 | **Acceso del asistente** | | |
 | `INVITACION_YA_USADA` | 409 | Esta invitación ya se abrió en otro celular. Pide ayuda en la puerta. |
 | `INVITACION_REVOCADA` | 422 | Este acceso ya no es válido. Pide uno nuevo en la puerta. |
@@ -168,9 +171,13 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `DISPOSITIVO_NO_VINCULADO` | 403 | Este celular no tiene tu acceso. Pídelo en la puerta. |
 | `FIRMA_INVALIDA` | 403 | No pudimos verificar tu celular. Pide ayuda en la puerta. |
 | `SIN_CHECK_IN` | 422 | Primero marca tu asistencia en la puerta. |
+| `DISPOSITIVO_YA_VINCULADO` | 409 | Este navegador ya tiene otra entrada en este evento. |
 | **Puerta** | | |
 | `LIMITE_REGISTRO_ALCANZADO` | 422 | Se alcanzó el límite de registros en puerta. |
 | `ASISTENTE_YA_REGISTRADO` | 409 | Esta persona ya está registrada en el evento. |
+| `ASISTENTE_POSIBLE_DUPLICADO` | 409 | Ya hay alguien con un nombre o correo parecido. Revisa antes de continuar. |
+| `CHECK_IN_YA_HECHO` | 409 | Esta persona ya está presente. |
+| `ALERTA_YA_ATENDIDA` | 409 | Otra persona ya está atendiendo este aviso. |
 | **Archivos** ([Subida de archivos §6](../04-tecnico/10-subida-de-archivos.md#6-errores)) | | |
 | `ARCHIVO_MUY_GRANDE` | 413 | El archivo supera el tamaño máximo. |
 | `ARCHIVO_TIPO_NO_PERMITIDO` | 422 | Este tipo de archivo no está permitido. Usa PNG, JPEG o WebP. |
@@ -183,6 +190,8 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `RETO_YA_COMPLETADO` | 409 | Ya completaste este reto. |
 | `RETO_NO_DISPONIBLE` | 422 | Este reto no está activo ahora. |
 | `TOPE_ALCANZADO` | 422 | Este reto ya entregó todos sus premios. |
+| `RETO_CON_PARTICIPACIONES` | 409 | Este reto ya tiene participaciones. Puedes desactivarlo. |
+| `TOPE_MENOR_A_ENTREGADOS` | 422 | El tope no puede ser menor que lo ya entregado. |
 | **Canjes** | | |
 | `SALDO_INSUFICIENTE` | 409 | Te faltan puntos para este canje. |
 | `PREMIO_AGOTADO` | 409 | Este premio se agotó. |
@@ -191,6 +200,8 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | **Evento** | | |
 | `EVENTO_CERRADO` | 422 | El evento ya cerró. Los puntos vencieron. |
 | `EVENTO_NO_INICIADO` | 422 | El evento todavía no empezó. |
+| `EVENTO_NO_ACTIVO` | 422 | El evento no está en curso. |
+| `EVENTO_SIN_PAGINA_PUBLICA` | 404 | Este evento no tiene página pública. |
 
 ## 5. Del lado del backend
 
