@@ -1,6 +1,6 @@
 # Blockchain explicado fácil
 
-> **Estado:** vigente · **Última revisión:** 2026-11-03
+> **Estado:** vigente · **Última revisión:** 2026-11-06
 > Para cualquier persona del equipo. No hace falta saber de blockchain.
 
 ## 1. ¿Qué es una blockchain?
@@ -16,17 +16,24 @@ Eso es una blockchain. Sirve para registrar cosas importantes (pagos, saldos, pa
 
 **Stellar es una blockchain especializada en pagos.** Pasitos la usa porque:
 - **Es rápida:** cada registro se confirma en unos 5 segundos.
-- **Es muy barata:** registrar un movimiento cuesta una fracción de centavo.
-- **Tiene dólares digitales (USDC)** listos para usar.
-- **Permite crear "fichas" con reglas propias**, por ejemplo: "estas fichas solo pueden estar en cuentas autorizadas por el evento".
+- **Es muy barata:** sellar un evento completo cuesta unos centavos.
+- **Tiene contratos inteligentes** que hacen cumplir reglas, como "este reto no puede entregar más de 300 premios".
+- **Tiene dólares digitales (USDC)** listos para usar, para la futura variante Feria.
+
+### Cómo la usa Pasitos: el libro sellado
+
+Pasitos **no escribe cada punto en la blockchain**. Lleva su propio **libro de movimientos** y, cada 5 minutos, le pide a Stellar que **selle una huella** de las páginas nuevas, como un notario que pone su sello. Una página sellada no se puede arrancar ni corregir sin que se note.
+
+Así, el asistente recibe sus puntos al instante, el costo no crece con la cantidad de gente y el sponsor igual puede comprobarlo todo. Versión técnica: [Libro y anclaje](../04-tecnico/07-libro-y-anclaje.md).
 
 ## 3. Conceptos que vas a escuchar
 
 | Palabra | Qué significa, en simple | Ejemplo en Pasitos |
 |---|---|---|
-| **Wallet (billetera)** | Una cuenta en la blockchain donde se guardan saldos | Cada asistente tiene una. Pasitos se la crea sola |
-| **Transacción** | Cada movimiento que se escribe en el cuaderno | "Valeria ganó 20 puntos" |
-| **Token / activo** | Una ficha digital | Nuestros puntos son una ficha propia del evento |
+| **Wallet (billetera)** | Una cuenta en la blockchain donde se guardan saldos | En la v1 los asistentes no necesitan una |
+| **Transacción** | Cada registro que se escribe en el cuaderno | "Sello del lote 37 del Foro Tech" |
+| **Huella (hash)** | Un número corto que resume un documento. Si el documento cambia una coma, la huella cambia | Lo que Pasitos sella en Stellar cada 5 minutos |
+| **Token / activo** | Una ficha digital | Nuestros puntos **no** son un token: viven en el libro del evento |
 | **Smart contract (contrato inteligente)** | Reglas automáticas escritas en código que nadie se puede saltar | "Cada persona puede ganar este reto una sola vez" |
 | **USDC** | Dólar digital. Cada USDC está respaldado por un dólar real | El saldo en dólares (solo en ferias) |
 | **Testnet** | La red de pruebas de Stellar. Todo funciona igual, pero el dinero es de juguete | Nuestro MVP funciona aquí |
@@ -42,8 +49,8 @@ Esta pregunta **siempre** aparece. La respuesta:
 > Si los datos los guardamos solo nosotros, el sponsor tiene que **confiar** en nosotros y en el organizador. En Stellar, los números quedan en un registro público que **nadie puede alterar**, ni nosotros. El sponsor los **comprueba** por sí mismo.
 
 Además:
-- Las reglas de los puntos (vencen, no salen del evento, un reto por persona) las **hace cumplir la red**, no nuestra palabra.
-- Cada asistente sale con una wallet real de Stellar: para un ecosistema como Stellar, eso es **gente nueva usando su red**.
+- El contrato **rechaza** cualquier sello que entregue más premios que el tope de un reto.
+- Cada participación lleva la firma de una pantalla del evento, registrada en Stellar antes de empezar.
 
 ## 5. Qué va en la blockchain y qué no
 
@@ -51,11 +58,11 @@ Además:
 
 | ✅ En la blockchain (público y permanente) | ❌ En nuestro servidor (privado) |
 |---|---|
-| Puntos ganados y canjeados | Nombres, emails, teléfonos |
-| Reglas de cada reto (recompensa, límite, horario) | Relación entre la entrada y la wallet |
-| Cada participación verificada | Fotos, catálogo, textos |
-| Saldo en dólares y reembolsos (ferias) | Precios y facturación |
-| Cierre del evento y vencimiento de los puntos | El código secreto del QR |
+| La huella de cada lote de movimientos | Nombres, correos, teléfonos |
+| El tope de cada reto | Los movimientos en sí (en archivos públicos, con IDs anónimos) |
+| Las llaves públicas de las pantallas | Fotos, catálogo, textos |
+| El cierre del evento y sus totales | Precios y facturación |
+| *(Feria, más adelante)* Saldo en dólares y reembolsos | La bitácora del equipo |
 
 > **Nunca se guardan datos personales en la blockchain**, porque es pública y no se puede borrar.
 
@@ -63,8 +70,8 @@ Versión técnica: [Datos on-chain](../04-tecnico/03-datos-on-chain.md).
 
 ## 6. El "circuito cerrado"
 
-Los puntos **solo pueden estar en cuentas autorizadas por el evento**: asistentes y mesas de canje. Si alguien intenta enviarlos a una cuenta de afuera, **la red Stellar rechaza el movimiento**. No lo bloquea nuestra app: lo bloquea la red. Y el intento rechazado queda registrado y se puede ver públicamente.
+Los puntos **solo existen dentro del libro del evento**. No son un token, así que no se pueden enviar a ninguna cuenta de afuera ni transferir a otra persona, y vencen al cierre.
 
 ## 7. Algo que hay que decir con honestidad
 
-En el MVP, nuestro servidor guarda las llaves de las cuentas de los asistentes, y solo en la red de pruebas. En la versión real, cada asistente firmará con su **huella o Face ID (passkey)** y nadie más tendrá sus llaves.
+El sello en Stellar prueba que **nadie alteró los números después** y que cada participación viene de una pantalla real del evento. No puede impedir que un organizador invente asistentes, pero lo hace **detectable**, porque el reporte compara las participaciones con los check-ins. Por eso decimos "verificable", no "imposible de falsear".

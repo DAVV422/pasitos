@@ -18,7 +18,7 @@
 - **Retos:** llegada temprana, charlas de sponsors, taller, primera transacción en Stellar, encuesta, check-in de cierre.
 - **Canje:** café, meriendas, stickers, tazas, poleras.
 - **Valor para el organizador:** gente hasta el cierre, merch repartido de forma justa y un reporte para su sponsor sin poner dinero.
-- **Valor para un ecosistema blockchain:** cada asistente sale con una wallet y transacciones reales. **Es onboarding a la red, medido con pruebas.**
+- **Valor para un ecosistema blockchain:** un reporte sellado en Stellar y, con el módulo de onboarding del plan Programa (después de la v1), asistentes que salen con su wallet y sus primeras transacciones.
 
 ## 3. Financiadores con obligación de reportar
 

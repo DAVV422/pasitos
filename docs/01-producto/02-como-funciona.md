@@ -13,23 +13,23 @@
 
 ## 2. El recorrido del asistente
 
-1. **Entra con el link o el QR de su entrada.** Sin registro ni contraseña: Pasitos le crea su cuenta automáticamente.
+1. **Entra con el link de su invitación, o con el QR del evento y su correo.** Sin nada que instalar. La primera vez define una contraseña ([flujos](07-flujos-v1.md#45-modos-de-registro-de-asistentes-d27)).
 2. **Ve los retos del evento.** Por ejemplo: "Asiste a la charla de X" (+20 pts), "Quédate a la charla de cierre" (+30 pts), "Haz tu primera transacción en Stellar" (+40 pts).
-3. **Escanea un QR** en la sala o en el stand, y en unos segundos recibe sus puntos. Algunos retos se verifican solos, sin QR.
+3. **Escanea un QR** en la sala o en el stand, y en menos de un segundo recibe sus puntos. Algunos retos no necesitan QR, como la encuesta.
 4. **Canjea sus puntos** por café, meriendas o merch en la mesa de canje.
 5. **Al cerrar el evento, los puntos vencen.** No sirven fuera del evento ni se convierten en dinero.
 
 ## 3. Retos
 
-El mismo contrato sirve para eventos con stands y sin stands. Lo que cambia es cómo se verifica cada reto.
+Las mismas reglas sirven para eventos con stands y sin stands. Lo que cambia es cómo se verifica cada reto. Los modos de QR están en [Flujos §6.2](07-flujos-v1.md#62-modos-de-qr-d28).
 
 | Reto | Cómo se verifica | Ejemplo |
 |---|---|---|
 | Asistir a una charla o taller | QR rotativo en la sala | Charla de un sponsor |
 | Quedarse hasta el cierre | QR en el último bloque, con ventana horaria | Retención |
 | Visitar un stand | QR rotativo en el stand | Feria o foro con expositores |
-| **Hacer tu primera transacción en Stellar** | **Automático:** el backend ve la transacción on-chain. No hace falta QR | Hackathon de Stellar |
-| Desplegar un contrato en testnet | Automático (on-chain) | Taller de Soroban |
+| Hacer tu primera transacción en Stellar *(después de la v1)* | Automático: el backend ve la transacción on-chain | Hackathon de Stellar |
+| Desplegar un contrato en testnet *(después de la v1)* | Automático (on-chain) | Taller de Soroban |
 | Entregar el proyecto | Lo confirma el organizador | Hackathon |
 | Responder la encuesta de feedback | Formulario dentro de la app | Cualquier evento |
 
@@ -48,7 +48,7 @@ El mismo contrato sirve para eventos con stands y sin stands. Lo que cambia es c
 
 | | **Puntos** | **Saldo en dólares** |
 |---|---|---|
-| ¿Qué es? | Fichas del evento (un activo propio en Stellar, ej. `FORO26`) | Dólares digitales (USDC: 1 USDC = 1 dólar) |
+| ¿Qué es? | Fichas del evento, registradas en el libro del evento y selladas en Stellar | Dólares digitales (USDC: 1 USDC = 1 dólar) |
 | ¿Cómo se consigue? | Gratis, cumpliendo retos | **El asistente lo carga** (QR bancario, tarjeta o efectivo en caja) |
 | ¿Dónde se usa? | **Solo dentro del evento** | En los comercios del evento |
 | ¿Se convierte en dinero? | **Nunca** | Sí: lo que sobra se devuelve |
@@ -60,7 +60,7 @@ El mismo contrato sirve para eventos con stands y sin stands. Lo que cambia es c
 - el saldo en dólares es **reembolsable** siempre;
 - los puntos que vencen sin usarse no le cuestan nada a nadie.
 
-> En los planes Comunidad y Programa **solo hay puntos**. El saldo en dólares es una función para ferias y eventos con venta (ver [modelo de ingresos](../02-negocio/03-modelo-de-ingresos.md)).
+> En los planes Comunidad y Programa **solo hay puntos**. El saldo en dólares es una función para ferias y eventos con venta (ver modelo de ingresos *(interno)*).
 
 ## 5. El reporte para el sponsor
 
@@ -71,7 +71,7 @@ Al terminar, el organizador comparte un link con:
 - los puntos emitidos, canjeados y vencidos;
 - **un enlace para comprobarlo todo en la blockchain**. El sponsor no tiene que creernos: lo puede verificar.
 
-Hay un **reporte simple gratis** y unas **estadísticas avanzadas pagas**. La diferencia está en el [Plan Comunidad](../02-negocio/04-plan-comunidad.md).
+Hay un **reporte simple gratis** y unas **estadísticas avanzadas pagas**. La diferencia está en el Plan Comunidad *(interno)*.
 
 ## 6. Reglas del producto que no cambian
 

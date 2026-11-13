@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Estado:** vigente · **Última revisión:** 2026-11-03
+> **Estado:** vigente · **Última revisión:** 2026-11-06
 
 ## 1. Etapas
 
@@ -11,26 +11,24 @@
 | **2. Primeros ingresos** | Hacia el mes 6 | Vender el plan Programa a fundaciones, ecosistemas, universidades y cooperación. Postular al SCF | Primeros clientes pagos | Pendiente |
 | **3. Ferias** | Después | Saldo en dólares y cobro por transacción en ferias comerciales | Escala | Pendiente |
 
-## 2. Producto: del MVP a producción
+## 2. Producto: del MVP a la v1 y después
 
-| Tema | MVP (hoy) | Producción |
-|---|---|---|
-| Red | Testnet | Mainnet, después de una auditoría |
-| Wallets | Cuentas clásicas custodiadas por el backend | Smart wallets con passkey (`smart-account-kit`); el asistente firma con huella o Face ID |
-| Comisiones | Fee bump del organizador | OpenZeppelin Relayer, con presupuesto y alertas |
-| Token de puntos | Asset clásico + SAC (opción A) | Token propio que solo acepta transferencias hacia comercios (opción B) |
-| Transacciones de retos | Una por acción | Claims en lote (`claim_batch`) |
-| Eventos | Uno solo, configurado por script | Varios eventos: contrato *factory* + panel para organizadores |
-| Plan Comunidad | Se menciona | Formulario de solicitud y bandeja de aprobación |
-| Estadísticas avanzadas | Pantalla bloqueada (mock) | Panel completo y reportes con marca por sponsor |
-| Sin internet | No | Vouchers firmados en el teléfono que se liquidan al recuperar la conexión |
-| Saldo en dólares | Carga y reembolso simulados | Carga con QR bancario o tarjeta vía anchor (SEP-24) o proveedor autorizado |
+| Tema | MVP del hackathon | v1 (pilotos) | Después |
+|---|---|---|---|
+| Red | Testnet | Testnet | Mainnet, después de una auditoría |
+| Registro de puntos | Una transacción por acción, token de puntos (SAC) | Libro de movimientos anclado cada 5 min (D22) | Igual; anclaje más espaciado en eventos muy grandes |
+| Cuentas de asistentes | Cuentas clásicas custodiadas por el backend | Cuenta Pasitos con correo y contraseña, sin wallet (D25, D26) | Wallet opcional con passkey en el módulo de onboarding |
+| Eventos | Uno solo, configurado por script | Consola de plataforma, organizaciones, planes y varios eventos ([flujos](07-flujos-v1.md)) | Pasarela de pago |
+| Equipo | — | Roles por evento y bitácora (D19) | Portales para sponsors y comercios |
+| Registro de asistentes | Link de la entrada | Lista de invitados, registro abierto o mixto, check-in en la puerta (D27) | Integraciones con plataformas de entradas |
+| Sin internet | No | Buena señal + procesos livianos (D24) | Cola de reclamos y sincronización por la mesa (D23) |
+| Estadísticas avanzadas | Pantalla bloqueada (mock) | Paquete opcional por evento | Reportes con marca por sponsor |
+| Saldo en dólares | Carga y reembolso simulados | No | Variante Feria con anchor (SEP-24) o proveedor autorizado |
 
 ## 3. Ideas para más adelante
 
 - **Integración con Stellar Passport:** si el asistente ya tiene wallet de Passport, la reutilizamos.
 - **Reputación entre eventos:** un badge intransferible de "asistente frecuente" con beneficios en el próximo evento; los puntos siguen siendo locales.
-- **Reutilizar la wallet del asistente** en sus eventos siguientes.
 - **Transparencia de fondos:** el sponsor deposita su aporte en USDC y ve on-chain cuánto se destinó a premios.
 
 ## 4. Antes de mainnet

@@ -33,7 +33,7 @@
 
 | Pregunta | Respuesta |
 |---|---|
-| ¿Por qué blockchain y no una base de datos? | Con una base de datos, el sponsor tiene que confiar en nosotros. En Stellar, los números están en un registro público que nadie puede alterar, y el sponsor los comprueba por sí mismo. Además, la red hace cumplir las reglas de los puntos. |
+| ¿Por qué blockchain y no una base de datos? | Con una base de datos, el sponsor tiene que confiar en nosotros. En Stellar, los números están en un registro público que nadie puede alterar, y el sponsor los comprueba por sí mismo. Cada 5 minutos sellamos en Stellar una huella del libro de movimientos: si alguien cambiara un número después, no coincidiría. Y el contrato rechaza cualquier sello que entregue más premios que el tope de un reto. |
 | ¿No es lo mismo que Stellar Passport? | Passport crea wallets en eventos. Nosotros agregamos la economía del evento (puntos, canje, retención) y el reporte para financiadores. Queremos integrarnos con ellos. |
 | ¿Quién paga si las comunidades no tienen dinero? | Las comunidades usan Pasitos gratis. Pagan los financiadores que necesitan reportar, y las comunidades pueden cobrarle al sponsor las estadísticas avanzadas dentro del patrocinio. |
 | ¿Cuánto les cuesta la red? | Unos pocos dólares por un evento de 300 personas (ver [costos de red](../04-tecnico/04-costos-de-red.md)). Lo cubrimos con un presupuesto mensual fijo. |

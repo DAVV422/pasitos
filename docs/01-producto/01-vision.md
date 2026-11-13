@@ -33,7 +33,7 @@ Pasa en todo tipo de eventos: hackathons, meetups de GDG, foros, ferias. **Tenga
 Una **web móvil** a la que el asistente entra con el link o el QR de su entrada, sin instalar nada:
 
 1. El evento define **retos**: asistir a una charla, quedarse al cierre, hacer la primera transacción en Stellar, responder la encuesta…
-2. Cada reto cumplido da **puntos**, verificados en la red Stellar.
+2. Cada reto cumplido da **puntos**, registrados en un libro que se sella en la red Stellar.
 3. Los puntos se **canjean dentro del evento** por café, meriendas o merch. **Vencen al cierre** y **nunca se convierten en dinero**.
 4. Al terminar, el organizador comparte un **reporte público y verificable**: cualquiera puede comprobar los números en la blockchain sin pedirnos nada.
 
@@ -42,9 +42,9 @@ El detalle del funcionamiento está en [Cómo funciona](02-como-funciona.md).
 ## 4. Por qué Stellar
 
 - **Registro que nadie puede alterar.** Cada participación queda en un registro público. El sponsor no tiene que confiar en nosotros ni en el organizador: lo comprueba por sí mismo.
-- **La red hace cumplir las reglas.** Los puntos solo pueden estar en cuentas autorizadas por el evento (circuito cerrado). No es una regla de nuestra app: es una regla del activo.
-- **Rápido y barato.** Cada movimiento se confirma en unos 5 segundos y cuesta una fracción de centavo.
-- **Onboarding real.** Cada asistente sale con una wallet y transacciones reales en Stellar, que es justo lo que financian los ecosistemas blockchain.
+- **La red hace cumplir los topes.** El contrato rechaza cualquier registro que entregue más premios de los previstos para un reto.
+- **Rápido y casi gratis.** El asistente recibe sus puntos en menos de un segundo, y sellar un evento completo cuesta unos centavos, sin importar cuánta gente vaya.
+- **Onboarding a Stellar, cuando se pide.** En el plan Programa, un ecosistema puede sumar un módulo para que los asistentes creen su wallet y hagan sus primeras transacciones (después de la v1).
 
 Explicación sin tecnicismos: [Blockchain explicado fácil](04-blockchain-explicado-facil.md).
 
