@@ -178,12 +178,12 @@ flowchart LR
 |---|---|---|
 | Proveedor | Un VPS en **São Paulo** (por ejemplo, Vultr o AWS Lightsail en esa región) | Menos latencia hacia Bolivia que en EE. UU. o Europa. 🔍 Medir desde La Paz y Santa Cruz antes de elegir |
 | Tamaño para el piloto | 2 vCPU, **8 GB de RAM** (ClamAV ocupa ~1,5 GB) y 80 GB de disco | Se valida con la prueba de carga (T-501) |
-| Contenedores | Docker Compose: `caddy`, `api`, `trabajador`, `sitio`, `postgres`, `clamav` | Un proyecto de Compose por entorno; **staging en el mismo VPS**, con menos recursos |
+| Contenedores | Docker Compose: `caddy`, `api`, `trabajador`, `sitio`, `postgres`, `clamav` | **Sin staging en el piloto** (D51): cada PR se prueba en un entorno temporal del CI, y producción tiene una organización demo (D52) |
 | Proxy y HTTPS | Caddy | Certificados automáticos, HTTP/2 y 3, y archivos precomprimidos |
 | CDN y DNS | Cloudflare (plan gratuito) | Cachea los archivos estáticos y protege de ataques |
 | Copias de seguridad | ⏳ **No se implementan por ahora** (D44). Opción cuando se definan: `pg_dump` cada noche + respaldo continuo con WAL (`pgBackRest`) hacia el almacenamiento de objetos | Se definen más adelante |
 | Monitoreo | Sentry (errores, nube gratuita o GlitchTip propio) + un monitor de disponibilidad externo gratuito + logs de `pino` | Alertas por errores, anclajes atrasados, disco y copias de seguridad fallidas |
-| CI/CD | GitHub Actions: tests y build → imágenes en GHCR → despliegue por SSH con `docker compose pull && up` | Staging automático y producción con aprobación |
+| CI/CD | GitHub Actions: tests y build → imágenes en GHCR → despliegue por SSH con `docker compose pull && up` | Producción con aprobación manual y copia de la base antes de cada migración |
 | Secretos | `sops` + `age`, nunca en el repositorio | `.env` en `.gitignore` |
 | Seguridad del VPS | SSH solo con llave y **solo por Tailscale**, firewall (80/443 desde Cloudflare), actualizaciones automáticas y `fail2ban` | |
 

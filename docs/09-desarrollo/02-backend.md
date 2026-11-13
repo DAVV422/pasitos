@@ -135,7 +135,7 @@ Es la parte más delicada del sistema ([Libro y anclaje](../04-tecnico/07-libro-
 - **Logs sin datos personales:** pino con `redact` para `email`, `nombre`, `ip`, `password`, `cookie`, `authorization`.
 - **Límites de uso** (`@fastify/rate-limit`) en login, vinculación y canje.
 - **Secretos** solo por variables de entorno validadas; nunca en el código ni en logs.
-- **La documentación OpenAPI** (`/api/docs`) se habilita solo en desarrollo y staging. **En producción la ruta no existe.**
+- **La documentación OpenAPI** (`/api/docs`) se habilita solo en desarrollo, en el CI y en un futuro entorno de staging. **En producción la ruta no existe.**
 - **Archivos subidos:** siempre por el módulo `archivos`, que valida y reencodea ([Subida de archivos](../04-tecnico/10-subida-de-archivos.md)). Ningún otro módulo guarda archivos del usuario.
 
 ## 6. Configuración

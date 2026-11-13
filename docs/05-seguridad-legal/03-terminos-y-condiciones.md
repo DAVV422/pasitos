@@ -71,6 +71,7 @@ Pasitos guarda una **huella** de los movimientos de cada evento en **Stellar**, 
 ## 8. Disponibilidad
 
 - Pasitos funciona por internet. **Necesitas conexión** para ganar y canjear puntos. Si la red del lugar falla, algunas acciones pueden demorarse o no estar disponibles por un rato.
+- **Pasitos está en versión piloto:** es una prueba en eventos reales y puede tener fallas.
 - Hacemos lo posible para que la plataforma funcione sin interrupciones, pero **no podemos garantizarlo**. Si algo falla durante el evento, el organizador puede corregir los puntos de quienes resultaron afectados.
 - Podemos pausar la plataforma por mantenimiento o seguridad. Evitamos hacerlo durante un evento en curso.
 

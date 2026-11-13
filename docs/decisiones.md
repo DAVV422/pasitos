@@ -59,6 +59,8 @@
 | D48 | Archivos y mapas | ✅ Vigente | Archivos **en el VPS**, con un servicio de validación (peso, tipo real, archivo sano, antivirus ClamAV y reencodeo a WebP). Plano del lugar como imagen; ubicación con Google Maps (buscador en el panel e imagen estática en la app). Ver [Subida de archivos](04-tecnico/10-subida-de-archivos.md) | 2026-11-13 |
 | D49 | Dominio de las apps | ✅ Vigente | **Un solo dominio con rutas:** sitio público en `/`, apps en `/app`, `/admin`, `/sala`, `/mesa`, `/plataforma` y el API en `/api`. Sin subdominios: simplifica cookies, CORS y certificados. El nombre del dominio se define más adelante | 2026-11-13 |
 | D50 | Red del piloto | ✅ Vigente | El piloto se ancla en **Stellar testnet**. El reporte lo indica, y al cierre se guarda una copia de la evidencia por si testnet se reinicia. Mainnet recién con los clientes pagos, con auditoría externa del contrato y la cuenta admin con multifirma | 2026-11-13 |
+| D51 | Entornos del piloto | ✅ Vigente | **Sin staging en el piloto:** desarrollo, un entorno temporal en el CI para cada PR y producción. Despliegue a producción con aprobación manual y copia de la base antes de cada migración. Staging vuelve con los clientes pagos | 2026-11-13 |
+| D52 | Organización demo | ✅ Vigente | Producción tiene una **organización demo con dos eventos demo** (uno en curso y otro cerrado con su reporte), con datos inventados. Los eventos `demo` y `prueba` no salen en *Eventos*, en reportes públicos ni en métricas | 2026-11-13 |
 
 ## Notas
 
