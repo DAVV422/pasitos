@@ -13,6 +13,7 @@
   <img alt="Estado" src="https://img.shields.io/badge/estado-pilotos%20con%20comunidades-F59E0B">
   <img alt="Red" src="https://img.shields.io/badge/red-Stellar%20testnet-0B0F19">
   <img alt="Idioma" src="https://img.shields.io/badge/docs-espa%C3%B1ol-EA580C">
+  <img alt="Licencia" src="https://img.shields.io/badge/licencia-Apache%202.0-blue">
 </p>
 
 ---
@@ -178,7 +179,7 @@ Toda la documentación está en español, en [docs/](docs/README.md). Por dónde
 | Si eres… | Empieza por |
 |---|---|
 | **Nuevo en el equipo** | [Visión](docs/01-producto/01-vision.md) → [Cómo funciona](docs/01-producto/02-como-funciona.md) → [Flujos de la v1](docs/01-producto/07-flujos-v1.md) → [Decisiones](docs/decisiones.md) |
-| **Desarrollador** | [Flujos de la v1](docs/01-producto/07-flujos-v1.md) → [Arquitectura](docs/04-tecnico/01-arquitectura.md) → [Libro y anclaje](docs/04-tecnico/07-libro-y-anclaje.md) → [Rendimiento](docs/04-tecnico/08-rendimiento.md) |
+| **Desarrollador** | [Flujos de la v1](docs/01-producto/07-flujos-v1.md) → [Arquitectura](docs/04-tecnico/01-arquitectura.md) → [Libro y anclaje](docs/04-tecnico/07-libro-y-anclaje.md) → [Reglas de desarrollo](docs/09-desarrollo/README.md) |
 | **Diseñador** | [UX y pantallas](docs/06-diseno/03-ux-y-pantallas.md) → [Design system](docs/06-diseno/02-design-system.md) |
 
 ¿Una palabra que no conoces? Está en el [Glosario](docs/glosario.md).
@@ -193,9 +194,16 @@ docs/
 ├── 05-seguridad-legal/  Amenazas, pruebas, cumplimiento, términos y privacidad
 ├── 06-diseno/           Marca, design system, pantallas y mockups
 ├── 07-hackathon/        Material del hackathon (histórico)
+├── 09-desarrollo/       Reglas de desarrollo: nomenclatura, backend, frontend, errores del API
 ├── decisiones.md        Registro de decisiones
 └── glosario.md          Términos explicados
 ```
+
+---
+
+## Licencia
+
+El código y la documentación de este repositorio se publican bajo la licencia [Apache 2.0](LICENSE).
 
 ---
 
