@@ -1,4 +1,43 @@
+# Sistema y editor
 Thumbs.db
 .DS_Store
 *.tmp
 .vscode/
+.idea/
+
+# Documentación interna (no se publica: ver docs/README.md)
+docs/INTERNO.md
+docs/02-negocio/
+docs/03-validacion/
+docs/version-piloto/
+docs/08-financiamiento/
+
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+infra/**/*.dec.*
+
+# Dependencias y builds (Node, Angular, Nx)
+node_modules/
+dist/
+tmp/
+coverage/
+.angular/
+.nx/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+
+# Rust / Soroban
+target/
+test_snapshots/
+.soroban/
+.stellar/
+
+# Pruebas
+playwright-report/
+test-results/
