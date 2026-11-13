@@ -145,7 +145,7 @@
 | Contrato | Rust + `soroban-sdk`, con tests en `cargo test` usando las utilidades de prueba del SDK |
 | Despliegue | Stellar CLI, con scripts versionados por red (testnet y mainnet) |
 | Llamadas desde el servidor | `@stellar/stellar-sdk` en el sellador. Se simula cada transacción antes de enviarla para conocer su costo |
-| RPC | Un RPC público de testnet en desarrollo; para mainnet, un proveedor de RPC con SLA (🔍 elegir) |
+| RPC | RPC público de testnet en desarrollo y en el piloto (D50); para mainnet, un proveedor de RPC con SLA (🔍 elegir) |
 | Explorador para la evidencia | stellar.expert |
 
 ### Llaves en un VPS (ajuste a D22)
@@ -154,7 +154,7 @@ Un VPS propio no trae un servicio de llaves (KMS) como las nubes grandes. Propon
 
 - **Llave del operador que ancla:** guardada **cifrada** (con `sops` + `age`) y descifrada solo en el proceso del sellador. Ese proceso corre con su propio usuario, y la llave nunca va al repositorio ni a los logs.
 - **La cuenta del operador tiene poco XLM** (lo justo para algunos meses de anclajes), así un robo tiene un daño acotado. Además, el contrato solo acepta lotes encadenados y dentro de los topes (T6).
-- **La llave de administración del contrato** (pausar, cambiar al operador) **no vive en el servidor:** se guarda fuera de línea, idealmente con multifirma.
+- **La llave de administración del contrato** (pausar, cambiar al operador) **no vive en el servidor:** se guarda fuera de línea. En el piloto (testnet), una sola llave; en mainnet, con multifirma.
 - **Más adelante:** un KMS o un HSM gestionado para la firma, si el volumen o un cliente lo piden.
 
 ## 6. Infraestructura en el VPS
@@ -226,5 +226,5 @@ pasitos/
 | 1 | Budgets definitivos de cada app, según la verificación de peso (T-008) | Primera semana de la fase 0 |
 | 2 | Proveedor del VPS, según la latencia medida desde Bolivia | Fase 0 |
 | 3 | Proveedor de correo | Fase 0 |
-| 4 | Proveedor de RPC para mainnet | Antes de T-506 |
+| 4 | Proveedor de RPC para mainnet | Antes de pasar a mainnet (después del piloto) |
 | 5 | Dominio | Antes de la fase 4 |
