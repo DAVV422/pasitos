@@ -1,0 +1,92 @@
+{
+  "name": "sitio",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "sit",
+  "sourceRoot": "apps/sitio/src",
+  "tags": ["scope:publico"],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/sitio",
+        "browser": "apps/sitio/src/main.ts",
+        "tsConfig": "apps/sitio/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/sitio/public"
+          }
+        ],
+        "styles": ["apps/sitio/src/styles.css"],
+        "server": "apps/sitio/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/sitio/src/server.ts"
+        },
+        "outputMode": "server",
+        "security": {
+          "allowedHosts": ["localhost", "127.0.0.1"]
+        }
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "300kb",
+              "maximumError": "400kb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kb",
+              "maximumError": "6kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "readyWhen": {
+        "signal": true
+      },
+      "executor": "@angular/build:dev-server",
+      "defaultConfiguration": "development",
+      "configurations": {
+        "production": {
+          "buildTarget": "sitio:build:production"
+        },
+        "development": {
+          "buildTarget": "sitio:build:development"
+        }
+      }
+    },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "options": {
+        "watch": false
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "readyWhen": {
+        "signal": true
+      },
+      "dependsOn": ["build"],
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "sitio:build",
+        "staticFilePath": "dist/apps/sitio/browser",
+        "spa": true
+      }
+    }
+  }
+}
