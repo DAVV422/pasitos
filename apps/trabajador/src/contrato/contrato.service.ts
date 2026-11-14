@@ -6,7 +6,9 @@ import {
   type ParNumerico,
   type ResultadoTx,
   type StellarPort,
+  type TransaccionesStellarRepository,
 } from '@pasitos/stellar';
+import type { AlertasOperacionPort } from '../comun/alertas-operacion';
 import type { Reloj } from '../comun/reloj';
 import type { SelladorRepository } from '../sellador/sellador.repository';
 import type { SelladorService } from '../sellador/sellador.service';
@@ -16,6 +18,19 @@ type Incluida = Extract<ResultadoTx, { estado: 'incluida' }>;
 export interface OpcionesContrato {
   readonly margenVencimientoMs: number;
   readonly consultaCadaMs: number;
+  /** HU-104 §2, para deploy, retos, pantallas y TTL. No se aplica al cierre: solo alerta. */
+  readonly comisionMaxPreparacionStroops: bigint;
+}
+
+/** La simulación pidió más que el tope (HU-104 §2). El trabajo se reintenta más tarde. */
+export class ComisionSobreTope extends Error {
+  constructor(
+    readonly operacion: string,
+    readonly comisionStroops: bigint,
+  ) {
+    super(`La comisión de ${operacion} (${comisionStroops} stroops) supera el tope`);
+    this.name = 'ComisionSobreTope';
+  }
 }
 
 const INTENTOS = 3;
@@ -31,7 +46,9 @@ export class ContratoService {
   constructor(
     private readonly repositorio: SelladorRepository,
     private readonly stellar: StellarPort,
+    private readonly transacciones: TransaccionesStellarRepository,
     private readonly sellador: SelladorService,
+    private readonly alertas: AlertasOperacionPort,
     private readonly reloj: Reloj,
     private readonly opciones: OpcionesContrato,
   ) {}
@@ -50,7 +67,7 @@ export class ContratoService {
     const contratoId = this.stellar.computeContratoId(salt);
     const retos = await this.repositorio.listRetosActivos(eventoId);
     if (!(await this.stellar.existsContrato(contratoId))) {
-      await this.execute({
+      await this.execute(eventoId, {
         operacion: 'deploy',
         salt,
         evento: {
@@ -91,10 +108,10 @@ export class ContratoService {
       }
     }
     if (nuevos.length > 0) {
-      await this.execute({ operacion: 'add_retos', contratoId, retos: nuevos });
+      await this.execute(eventoId, { operacion: 'add_retos', contratoId, retos: nuevos });
     }
     for (const [reto, tope] of subidas) {
-      await this.execute({ operacion: 'raise_tope', contratoId, reto, tope });
+      await this.execute(eventoId, { operacion: 'raise_tope', contratoId, reto, tope });
     }
     await this.repositorio.markRetosRegistrados(
       eventoId,
@@ -118,7 +135,11 @@ export class ContratoService {
     if (porRegistrar.length === 0) {
       return;
     }
-    await this.execute({ operacion: 'add_pantallas', contratoId, pantallas: porRegistrar });
+    await this.execute(eventoId, {
+      operacion: 'add_pantallas',
+      contratoId,
+      pantallas: porRegistrar,
+    });
     for (const pantalla of pendientes) {
       const enRed = await this.stellar.getPantalla(contratoId, pantalla.numero);
       if (enRed) {
@@ -154,7 +175,7 @@ export class ContratoService {
     const huellaFinal = ultimoLote
       ? new Uint8Array(ultimoLote.huella)
       : await buildGenesis(await buildEventoIdHash(eventoId));
-    await this.execute({
+    await this.execute(eventoId, {
       operacion: 'close',
       contratoId,
       nFinal: ultimo.n,
@@ -167,10 +188,30 @@ export class ContratoService {
     this.logger.log({ eventoId, contratoId, nFinal: ultimo.n }, 'Contrato del evento cerrado');
   }
 
-  /** Simula, firma, envía y espera la confirmación. Si venció sin entrar, la rearma (hasta 3 veces). */
-  async execute(llamada: LlamadaContrato): Promise<Incluida> {
+  /**
+   * Simula, firma, envía y espera la confirmación. Si venció sin entrar, la rearma (hasta 3 veces).
+   * Cada intento enviado queda en transacciones_stellar (HU-104 §1).
+   */
+  async execute(eventoId: string | null, llamada: LlamadaContrato): Promise<Incluida> {
     for (let intento = 1; intento <= INTENTOS; intento++) {
       const tx = await this.stellar.prepare(llamada);
+      if (tx.comisionEstimadaStroops > this.opciones.comisionMaxPreparacionStroops) {
+        await this.alertas.raise({
+          codigo: 'COMISION_SOBRE_TOPE',
+          gravedad: 'aviso',
+          ...(eventoId ? { eventoId } : {}),
+          detalle: {
+            operacion: llamada.operacion,
+            comisionStroops: tx.comisionEstimadaStroops.toString(),
+            topeStroops: this.opciones.comisionMaxPreparacionStroops.toString(),
+          },
+        });
+        // El cierre del evento no espera: se envía igual y queda la alerta.
+        if (llamada.operacion !== 'close') {
+          throw new ComisionSobreTope(llamada.operacion, tx.comisionEstimadaStroops);
+        }
+      }
+      await this.transacciones.insertEnviada({ eventoId, operacion: llamada.operacion, tx });
       try {
         await this.stellar.send(tx);
       } catch (error) {
@@ -184,11 +225,24 @@ export class ContratoService {
       const vence = tx.validaHasta.getTime() + this.opciones.margenVencimientoMs;
       for (;;) {
         const resultado = await this.stellar.getResultado(tx.hash);
-        if (resultado.estado === 'incluida') return resultado;
+        if (resultado.estado === 'incluida') {
+          await this.transacciones.resolve(tx.hash, 'incluida', {
+            comisionStroops: resultado.comisionStroops,
+            ledger: resultado.ledger,
+          });
+          return resultado;
+        }
         if (resultado.estado === 'fallida') {
+          await this.transacciones.resolve(tx.hash, 'fallida', {
+            comisionStroops: resultado.comisionStroops,
+            ledger: resultado.ledger,
+          });
           throw new Error(`La transacción ${llamada.operacion} falló en la red`);
         }
-        if (this.reloj.now().getTime() > vence) break;
+        if (this.reloj.now().getTime() > vence) {
+          await this.transacciones.resolve(tx.hash, 'vencida');
+          break;
+        }
         await this.reloj.sleep(this.opciones.consultaCadaMs);
       }
     }

@@ -30,6 +30,7 @@ async function bootstrap(): Promise<void> {
     pool: composicion.conexion.pool,
     sellador: composicion.sellador,
     contrato: composicion.contrato,
+    costo: composicion.costo,
   });
   logger.log(
     `Trabajador iniciado. Red de Stellar: ${config.STELLAR_RED}; operador ${composicion.stellar.operador}.`,

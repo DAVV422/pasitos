@@ -13,7 +13,6 @@ import {
 import { uuidv7 } from 'uuidv7';
 
 export type FilaLote = typeof lotes.$inferSelect;
-type Conexion = Db | Tx;
 
 /** Un movimiento todavía sin lote, con lo que hace falta para armar su versión pública. */
 export interface MovimientoParaLote {

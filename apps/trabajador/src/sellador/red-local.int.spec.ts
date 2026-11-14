@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import { buildEventoIdHash, buildGenesis, buildHuella, equalBytes } from '@pasitos/firmas';
 import { seedMovimientosPrueba } from '@pasitos/libro';
-import { RpcStellar } from '@pasitos/stellar';
+import { RpcStellar, TransaccionesStellarRepository } from '@pasitos/stellar';
 import { AlertasEnLogs } from '../comun/alertas-operacion';
 import { RELOJ_SISTEMA } from '../comun/reloj';
 import { ContratoService } from '../contrato/contrato.service';
@@ -39,10 +39,14 @@ describe.runIf(RPC && LLAVE && ADMIN && WASM)('sellador con la red local de Stel
       wasmHash: WASM ?? '',
     });
     const repositorio = new SelladorRepository(base.sistema.db);
+    const transacciones = new TransaccionesStellarRepository(base.sistema.db, 'local');
+    const alertas = new AlertasEnLogs(RELOJ_SISTEMA);
+    const comisionMaxStroops = 100_000_000n;
     const sellador = new SelladorService(
       repositorio,
       stellar,
-      new AlertasEnLogs(RELOJ_SISTEMA),
+      transacciones,
+      alertas,
       RELOJ_SISTEMA,
       {
         intervaloPorDefectoMin: 5,
@@ -51,12 +55,22 @@ describe.runIf(RPC && LLAVE && ADMIN && WASM)('sellador con la red local de Stel
         consultaCadaMs: 1_000,
         margenVencimientoMs: 30_000,
         antiguedadMinimaMs: 0,
+        comisionMaxStroops,
       },
     );
-    const contrato = new ContratoService(repositorio, stellar, sellador, RELOJ_SISTEMA, {
-      margenVencimientoMs: 30_000,
-      consultaCadaMs: 1_000,
-    });
+    const contrato = new ContratoService(
+      repositorio,
+      stellar,
+      transacciones,
+      sellador,
+      alertas,
+      RELOJ_SISTEMA,
+      {
+        margenVencimientoMs: 30_000,
+        consultaCadaMs: 1_000,
+        comisionMaxPreparacionStroops: comisionMaxStroops,
+      },
+    );
 
     // 12 asistentes: ~48 movimientos, en lotes de hasta 15 → al menos tres lotes.
     const { eventoId } = await seedMovimientosPrueba(base.sistema.db, {
@@ -87,5 +101,12 @@ describe.runIf(RPC && LLAVE && ADMIN && WASM)('sellador con la red local de Stel
     const ultimo = await stellar.getUltimo(contratoId);
     expect(ultimo.n).toBeGreaterThanOrEqual(3);
     expect(equalBytes(ultimo.huella, anterior)).toBe(true);
+
+    // HU-104: cada transacción quedó registrada con lo que cobró la red.
+    const costo = await transacciones.getCostoRed({ eventoId });
+    expect(costo.porOperacion.deploy.cantidad).toBe(1);
+    expect(costo.porOperacion.anchor.cantidad).toBeGreaterThanOrEqual(3);
+    expect(costo.porOperacion.close.cantidad).toBe(1);
+    expect(costo.comisionStroops).toBeGreaterThan(0n);
   }, 300_000);
 });

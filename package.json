@@ -23,6 +23,7 @@
     "stellar:bajar": "docker compose -f infra/compose.dev.yml --env-file .env --profile stellar stop stellar",
     "stellar:cuentas": "node tools/stellar.mjs cuentas",
     "stellar:trabajo": "tsx --env-file=.env --tsconfig tsconfig.base.json apps/trabajador/src/cli/stellar-trabajo.ts",
+    "stellar:medir": "tsx --tsconfig tsconfig.base.json apps/trabajador/src/cli/medir-costos.ts",
     "sellador:rearmar": "tsx --env-file=.env --tsconfig tsconfig.base.json apps/trabajador/src/cli/rearmar-lote.ts",
     "contrato:instalar": "node tools/stellar.mjs instalar",
     "contrato:probar": "node tools/stellar.mjs probar",

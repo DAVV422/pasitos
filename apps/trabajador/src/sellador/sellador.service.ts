@@ -5,6 +5,7 @@ import {
   StellarNoDisponible,
   type ResultadoTx,
   type StellarPort,
+  type TransaccionesStellarRepository,
 } from '@pasitos/stellar';
 import { uuidv7 } from 'uuidv7';
 import type { AlertasOperacionPort } from '../comun/alertas-operacion';
@@ -22,11 +23,13 @@ export interface OpcionesSellador {
   readonly margenVencimientoMs: number;
   /** Un movimiento entra en un lote recién cuando tiene esta antigüedad (Contrato §3.1). */
   readonly antiguedadMinimaMs: number;
+  /** HU-104 §2: si la simulación pide más, el lote no se envía y se reintenta en el ciclo siguiente. */
+  readonly comisionMaxStroops: bigint;
 }
 
 export const OPCIONES_SELLADOR_POR_DEFECTO: Omit<
   OpcionesSellador,
-  'intervaloPorDefectoMin' | 'loteMax'
+  'intervaloPorDefectoMin' | 'loteMax' | 'comisionMaxStroops'
 > = {
   esperaConfirmacionMs: 60_000,
   consultaCadaMs: 2_000,
@@ -44,6 +47,8 @@ const VALIDEZ_TX_MS = 60_000;
 const MAX_PASOS = 50;
 const ATRASO_MS = 15 * 60 * 1000;
 const SIN_RESPUESTA_MS = 5 * 60 * 1000;
+/** HU-104 §2: cuánto puede seguir la comisión sobre el tope antes de alertar. */
+const SOBRE_TOPE_MS = 30 * 60 * 1000;
 
 /**
  * Sellador (HU-103 §4): arma un lote por evento con todos sus movimientos nuevos y lo ancla en orden.
@@ -52,10 +57,13 @@ const SIN_RESPUESTA_MS = 5 * 60 * 1000;
 export class SelladorService {
   private readonly logger = new Logger('Sellador');
   private primerFalloRpcAt: Date | null = null;
+  /** Desde cuándo la comisión de cada evento está sobre el tope (en memoria: un reinicio vuelve a contar). */
+  private readonly sobreTopeDesde = new Map<string, Date>();
 
   constructor(
     private readonly repositorio: SelladorRepository,
     private readonly stellar: StellarPort,
+    private readonly transacciones: TransaccionesStellarRepository,
     private readonly alertas: AlertasOperacionPort,
     private readonly reloj: Reloj,
     private readonly opciones: OpcionesSellador,
@@ -127,7 +135,7 @@ export class SelladorService {
         if ((await this.confirmLote(lote)) === 'pendiente') return 'pendiente';
         continue;
       }
-      await this.sendLote(lote, evento.contratoId);
+      if ((await this.sendLote(lote, evento.contratoId)) === 'retenido') return 'pendiente';
     }
     return 'pendiente';
   }
@@ -211,8 +219,8 @@ export class SelladorService {
     });
   }
 
-  /** 4.2 y 4.3: simular, firmar, guardar el tx_hash y enviar. */
-  private async sendLote(lote: FilaLote, contratoId: string): Promise<void> {
+  /** 4.2 y 4.3: simular, firmar, guardar el tx_hash y enviar. `retenido`: la comisión supera el tope. */
+  private async sendLote(lote: FilaLote, contratoId: string): Promise<'enviado' | 'retenido'> {
     let tx;
     try {
       tx = await this.stellar.prepare({
@@ -230,10 +238,16 @@ export class SelladorService {
         } else {
           await this.rejectLote(lote, error.nombre);
         }
-        return;
+        return 'enviado';
       }
       throw error;
     }
+
+    if (tx.comisionEstimadaStroops > this.opciones.comisionMaxStroops) {
+      await this.holdPorComision(lote, tx.comisionEstimadaStroops);
+      return 'retenido';
+    }
+    this.sobreTopeDesde.delete(lote.eventoId);
 
     await this.repositorio.updateLote(lote.id, {
       estado: 'enviado',
@@ -242,6 +256,12 @@ export class SelladorService {
       intentos: lote.intentos + 1,
       enviadoAt: this.reloj.now(),
       ultimoError: null,
+    });
+    await this.transacciones.insertEnviada({
+      eventoId: lote.eventoId,
+      loteId: lote.id,
+      operacion: 'anchor',
+      tx,
     });
     try {
       await this.stellar.send(tx);
@@ -254,6 +274,29 @@ export class SelladorService {
         { lote: lote.numero, error: error.message },
         'Sin respuesta al enviar el lote',
       );
+    }
+    return 'enviado';
+  }
+
+  /** HU-104 §2: no se envía; el lote queda armado. Si sigue así 30 minutos, alerta. */
+  private async holdPorComision(lote: FilaLote, comision: bigint): Promise<void> {
+    const ahora = this.reloj.now();
+    const desde = this.sobreTopeDesde.get(lote.eventoId) ?? ahora;
+    this.sobreTopeDesde.set(lote.eventoId, desde);
+    await this.repositorio.updateLote(lote.id, { ultimoError: 'Comisión sobre el tope' });
+    const detalle = {
+      lote: lote.numero,
+      comisionStroops: comision.toString(),
+      topeStroops: this.opciones.comisionMaxStroops.toString(),
+    };
+    this.logger.warn({ eventoId: lote.eventoId, ...detalle }, 'Comisión sobre el tope: se espera');
+    if (ahora.getTime() - desde.getTime() >= SOBRE_TOPE_MS) {
+      await this.alertas.raise({
+        codigo: 'COMISION_SOBRE_TOPE',
+        gravedad: 'aviso',
+        eventoId: lote.eventoId,
+        detalle: { ...detalle, desde: desde.toISOString() },
+      });
     }
   }
 
@@ -271,6 +314,10 @@ export class SelladorService {
     for (;;) {
       const resultado = await this.stellar.getResultado(lote.txHash);
       if (resultado.estado === 'incluida') {
+        await this.transacciones.resolve(lote.txHash, 'incluida', {
+          comisionStroops: resultado.comisionStroops,
+          ledger: resultado.ledger,
+        });
         if (!(resultado.valor instanceof Uint8Array) || !equalBytes(resultado.valor, lote.huella)) {
           await this.rejectLote(lote, 'HuellaDelContratoDistinta');
           return 'rechazado';
@@ -279,6 +326,10 @@ export class SelladorService {
         return 'confirmado';
       }
       if (resultado.estado === 'fallida') {
+        await this.transacciones.resolve(lote.txHash, 'fallida', {
+          comisionStroops: resultado.comisionStroops,
+          ledger: resultado.ledger,
+        });
         // La simulación del próximo intento dirá si fue un rechazo del contrato.
         await this.repositorio.updateLote(lote.id, {
           estado: 'armado',
@@ -288,6 +339,7 @@ export class SelladorService {
       }
       const ahora = this.reloj.now().getTime();
       if (ahora > vence) {
+        await this.transacciones.resolve(lote.txHash, 'vencida');
         await this.repositorio.updateLote(lote.id, {
           estado: 'armado',
           ultimoError: 'Venció sin entrar',
@@ -309,6 +361,12 @@ export class SelladorService {
       return;
     }
     const anterior = lote.txHash ? await this.stellar.getResultado(lote.txHash) : null;
+    if (lote.txHash && anterior?.estado === 'incluida') {
+      await this.transacciones.resolve(lote.txHash, 'incluida', {
+        comisionStroops: anterior.comisionStroops,
+        ledger: anterior.ledger,
+      });
+    }
     await this.markConfirmado(lote, anterior?.estado === 'incluida' ? anterior : null);
   }
 

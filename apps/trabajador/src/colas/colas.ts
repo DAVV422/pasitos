@@ -2,11 +2,13 @@ import { Logger } from '@nestjs/common';
 import type { Pool } from 'pg';
 import type { PgBoss } from 'pg-boss';
 import type { ContratoService } from '../contrato/contrato.service';
+import type { CostoRedService } from '../costo/costo-red.service';
 import type { SelladorService } from '../sellador/sellador.service';
 
 /** Colas del trabajador (HU-103 §3). Nombres de trabajos en kebab-case (Backend §1.3). */
 export const COLA_TICK = 'tick-sellador';
 export const COLA_STELLAR = 'stellar';
+export const COLA_SALDO = 'check-saldo-operador';
 
 export const TRABAJOS_STELLAR = [
   'anchor-lote',
@@ -70,6 +72,7 @@ export interface DependenciasColas {
   readonly pool: Pool;
   readonly sellador: SelladorService;
   readonly contrato: ContratoService;
+  readonly costo: CostoRedService;
 }
 
 export async function startColas({
@@ -77,10 +80,12 @@ export async function startColas({
   pool,
   sellador,
   contrato,
+  costo,
 }: DependenciasColas): Promise<void> {
   const logger = new Logger('Colas');
   await boss.createQueue(COLA_TICK);
   await boss.createQueue(COLA_STELLAR);
+  await boss.createQueue(COLA_SALDO);
 
   await boss.schedule(COLA_TICK, '* * * * *');
   await boss.work(COLA_TICK, { localConcurrency: 1 }, async () => {
@@ -88,6 +93,17 @@ export async function startColas({
       await sendTrabajoStellar(boss, { trabajo: 'anchor-lote', eventoId });
     }
     await sellador.checkAtrasos();
+    await costo.checkPresupuesto();
+  });
+
+  // HU-104 §3. Friendbot no usa la secuencia del operador: no necesita el candado.
+  await boss.schedule(COLA_SALDO, '0 * * * *');
+  await boss.work(COLA_SALDO, { localConcurrency: 1 }, async () => {
+    const estado = await costo.checkSaldoOperador();
+    logger.log(
+      { dias: Math.floor(estado.dias), fondosPedidos: estado.fondosPedidos },
+      'Saldo del operador revisado',
+    );
   });
 
   await boss.work<TrabajoStellar>(
@@ -107,7 +123,9 @@ export async function startColas({
       }
     },
   );
-  logger.log('Colas listas: tick-sellador (cada minuto) y stellar (de a una).');
+  logger.log(
+    'Colas listas: tick-sellador (cada minuto), stellar (de a una) y check-saldo-operador (cada hora).',
+  );
 }
 
 export async function runTrabajoStellar(

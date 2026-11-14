@@ -14,36 +14,12 @@ import {
 } from '@pasitos/db';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import { buildEventoIdHash, buildGenesis, buildHuella, equalBytes } from '@pasitos/firmas';
-import { LibroService, seedMovimientosPrueba } from '@pasitos/libro';
+import { LibroService } from '@pasitos/libro';
 import { RpcStellar, StellarNoDisponible } from '@pasitos/stellar';
-import { FakeStellar } from '@pasitos/stellar/pruebas';
-import type { AlertaOperacion, AlertasOperacionPort } from '../comun/alertas-operacion';
-import type { Reloj } from '../comun/reloj';
+import type { FakeStellar } from '@pasitos/stellar/pruebas';
 import { loadTrabajadorConfig } from '../config/trabajador.config';
-import { ContratoService } from '../contrato/contrato.service';
-import { SelladorRepository } from './sellador.repository';
-import { SelladorService } from './sellador.service';
-
-/** Reloj virtual: `sleep` adelanta el tiempo sin esperar. Empieza 10 s adelante para pasar la antigüedad mínima. */
-function createReloj(): Reloj & { adelantar(ms: number): void } {
-  let desfase = 10_000;
-  return {
-    now: () => new Date(Date.now() + desfase),
-    sleep: async (ms) => {
-      desfase += ms;
-    },
-    adelantar: (ms) => {
-      desfase += ms;
-    },
-  };
-}
-
-class AlertasEnMemoria implements AlertasOperacionPort {
-  readonly recibidas: AlertaOperacion[] = [];
-  async raise(alerta: AlertaOperacion): Promise<void> {
-    this.recibidas.push(alerta);
-  }
-}
+import type { ContratoService } from '../contrato/contrato.service';
+import { createEntorno, createEventoConContrato as createEventoEnBase } from '../pruebas/entorno';
 
 /** Sellador contra PostgreSQL real y Stellar falso (HU-103). Requiere Docker. */
 describe('sellador', () => {
@@ -58,35 +34,11 @@ describe('sellador', () => {
   });
 
   function armar(opciones: { loteMax?: number } = {}) {
-    const stellar = new FakeStellar();
-    const reloj = createReloj();
-    stellar.ahora = () => reloj.now();
-    const alertas = new AlertasEnMemoria();
-    const repositorio = new SelladorRepository(base.sistema.db);
-    const crearSellador = () =>
-      new SelladorService(repositorio, stellar, alertas, reloj, {
-        intervaloPorDefectoMin: 5,
-        loteMax: opciones.loteMax ?? 1000,
-        esperaConfirmacionMs: 10_000,
-        consultaCadaMs: 1_000,
-        margenVencimientoMs: 30_000,
-        antiguedadMinimaMs: 2_000,
-      });
-    const sellador = crearSellador();
-    const contrato = new ContratoService(repositorio, stellar, sellador, reloj, {
-      margenVencimientoMs: 30_000,
-      consultaCadaMs: 1_000,
-    });
-    return { stellar, reloj, alertas, repositorio, sellador, contrato, crearSellador };
+    return createEntorno(base, opciones);
   }
 
-  async function createEventoConContrato(contrato: ContratoService, asistentesPrueba = 10) {
-    const { eventoId } = await seedMovimientosPrueba(base.sistema.db, {
-      asistentes: asistentesPrueba,
-      minutos: 0,
-    });
-    const contratoId = await contrato.deployContrato(eventoId);
-    return { eventoId, contratoId };
+  function createEventoConContrato(contrato: ContratoService, asistentesPrueba = 10) {
+    return createEventoEnBase(base, contrato, asistentesPrueba);
   }
 
   async function countSinLote(eventoId: string): Promise<number> {

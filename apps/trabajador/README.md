@@ -5,6 +5,8 @@ Aplicación NestJS sin HTTP para las colas de pg-boss (esquema `pgboss`). Hoy co
 - `tick-sellador`, cada minuto: encola `anchor-lote` para cada evento con contrato.
 - `stellar`, de a un trabajo por vez en todo el sistema (y con un candado de PostgreSQL): `anchor-lote`, `deploy-contrato`, `sync-retos`, `register-pantallas` y `close-contrato`.
 - Cada lote pasa por `armado` → `enviado` → `confirmado` (o `rechazado`, que detiene el sellado de ese evento y alerta). Cada ejecución empieza mirando el estado, así que un reinicio retoma donde quedó.
+- `check-saldo-operador`, cada hora: alerta si el saldo alcanza para menos de 30 días y, debajo de 1 000 XLM, pide más a Friendbot (HU-104).
+- **Costo de red (HU-104):** cada intento enviado queda en `transacciones_stellar`. Si la simulación de un `anchor` pide más que `STELLAR_COMISION_MAX_STROOPS`, el lote espera al ciclo siguiente (alerta a los 30 min); la preparación del contrato tiene su propio tope; el cierre se envía igual y alerta. El tick alerta al pasar el 80 % y el 100 % del presupuesto del mes.
 - La llave del operador se lee de `STELLAR_OPERADOR_LLAVE_ARCHIVO` y solo vive en memoria. `STELLAR_RED=mainnet` no arranca (D50).
 
 ## Comandos
@@ -16,6 +18,7 @@ Aplicación NestJS sin HTTP para las colas de pg-boss (esquema `pgboss`). Hoy co
 | `nx test trabajador` | Tests |
 | `nx lint trabajador` | Lint |
 | `pnpm stellar:trabajo <trabajo> --evento <slug> [--directo]` | Encola un trabajo de Stellar, o lo corre en el momento con `--directo` |
+| `pnpm stellar:medir --red <red>` | Mide el costo de cada operación del contrato (crea contratos de prueba; no toca la base) |
 | `pnpm sellador:rearmar --evento <slug> --lote <n> --motivo "…"` | Rearma un lote rechazado con los mismos movimientos (queda en la bitácora) |
 
 **Para probar con la red local:** `pnpm stellar:levantar`, `pnpm stellar:cuentas --red local`, `pnpm contrato:instalar --red local` y copiar al `.env` lo que imprimen. La prueba `red-local.int.spec.ts` corre si están las variables `STELLAR_PRUEBAS_*` (en el CI, el job *Sellador con red local*).
