@@ -1,0 +1,36 @@
+{
+  "name": "contrato-evento",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "contracts/evento/src",
+  "tags": ["scope:contrato"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "stellar contract build",
+        "cwd": "contracts"
+      },
+      "cache": true,
+      "inputs": ["{projectRoot}/**/*.rs", "{projectRoot}/**/Cargo.toml"],
+      "outputs": ["{projectRoot}/target/wasm32v1-none/release"]
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cargo test",
+        "cwd": "contracts"
+      },
+      "cache": true,
+      "inputs": ["{projectRoot}/**/*.rs", "{projectRoot}/**/Cargo.toml"]
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["cargo fmt --check", "cargo clippy --all-targets -- -D warnings"],
+        "parallel": false,
+        "cwd": "contracts"
+      }
+    }
+  }
+}
