@@ -1,0 +1,378 @@
+{
+  "version": 1,
+  "descripcion": "Vectores de huellas de Pasitos (Contrato y sellador §4). Generado por tools/vectores/generar.py; no editar a mano.",
+  "eventos": [
+    {
+      "eventoId": "0193a6f2-7c1e-7b3a-9f10-2d4c5e6f7a8b",
+      "eventoIdHash": "9203f7d2015c5031a4d97a01a5b3f4a3bc482f4f1c256cf3f3b929138e36dfb3",
+      "genesis": "ff64631aef51456b7aeae781b0d71876f2a373111272b6f97b838d0c6b89eba0"
+    },
+    {
+      "eventoId": "0193A6F2-7C1E-7B3A-9F10-AAAAAAAAAAAA",
+      "eventoIdHash": "e78a8140dff43df9321715e19dd664cc0803aa6e6d2ff16cd39d1bc2fce75f68",
+      "genesis": "0bdab9fa27302ca32161e6a18e96b7cda075326f460c061d590da7a32840e012"
+    }
+  ],
+  "jcs": [
+    {
+      "entrada": {
+        "b": 1,
+        "a": 2,
+        "c": {
+          "z": 1,
+          "y": [
+            3,
+            2,
+            1
+          ]
+        }
+      },
+      "salida": "{\"a\":2,\"b\":1,\"c\":{\"y\":[3,2,1],\"z\":1}}"
+    },
+    {
+      "entrada": {
+        "motivo": "Falló el QR · ñandú",
+        "texto": "comillas \" y barra \\ y\nsalto"
+      },
+      "salida": "{\"motivo\":\"Falló el QR · ñandú\",\"texto\":\"comillas \\\" y barra \\\\ y\\nsalto\"}"
+    },
+    {
+      "entrada": {
+        "vacio": {},
+        "lista": [],
+        "negativo": -42,
+        "cero": 0
+      },
+      "salida": "{\"cero\":0,\"lista\":[],\"negativo\":-42,\"vacio\":{}}"
+    }
+  ],
+  "hojas": [
+    {
+      "movimiento": {
+        "n": 1,
+        "tipo": "checkin",
+        "asistente": "a7f3c90000000000000000000000000000000000000000000000000000000000",
+        "puntos": 0,
+        "hora": "2026-11-21T13:00:05Z"
+      },
+      "jcs": "{\"asistente\":\"a7f3c90000000000000000000000000000000000000000000000000000000000\",\"hora\":\"2026-11-21T13:00:05Z\",\"n\":1,\"puntos\":0,\"tipo\":\"checkin\"}",
+      "hoja": "f9b6c8b98dd51ebd1ca5da2b3f61d12e282f64d8e9428e368dc982338fc513ed"
+    },
+    {
+      "movimiento": {
+        "n": 2,
+        "tipo": "reto",
+        "asistente": "a7f3c90000000000000000000000000000000000000000000000000000000000",
+        "puntos": 20,
+        "reto": 7,
+        "pantalla": 2,
+        "qr": {
+          "e": 3,
+          "f": 20431,
+          "firma": "MEUCIQDx4y2y0P9x8vVb7w6s5r4q3p2o1n0m9l8k7j6i5h4g3f2e1dA"
+        },
+        "hora": "2026-11-21T14:02:15Z"
+      },
+      "jcs": "{\"asistente\":\"a7f3c90000000000000000000000000000000000000000000000000000000000\",\"hora\":\"2026-11-21T14:02:15Z\",\"n\":2,\"pantalla\":2,\"puntos\":20,\"qr\":{\"e\":3,\"f\":20431,\"firma\":\"MEUCIQDx4y2y0P9x8vVb7w6s5r4q3p2o1n0m9l8k7j6i5h4g3f2e1dA\"},\"reto\":7,\"tipo\":\"reto\"}",
+      "hoja": "604ace9a2e7057f17f9c0b2f91f2d82946f676090afc5eb77bc814abc8769fb1"
+    },
+    {
+      "movimiento": {
+        "n": 3,
+        "tipo": "reto",
+        "asistente": "a7f3c90000000000000000000000000000000000000000000000000000000000",
+        "puntos": 15,
+        "reto": 2,
+        "pantalla": 1,
+        "qr": {
+          "e": 1,
+          "u": "k3J9xQ",
+          "firma": "MEUCIQDx4y2y0P9x8vVb7w6s5r4q3p2o1n0m9l8k7j6i5h4g3f2e1dA"
+        },
+        "hora": "2026-11-21T14:10:00Z"
+      },
+      "jcs": "{\"asistente\":\"a7f3c90000000000000000000000000000000000000000000000000000000000\",\"hora\":\"2026-11-21T14:10:00Z\",\"n\":3,\"pantalla\":1,\"puntos\":15,\"qr\":{\"e\":1,\"firma\":\"MEUCIQDx4y2y0P9x8vVb7w6s5r4q3p2o1n0m9l8k7j6i5h4g3f2e1dA\",\"u\":\"k3J9xQ\"},\"reto\":2,\"tipo\":\"reto\"}",
+      "hoja": "fca32956ae3caab55dde61865dc9ffb8d643673b62c30f8ce7f427fb040a6a95"
+    },
+    {
+      "movimiento": {
+        "n": 4,
+        "tipo": "canje",
+        "asistente": "a7f3c90000000000000000000000000000000000000000000000000000000000",
+        "puntos": -30,
+        "hora": "2026-11-21T15:00:00Z"
+      },
+      "jcs": "{\"asistente\":\"a7f3c90000000000000000000000000000000000000000000000000000000000\",\"hora\":\"2026-11-21T15:00:00Z\",\"n\":4,\"puntos\":-30,\"tipo\":\"canje\"}",
+      "hoja": "b9e93948a0af7d3981d10ae248c6e254e61237be9c061a0f0f71fd23a3a933d5"
+    },
+    {
+      "movimiento": {
+        "n": 5,
+        "tipo": "anulacion",
+        "asistente": "a7f3c90000000000000000000000000000000000000000000000000000000000",
+        "puntos": 30,
+        "anula": 4,
+        "autor": "equipo #2",
+        "hora": "2026-11-21T15:05:00Z"
+      },
+      "jcs": "{\"anula\":4,\"asistente\":\"a7f3c90000000000000000000000000000000000000000000000000000000000\",\"autor\":\"equipo #2\",\"hora\":\"2026-11-21T15:05:00Z\",\"n\":5,\"puntos\":30,\"tipo\":\"anulacion\"}",
+      "hoja": "23b399c5500a4fa4a3151c12cc0d24ee10edd2eb8b25b4a5b2c8838b74b7da63"
+    },
+    {
+      "movimiento": {
+        "n": 6,
+        "tipo": "ajuste",
+        "asistente": "a7f3c90000000000000000000000000000000000000000000000000000000000",
+        "puntos": -5,
+        "autor": "equipo #1",
+        "motivo": "Compensación",
+        "hora": "2026-11-21T16:00:00Z"
+      },
+      "jcs": "{\"asistente\":\"a7f3c90000000000000000000000000000000000000000000000000000000000\",\"autor\":\"equipo #1\",\"hora\":\"2026-11-21T16:00:00Z\",\"motivo\":\"Compensación\",\"n\":6,\"puntos\":-5,\"tipo\":\"ajuste\"}",
+      "hoja": "7dff7ad98d633d5deb8a5e57ad8bb92669bc1c76c213c01e88be6ad544382378"
+    },
+    {
+      "movimiento": {
+        "n": 7,
+        "tipo": "vencimiento",
+        "asistente": "a7f3c90000000000000000000000000000000000000000000000000000000000",
+        "puntos": -30,
+        "hora": "2026-11-21T20:00:00Z"
+      },
+      "jcs": "{\"asistente\":\"a7f3c90000000000000000000000000000000000000000000000000000000000\",\"hora\":\"2026-11-21T20:00:00Z\",\"n\":7,\"puntos\":-30,\"tipo\":\"vencimiento\"}",
+      "hoja": "ded024be612f2508725e04bc9320964d17326ad50dc64cc56989f528c2c71a70"
+    }
+  ],
+  "raizMovimientos": "0e19101a4ce2341ce14b9acd630bcaeaa6abd820ac86b03876833e15f2d1edce",
+  "raices": [
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274"
+      ],
+      "raiz": "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274"
+    },
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274",
+        "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654"
+      ],
+      "raiz": "3073cce4d8f24d57b3b08b83dd7dcee2bd6d862fef19300d47854e9e4ac81a1b"
+    },
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274",
+        "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654",
+        "f6ac2fa99961af21e593687b1ea9d21196d11093817aae7c0a3b86e6e15624ff"
+      ],
+      "raiz": "1410a5d66c834925fa73fa0433d5d2a7802c91f01da25b24656cc430777b7802"
+    },
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274",
+        "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654",
+        "f6ac2fa99961af21e593687b1ea9d21196d11093817aae7c0a3b86e6e15624ff",
+        "e6ad9c44375a0f329fd53c89c725b5b0d6273daa03c21b199666f04191d84496"
+      ],
+      "raiz": "a3c1eaa08f31155845c56296b8860f3bb7a4f37b478cab4b030b6f2d69fa04a0"
+    },
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274",
+        "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654",
+        "f6ac2fa99961af21e593687b1ea9d21196d11093817aae7c0a3b86e6e15624ff",
+        "e6ad9c44375a0f329fd53c89c725b5b0d6273daa03c21b199666f04191d84496",
+        "89ffe31ec98ed6777b536eff90049a54c975e5662afc758cd2a8547b56b404dd"
+      ],
+      "raiz": "9e1bdf078cbdaaa313d98273d0a065315e8b53e52a967413bab3aaf72b278e52"
+    },
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274",
+        "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654",
+        "f6ac2fa99961af21e593687b1ea9d21196d11093817aae7c0a3b86e6e15624ff",
+        "e6ad9c44375a0f329fd53c89c725b5b0d6273daa03c21b199666f04191d84496",
+        "89ffe31ec98ed6777b536eff90049a54c975e5662afc758cd2a8547b56b404dd",
+        "3982a0a7d4534b5fec77d88e693d60d4d034d12af377c4cd73c3428be934cb67",
+        "0489a36b715f2a8dd5c4d28597d7bf422a6b297c4a83994e0d53b4c83501f6fa"
+      ],
+      "raiz": "ce89783557a4db4fd7aa213d8e9bb55b87a02b0e009cf319ea4eae520c7662fe"
+    },
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274",
+        "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654",
+        "f6ac2fa99961af21e593687b1ea9d21196d11093817aae7c0a3b86e6e15624ff",
+        "e6ad9c44375a0f329fd53c89c725b5b0d6273daa03c21b199666f04191d84496",
+        "89ffe31ec98ed6777b536eff90049a54c975e5662afc758cd2a8547b56b404dd",
+        "3982a0a7d4534b5fec77d88e693d60d4d034d12af377c4cd73c3428be934cb67",
+        "0489a36b715f2a8dd5c4d28597d7bf422a6b297c4a83994e0d53b4c83501f6fa",
+        "835234b22e7ff9f39e822fe61645c517432622c54d41e290f6ef108ebc77455c",
+        "50944eab4c5c6fd39cefdd5544bc87274f2368fad9fe3f856205bc3f09cfe422",
+        "e26fbb5b9a5342b009fbc8e2f319933d692f8c5bbd3d3880d29bfdeabd2fdff1",
+        "073e58fef7b11d6f8754d6e4adb8835ba8dff11891fb2ad2c79b5272050af5d3",
+        "983c11c48144eae9af952c581bed747e614d3ab88872d1b77db8a15f94aa1a12",
+        "cef10f58c2209d0d09e0e13e77301a0faecee9b0109d1e33ac86c207d84baee7",
+        "4240c7fd2ff852c3567e683c244e9ed97c056c6e0a91d579e3e6d511e28cfc89",
+        "a8450ccda83ebce881e7d455c5d904c661f29b3ca86b1b1471c61f3215ecb3c9",
+        "66a018f5ed4f7f0a8d2a071e64dccaef12e8ae0b9e9daf10ea3d67136ab40ae0"
+      ],
+      "raiz": "af3b57089320d090e5c35e12ae69275d2d474e211e66312ac747d5d67860dcaf"
+    }
+  ],
+  "pruebas": [
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274",
+        "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654",
+        "f6ac2fa99961af21e593687b1ea9d21196d11093817aae7c0a3b86e6e15624ff",
+        "e6ad9c44375a0f329fd53c89c725b5b0d6273daa03c21b199666f04191d84496",
+        "89ffe31ec98ed6777b536eff90049a54c975e5662afc758cd2a8547b56b404dd",
+        "3982a0a7d4534b5fec77d88e693d60d4d034d12af377c4cd73c3428be934cb67",
+        "0489a36b715f2a8dd5c4d28597d7bf422a6b297c4a83994e0d53b4c83501f6fa"
+      ],
+      "indice": 0,
+      "prueba": [
+        {
+          "lado": "derecho",
+          "hash": "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654"
+        },
+        {
+          "lado": "derecho",
+          "hash": "ee2a253f0a2d25f075b85c2f20bfcbbf40d69056e4892a9db2cf556830af35a2"
+        },
+        {
+          "lado": "derecho",
+          "hash": "9dea7cb1b1b826fade5cfb0e807433af44110899ca90db62f94427da54a18a0c"
+        }
+      ],
+      "raiz": "ce89783557a4db4fd7aa213d8e9bb55b87a02b0e009cf319ea4eae520c7662fe"
+    },
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274",
+        "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654",
+        "f6ac2fa99961af21e593687b1ea9d21196d11093817aae7c0a3b86e6e15624ff",
+        "e6ad9c44375a0f329fd53c89c725b5b0d6273daa03c21b199666f04191d84496",
+        "89ffe31ec98ed6777b536eff90049a54c975e5662afc758cd2a8547b56b404dd",
+        "3982a0a7d4534b5fec77d88e693d60d4d034d12af377c4cd73c3428be934cb67",
+        "0489a36b715f2a8dd5c4d28597d7bf422a6b297c4a83994e0d53b4c83501f6fa"
+      ],
+      "indice": 3,
+      "prueba": [
+        {
+          "lado": "izquierdo",
+          "hash": "f6ac2fa99961af21e593687b1ea9d21196d11093817aae7c0a3b86e6e15624ff"
+        },
+        {
+          "lado": "izquierdo",
+          "hash": "3073cce4d8f24d57b3b08b83dd7dcee2bd6d862fef19300d47854e9e4ac81a1b"
+        },
+        {
+          "lado": "derecho",
+          "hash": "9dea7cb1b1b826fade5cfb0e807433af44110899ca90db62f94427da54a18a0c"
+        }
+      ],
+      "raiz": "ce89783557a4db4fd7aa213d8e9bb55b87a02b0e009cf319ea4eae520c7662fe"
+    },
+    {
+      "hojas": [
+        "7ce745ce5c78ba2ff47b7ba54728a2bcdc1c5a928371b5055a0819d173b70274",
+        "62933fb1b70d7c68d92c5183e29669e5582e2866a506fd30e4649293eac77654",
+        "f6ac2fa99961af21e593687b1ea9d21196d11093817aae7c0a3b86e6e15624ff",
+        "e6ad9c44375a0f329fd53c89c725b5b0d6273daa03c21b199666f04191d84496",
+        "89ffe31ec98ed6777b536eff90049a54c975e5662afc758cd2a8547b56b404dd",
+        "3982a0a7d4534b5fec77d88e693d60d4d034d12af377c4cd73c3428be934cb67",
+        "0489a36b715f2a8dd5c4d28597d7bf422a6b297c4a83994e0d53b4c83501f6fa"
+      ],
+      "indice": 6,
+      "prueba": [
+        {
+          "lado": "izquierdo",
+          "hash": "97a3881ed9867d459a499b58b240a3555b641ae8cedaedc1b952957be094e610"
+        },
+        {
+          "lado": "izquierdo",
+          "hash": "a3c1eaa08f31155845c56296b8860f3bb7a4f37b478cab4b030b6f2d69fa04a0"
+        }
+      ],
+      "raiz": "ce89783557a4db4fd7aa213d8e9bb55b87a02b0e009cf319ea4eae520c7662fe"
+    }
+  ],
+  "cadena": {
+    "eventoId": "0193a6f2-7c1e-7b3a-9f10-2d4c5e6f7a8b",
+    "eventoIdHash": "9203f7d2015c5031a4d97a01a5b3f4a3bc482f4f1c256cf3f3b929138e36dfb3",
+    "lotes": [
+      {
+        "n": 1,
+        "huellaAnterior": "ff64631aef51456b7aeae781b0d71876f2a373111272b6f97b838d0c6b89eba0",
+        "raiz": "1410a5d66c834925fa73fa0433d5d2a7802c91f01da25b24656cc430777b7802",
+        "conteos": [
+          [
+            2,
+            41
+          ],
+          [
+            7,
+            128
+          ]
+        ],
+        "huella": "d7459bd4ad3429d2413650a513497e59a9d92a18fe2cae7c3168a98f5469dc07"
+      },
+      {
+        "n": 2,
+        "huellaAnterior": "d7459bd4ad3429d2413650a513497e59a9d92a18fe2cae7c3168a98f5469dc07",
+        "raiz": "a3c1eaa08f31155845c56296b8860f3bb7a4f37b478cab4b030b6f2d69fa04a0",
+        "conteos": [],
+        "huella": "91d78107d1b6c73749fcb4812fb4a221b41a744cbdbf734211fe3b3191e88d12"
+      },
+      {
+        "n": 3,
+        "huellaAnterior": "91d78107d1b6c73749fcb4812fb4a221b41a744cbdbf734211fe3b3191e88d12",
+        "raiz": "9e1bdf078cbdaaa313d98273d0a065315e8b53e52a967413bab3aaf72b278e52",
+        "conteos": [
+          [
+            1,
+            1
+          ]
+        ],
+        "huella": "81ab751ac87ff615ac93b5b5a79575965764414e9fecfdd3dc3c8cb0cb05a1a1"
+      },
+      {
+        "n": 4,
+        "huellaAnterior": "81ab751ac87ff615ac93b5b5a79575965764414e9fecfdd3dc3c8cb0cb05a1a1",
+        "raiz": "6bf6e223b5f826c661d833f9bf0834be6afc405a6d852d22c6d2ff80e8f44f16",
+        "conteos": [
+          [
+            2,
+            0
+          ],
+          [
+            3,
+            5
+          ]
+        ],
+        "huella": "882179899d48dc494184976c871fd9b2296da03f46b695d19d1ee312f2a811cc"
+      },
+      {
+        "n": 5,
+        "huellaAnterior": "882179899d48dc494184976c871fd9b2296da03f46b695d19d1ee312f2a811cc",
+        "raiz": "ce89783557a4db4fd7aa213d8e9bb55b87a02b0e009cf319ea4eae520c7662fe",
+        "conteos": [
+          [
+            1,
+            10
+          ],
+          [
+            2,
+            10
+          ],
+          [
+            7,
+            10
+          ]
+        ],
+        "huella": "cf4efc4173a3bc36e9103171ea95586917c01027cd261f3c07a5b01e115d4ae2"
+      }
+    ]
+  }
+}

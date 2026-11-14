@@ -54,6 +54,7 @@ modules/canjes/
 ```
 
 - Los **esquemas Zod** de entrada y salida no van en el módulo: viven en `libs/dominio/canjes/` porque los usan también las apps.
+- **Se importan desde `@pasitos/dominio/esquemas`, no desde `@pasitos/dominio`.** Un esquema Zod se arma al cargar el módulo, así que si estuviera en el índice entraría en el paquete de todas las apps aunque no lo usaran. Desde el índice solo salen los tipos (`export type`).
 - El **esquema de tablas** vive en `libs/db`.
 
 ### 1.3 Trabajador (`apps/trabajador`)

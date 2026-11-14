@@ -13,6 +13,7 @@ import {
 } from '@pasitos/db';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import { AppError } from '@pasitos/dominio';
+import { buildIdAnonimo } from '@pasitos/firmas';
 import { LibroService, type NuevoMovimiento } from './libro.service';
 import {
   createAsistente,
@@ -68,6 +69,9 @@ describe('libro de movimientos', () => {
         .digest();
       expect(asistente?.idAnonimo.equals(esperado)).toBe(true);
       expect(saldo?.puntos).toBe(0);
+      // libs/firmas hace el mismo cálculo que el trigger (para verificar desde afuera).
+      const calculado = await buildIdAnonimo(evento?.sal ?? new Uint8Array(), asistenteId);
+      expect(Buffer.from(calculado).equals(asistente?.idAnonimo ?? Buffer.alloc(0))).toBe(true);
     });
 
     it('el id anónimo no se puede cambiar', async () => {

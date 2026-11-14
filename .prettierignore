@@ -8,3 +8,4 @@ pnpm-lock.yaml
 *.md
 target
 contracts/**/target
+libs/firmas/vectores
