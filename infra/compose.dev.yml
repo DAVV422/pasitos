@@ -30,5 +30,25 @@ services:
       timeout: 3s
       retries: 20
 
+  # Red local de Stellar (HU-102): core, RPC y Friendbot. Solo con el perfil `stellar`:
+  #   pnpm stellar:levantar · pnpm stellar:bajar
+  # Imagen fija por digest (2026-11-14); se actualiza a mano junto con Stellar CLI.
+  stellar:
+    profiles: ['stellar']
+    image: stellar/quickstart@sha256:a61ce821add98adb4f3e3d6e757b2615dd169a2b39c7e30cd47cfa95074f97d9
+    command: ['--local', '--enable', 'core,rpc', '--limits', 'unlimited']
+    ports:
+      - '127.0.0.1:${STELLAR_PORT:-8000}:8000'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -sf -X POST -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getHealth\"}" http://localhost:8000/rpc | grep -q healthy',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+
 volumes:
   postgres:
