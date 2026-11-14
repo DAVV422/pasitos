@@ -1,0 +1,1 @@
+ALTER TABLE "eventos" ADD COLUMN "evidencia_sha256" text;
