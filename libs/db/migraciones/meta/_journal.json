@@ -29,6 +29,13 @@
       "when": 1794662202834,
       "tag": "0003_colas",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794670477773,
+      "tag": "0004_costo_red",
+      "breakpoints": true
     }
   ]
 }
