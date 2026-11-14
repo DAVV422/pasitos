@@ -7,6 +7,7 @@ export interface EstadoSalud {
   readonly estado: 'ok';
   readonly version: string;
   readonly base: 'ok';
+  /** Segundos desde el último lote anclado; null si todavía no hay. Sin ids ni datos del evento. */
   readonly ultimoLoteConfirmadoHace: number | null;
 }
 
@@ -31,8 +32,7 @@ export class SaludController {
       estado: 'ok',
       version: this.config.VERSION,
       base: 'ok',
-      // Lo completa HU-103 (sellador).
-      ultimoLoteConfirmadoHace: null,
+      ultimoLoteConfirmadoHace: await this.saludService.getUltimoAnclajeSegundos(),
     };
   }
 }

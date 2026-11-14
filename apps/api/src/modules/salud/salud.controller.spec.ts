@@ -10,7 +10,10 @@ import { SaludService } from './salud.service';
 
 describe('GET /api/v1/salud', () => {
   let app: NestFastifyApplication;
-  const saludService = { isBaseDisponible: vi.fn<() => Promise<boolean>>() };
+  const saludService = {
+    isBaseDisponible: vi.fn<() => Promise<boolean>>(),
+    getUltimoAnclajeSegundos: vi.fn<() => Promise<number | null>>(),
+  };
 
   beforeAll(async () => {
     const modulo = await Test.createTestingModule({
@@ -43,6 +46,7 @@ describe('GET /api/v1/salud', () => {
 
   it('responde 200 con la base disponible', async () => {
     saludService.isBaseDisponible.mockResolvedValueOnce(true);
+    saludService.getUltimoAnclajeSegundos.mockResolvedValueOnce(null);
     const respuesta = await app.inject({ method: 'GET', url: '/api/v1/salud' });
     expect(respuesta.statusCode).toBe(200);
     expect(respuesta.json()).toEqual({
@@ -51,6 +55,19 @@ describe('GET /api/v1/salud', () => {
       base: 'ok',
       ultimoLoteConfirmadoHace: null,
     });
+  });
+
+  it('suma los segundos desde el último anclaje, sin nada del evento', async () => {
+    saludService.isBaseDisponible.mockResolvedValueOnce(true);
+    saludService.getUltimoAnclajeSegundos.mockResolvedValueOnce(42);
+    const respuesta = await app.inject({ method: 'GET', url: '/api/v1/salud' });
+    expect(Object.keys(respuesta.json() as object).sort()).toEqual([
+      'base',
+      'estado',
+      'ultimoLoteConfirmadoHace',
+      'version',
+    ]);
+    expect(respuesta.json()).toMatchObject({ ultimoLoteConfirmadoHace: 42 });
   });
 
   it('responde 503 en formato Problem Details si la base no responde', async () => {
