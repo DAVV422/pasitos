@@ -6,6 +6,7 @@ import { buildLoggerParams } from './common/observabilidad/logger';
 import { type AppConfig } from './config/app.config';
 import { ConfigModule } from './config/config.module';
 import { DbModule } from './infra/db/db.module';
+import { MovimientosModule } from './modules/movimientos/movimientos.module';
 import { SaludModule } from './modules/salud/salud.module';
 
 @Module({})
@@ -18,6 +19,7 @@ export class AppModule {
         ConfigModule.forConfig(config),
         DbModule,
         SaludModule,
+        MovimientosModule,
       ],
       providers: [{ provide: APP_FILTER, useClass: ProblemDetailsFilter }],
     };
