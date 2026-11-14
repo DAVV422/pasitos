@@ -22,6 +22,13 @@
       "when": 1794631819242,
       "tag": "0002_libro",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794662202834,
+      "tag": "0003_colas",
+      "breakpoints": true
     }
   ]
 }
