@@ -10,6 +10,9 @@ NestJS sobre Fastify. Logs con `traceId`, errores en formato Problem Details, Se
 | `nx build api` | Build de producción |
 | `nx test api` | Tests |
 | `nx lint api` | Lint |
+| `pnpm plataforma intervalo --evento <slug> --minutos <n\|plataforma> --motivo "…"` | Acción de la consola de plataforma mientras no existe (HU-105): cambia el intervalo de anclaje con `pasitos_sistema` y lo deja en la bitácora |
+
+`GET /api/v1/salud` informa `ultimoLoteConfirmadoHace`: los segundos desde el último lote anclado en Stellar (HU-104), sin datos del evento.
 
 ## Reglas
 
