@@ -8,8 +8,10 @@
  *   pnpm contrato:probar  --red local|testnet   # despliega una instancia de prueba y llama a version()
  */
 import { execFileSync } from 'node:child_process';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { createHash, randomUUID } from 'node:crypto';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
 const RAIZ = resolve(import.meta.dirname, '..');
@@ -64,11 +66,21 @@ function crearCuentas() {
       stellar(['keys', 'generate', alias, '--network', red, '--fund']);
     }
   }
+  // El trabajador lee la llave del operador de un archivo (HU-103 §1), fuera del repositorio.
+  const carpeta = join(homedir(), '.config', 'pasitos');
+  mkdirSync(carpeta, { recursive: true });
+  const archivo = join(carpeta, `stellar-operador-${red}.key`);
+  writeFileSync(
+    archivo,
+    `${stellar(['keys', 'show', operador], { silencioso: true })}
+`,
+    { mode: 0o600 },
+  );
   process.stdout.write(
     [
       '',
-      'Cuentas listas. Solo las direcciones públicas van al .env:',
-      `  STELLAR_OPERADOR_DIRECCION=${stellar(['keys', 'address', operador])}`,
+      'Cuentas listas. Al .env van las direcciones públicas y la ruta del archivo de la llave:',
+      `  STELLAR_OPERADOR_LLAVE_ARCHIVO=${archivo}`,
       `  STELLAR_ADMIN_DIRECCION=${stellar(['keys', 'address', admin])}`,
       '',
       'Las llaves secretas quedan en la configuración de Stellar CLI de este equipo.',

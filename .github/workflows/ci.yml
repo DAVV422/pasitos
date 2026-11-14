@@ -80,6 +80,44 @@ jobs:
             exit 1
           fi
 
+  sellador-red-local:
+    name: Sellador con red local
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+      - name: Stellar CLI (queda en la caché de ~/.cargo/bin)
+        run: cargo install --locked stellar-cli@30.0.1
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Red local de Stellar
+        run: |
+          docker compose -f infra/compose.dev.yml --profile stellar up -d --wait stellar
+      - name: Cuentas y WASM en la red local
+        run: |
+          stellar keys generate ci-operador --network local --fund
+          stellar keys generate ci-admin --network local --fund
+          (cd contracts && stellar contract build)
+          hash=$(stellar contract upload --wasm contracts/target/wasm32v1-none/release/pasitos_evento.wasm --source ci-operador --network local)
+          stellar keys show ci-operador > "$RUNNER_TEMP/operador.key"
+          chmod 600 "$RUNNER_TEMP/operador.key"
+          {
+            echo "STELLAR_PRUEBAS_RPC_URL=http://127.0.0.1:8000/rpc"
+            echo "STELLAR_PRUEBAS_LLAVE_ARCHIVO=$RUNNER_TEMP/operador.key"
+            echo "STELLAR_PRUEBAS_ADMIN=$(stellar keys address ci-admin)"
+            echo "STELLAR_PRUEBAS_WASM_HASH=$hash"
+          } >> "$GITHUB_ENV"
+      - name: Sellador contra la red local
+        run: pnpm exec vitest run --config apps/trabajador/vitest.config.mts red-local
+
   secretos:
     name: Revisión de secretos
     runs-on: ubuntu-latest

@@ -1,6 +1,11 @@
 # Trabajador
 
-Aplicación NestJS sin HTTP para las colas de pg-boss: sellador, correos, borrado a los 30 días y reportes. En la fase 0 solo arranca y termina limpio.
+Aplicación NestJS sin HTTP para las colas de pg-boss (esquema `pgboss`). Hoy corre el **sellador** y los trabajos del contrato (HU-103); después se suman correos, borrado a los 30 días y reportes.
+
+- `tick-sellador`, cada minuto: encola `anchor-lote` para cada evento con contrato.
+- `stellar`, de a un trabajo por vez en todo el sistema (y con un candado de PostgreSQL): `anchor-lote`, `deploy-contrato`, `sync-retos`, `register-pantallas` y `close-contrato`.
+- Cada lote pasa por `armado` → `enviado` → `confirmado` (o `rechazado`, que detiene el sellado de ese evento y alerta). Cada ejecución empieza mirando el estado, así que un reinicio retoma donde quedó.
+- La llave del operador se lee de `STELLAR_OPERADOR_LLAVE_ARCHIVO` y solo vive en memoria. `STELLAR_RED=mainnet` no arranca (D50).
 
 ## Comandos
 
@@ -10,6 +15,10 @@ Aplicación NestJS sin HTTP para las colas de pg-boss: sellador, correos, borrad
 | `nx build trabajador` | Build de producción |
 | `nx test trabajador` | Tests |
 | `nx lint trabajador` | Lint |
+| `pnpm stellar:trabajo <trabajo> --evento <slug> [--directo]` | Encola un trabajo de Stellar, o lo corre en el momento con `--directo` |
+| `pnpm sellador:rearmar --evento <slug> --lote <n> --motivo "…"` | Rearma un lote rechazado con los mismos movimientos (queda en la bitácora) |
+
+**Para probar con la red local:** `pnpm stellar:levantar`, `pnpm stellar:cuentas --red local`, `pnpm contrato:instalar --red local` y copiar al `.env` lo que imprimen. La prueba `red-local.int.spec.ts` corre si están las variables `STELLAR_PRUEBAS_*` (en el CI, el job *Sellador con red local*).
 
 ## Reglas
 

@@ -42,7 +42,6 @@ export async function seedMovimientosPrueba(
 ): Promise<ResultadoMovimientosPrueba> {
   const libro = new LibroService();
   const ahora = new Date();
-  const slug = `prueba-anclaje-${ahora.toISOString().slice(0, 19).replaceAll(/[-:T]/g, '')}`;
 
   const [organizacion] = await db
     .insert(organizaciones)
@@ -59,6 +58,8 @@ export async function seedMovimientosPrueba(
   }
   const organizacionId = organizacion.id;
   const eventoId = uuidv7();
+  // Con un pedazo del id: dos semillas en el mismo segundo no chocan.
+  const slug = `prueba-anclaje-${ahora.toISOString().slice(0, 19).replaceAll(/[-:T]/g, '')}-${eventoId.slice(-6)}`;
 
   const { idsRetos, idsPantallas, idsAsistentes } = await withOrganizacion(
     db,
