@@ -187,6 +187,26 @@ Toda la documentación está en español, en [docs/](docs/README.md). Por dónde
 ### Estructura del repositorio
 
 ```
+apps/
+├── app/                 Angular · app del asistente (/app)
+├── sala/                Angular · pantalla de sala o stand (/sala)
+├── mesa/                Angular · mesa de canje (/mesa)
+├── admin/               Angular · panel del organizador y Puerta (/admin)
+├── plataforma/          Angular · consola de plataforma (/plataforma)
+├── sitio/               Angular SSR · sitio público (/)
+├── api/                 NestJS + Fastify · API (/api/v1)
+└── trabajador/          NestJS · colas y tareas programadas
+libs/
+├── dominio/             Errores, tipos y esquemas compartidos
+├── firmas/              Firmas, QR y Merkle
+├── db/                  Esquema, migraciones, RLS y semillas
+├── ui/                  Design system (tokens y componentes px-…)
+├── web-core/            Interceptores y errores de las apps web
+└── testing/             Utilidades de test
+contracts/evento/        Rust · contrato Soroban
+e2e/                     Playwright · pruebas de punta a punta
+infra/                   Compose de desarrollo y arranque de PostgreSQL
+tools/                   Control de peso y servidor local
 assets/brand/            Logo y recursos de marca
 docs/
 ├── 01-producto/         Visión, cómo funciona, casos de uso, roadmap
@@ -198,6 +218,45 @@ docs/
 ├── decisiones.md        Registro de decisiones
 └── glosario.md          Términos explicados
 ```
+
+---
+
+## Desarrollo
+
+### Requisitos
+
+| Herramienta | Versión |
+|---|---|
+| Node.js | **24.15 o superior** (ver `.node-version`). Angular 22 no compila el sitio con versiones anteriores |
+| pnpm | 10 |
+| Docker | Para PostgreSQL y los tests de la base |
+| Rust | Estable, para el contrato |
+| Stellar CLI | 25.2 o superior, solo para compilar el contrato a WASM |
+
+### Primeros pasos
+
+```bash
+pnpm install
+git config core.hooksPath .githooks   # revisa secretos y el formato de los commits
+cp .env.example .env                  # valores de desarrollo
+pnpm db:levantar                      # PostgreSQL 17 en el puerto 55432
+pnpm db:migrar                        # crea las tablas y el aislamiento por organización
+pnpm semilla minima                   # organización y evento de prueba
+pnpm semilla produccion-demo          # organización demo con sus dos eventos
+```
+
+### Correr y probar
+
+| Comando | Qué hace |
+|---|---|
+| `nx serve api` · `nx serve app` | Servidor de desarrollo de un proyecto |
+| `pnpm build` y luego `pnpm local` | Todo con las rutas de producción en http://localhost:8080 (`/`, `/app/`, `/admin/`, `/api/v1/…`) |
+| `pnpm test` | Tests unitarios y de integración (los de la base levantan PostgreSQL con Docker) |
+| `pnpm e2e` | Pruebas de punta a punta con Playwright (Android, iPhone y escritorio) |
+| `pnpm peso` | Peso comprimido de la carga inicial de cada app |
+| `pnpm verificar` | Todo lo que revisa el CI, antes de abrir un PR |
+
+Reglas para programar: [AGENTS.md](AGENTS.md) y [docs/09-desarrollo/](docs/09-desarrollo/README.md).
 
 ---
 
