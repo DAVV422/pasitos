@@ -205,7 +205,11 @@ pasitos/
 │  ├─ dominio/      # Zod: esquemas y tipos compartidos, textos de error
 │  ├─ firmas/       # Firmas P-256 y Merkle (navegador y servidor)
 │  ├─ ui/           # Componentes propios y tokens del design system
-│  └─ db/           # Esquema de Drizzle y migraciones
+│  ├─ web-core/     # Interceptores, ErrorApi y SSE de las apps
+│  ├─ db/           # Esquema de Drizzle y migraciones
+│  ├─ libro/        # Libro de movimientos: la única forma de mover puntos (API y trabajador)
+│  ├─ stellar/      # Cliente de Stellar detrás de un puerto (trabajador; el API solo lee)
+│  └─ testing/      # Fábricas y falsos para los tests
 ├─ contracts/
 │  └─ evento/       # Rust · contrato Soroban
 ├─ infra/           # Docker Compose, Caddyfile, scripts de despliegue y copias de seguridad
