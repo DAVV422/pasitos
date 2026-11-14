@@ -1,0 +1,10 @@
+/dist
+/coverage
+/.nx
+.angular
+pnpm-lock.yaml
+/docs
+/assets
+*.md
+target
+contracts/**/target
