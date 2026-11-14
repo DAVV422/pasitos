@@ -47,6 +47,11 @@ const VALIDEZ_TX_MS = 60_000;
 const MAX_PASOS = 50;
 const ATRASO_MS = 15 * 60 * 1000;
 const SIN_RESPUESTA_MS = 5 * 60 * 1000;
+/**
+ * El tick corre cada minuto y el lote se arma unos segundos después. Sin este margen, con 1 minuto
+ * de intervalo el tick siguiente llega unos segundos antes y el lote sale cada 2 minutos.
+ */
+const MARGEN_TICK_MS = 15_000;
 /** HU-104 §2: cuánto puede seguir la comisión sobre el tope antes de alertar. */
 const SOBRE_TOPE_MS = 30 * 60 * 1000;
 
@@ -148,7 +153,8 @@ export class SelladorService {
       return true;
     }
     return (
-      this.reloj.now().getTime() - evento.ultimoArmadoAt.getTime() >= evento.intervaloMin * 60_000
+      this.reloj.now().getTime() - evento.ultimoArmadoAt.getTime() >=
+      evento.intervaloMin * 60_000 - MARGEN_TICK_MS
     );
   }
 

@@ -4,7 +4,6 @@ import { and, count, eq, sql } from 'drizzle-orm';
 import {
   asistentes,
   bitacora,
-  eventos,
   lotes,
   movimientos,
   movimientosLote,
@@ -19,7 +18,11 @@ import { RpcStellar, StellarNoDisponible } from '@pasitos/stellar';
 import type { FakeStellar } from '@pasitos/stellar/pruebas';
 import { loadTrabajadorConfig } from '../config/trabajador.config';
 import type { ContratoService } from '../contrato/contrato.service';
-import { createEntorno, createEventoConContrato as createEventoEnBase } from '../pruebas/entorno';
+import {
+  addMovimientos as addMovimientosEnBase,
+  createEntorno,
+  createEventoConContrato as createEventoEnBase,
+} from '../pruebas/entorno';
 
 /** Sellador contra PostgreSQL real y Stellar falso (HU-103). Requiere Docker. */
 describe('sellador', () => {
@@ -77,25 +80,8 @@ describe('sellador', () => {
     expect(equalBytes(ultimo.huella, anterior)).toBe(true);
   }
 
-  async function addMovimientos(eventoId: string, cantidad: number) {
-    const [evento] = await base.sistema.db.select().from(eventos).where(eq(eventos.id, eventoId));
-    const ids = await base.sistema.db
-      .select({ id: asistentes.id })
-      .from(asistentes)
-      .where(eq(asistentes.eventoId, eventoId))
-      .limit(cantidad);
-    const libro = new LibroService();
-    for (const { id } of ids) {
-      await withOrganizacion(base.sistema.db, evento?.organizacionId ?? '', (tx) =>
-        libro.addMovimiento(tx, {
-          eventoId,
-          asistenteId: id,
-          tipo: 'checkin',
-          origen: 'equipo',
-          puntos: 5,
-        }),
-      );
-    }
+  function addMovimientos(eventoId: string, cantidad: number) {
+    return addMovimientosEnBase(base, eventoId, cantidad);
   }
 
   it('deploy-contrato crea un solo contrato aunque se ejecute dos veces', async () => {

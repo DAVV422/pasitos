@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { INTERVALOS_ANCLAJE_MIN, isIntervaloAnclaje } from '@pasitos/dominio';
 import { z } from 'zod';
 
 /**
@@ -26,10 +27,7 @@ const esquemaConfig = z.object({
   STELLAR_ADMIN_DIRECCION: z.string().regex(/^G[A-Z2-7]{55}$/),
   ANCLAJE_INTERVALO_MIN: z.coerce
     .number()
-    .refine(
-      (valor) => [1, 2, 5, 10, 15, 30].includes(valor),
-      'Valores permitidos: 1, 2, 5, 10, 15, 30',
-    )
+    .refine(isIntervaloAnclaje, `Valores permitidos: ${INTERVALOS_ANCLAJE_MIN.join(', ')}`)
     .default(5),
   ANCLAJE_LOTE_MAX: z.coerce.number().int().min(1).max(50_000).default(10_000),
   // HU-104 §2: arriba de esto un anchor no se envía. 1 000 000 stroops = 0,1 XLM (medido: 0,0006 a 0,009).

@@ -5,6 +5,7 @@ import { RELOJ_SISTEMA, type Reloj } from './comun/reloj';
 import { readLlaveOperador, type TrabajadorConfig } from './config/trabajador.config';
 import { ContratoService } from './contrato/contrato.service';
 import { CostoRedService } from './costo/costo-red.service';
+import { EvidenciaService } from './evidencia/evidencia.service';
 import { SelladorRepository } from './sellador/sellador.repository';
 import { OPCIONES_SELLADOR_POR_DEFECTO, SelladorService } from './sellador/sellador.service';
 
@@ -15,6 +16,7 @@ export interface Composicion {
   readonly contrato: ContratoService;
   readonly costo: CostoRedService;
   readonly transacciones: TransaccionesStellarRepository;
+  readonly repositorio: SelladorRepository;
 }
 
 /** Arma las piezas del trabajador. Los tests arman las mismas con FakeStellar y otro reloj. */
@@ -47,6 +49,10 @@ export function buildComposicion(
     loteMax: config.ANCLAJE_LOTE_MAX,
     comisionMaxStroops,
   });
+  const evidencia = new EvidenciaService(repositorio, stellar, transacciones, reloj, {
+    archivosDir: config.ARCHIVOS_DIR,
+    wasmHash: config.STELLAR_WASM_HASH ?? '',
+  });
   const contrato = new ContratoService(
     repositorio,
     stellar,
@@ -59,10 +65,11 @@ export function buildComposicion(
       consultaCadaMs: OPCIONES_SELLADOR_POR_DEFECTO.consultaCadaMs,
       comisionMaxPreparacionStroops: config.STELLAR_COMISION_MAX_PREPARACION_STROOPS,
     },
+    evidencia,
   );
   const costo = new CostoRedService(transacciones, stellar, alertas, reloj, {
     presupuestoMensualStroops: config.STELLAR_PRESUPUESTO_MENSUAL_STROOPS,
     comisionMaxStroops,
   });
-  return { conexion, stellar, sellador, contrato, costo, transacciones };
+  return { conexion, stellar, sellador, contrato, costo, transacciones, repositorio };
 }

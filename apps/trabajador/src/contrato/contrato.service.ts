@@ -10,6 +10,7 @@ import {
 } from '@pasitos/stellar';
 import type { AlertasOperacionPort } from '../comun/alertas-operacion';
 import type { Reloj } from '../comun/reloj';
+import type { EvidenciaService } from '../evidencia/evidencia.service';
 import type { SelladorRepository } from '../sellador/sellador.repository';
 import type { SelladorService } from '../sellador/sellador.service';
 
@@ -51,6 +52,7 @@ export class ContratoService {
     private readonly alertas: AlertasOperacionPort,
     private readonly reloj: Reloj,
     private readonly opciones: OpcionesContrato,
+    private readonly evidencia?: EvidenciaService,
   ) {}
 
   /** La sal de la instancia sale del evento: un reintento calcula la misma dirección y no crea dos. */
@@ -148,10 +150,16 @@ export class ContratoService {
     }
   }
 
-  /** Ancla lo que quede sin esperar el intervalo y cierra el contrato con la huella final y los totales. */
+  /**
+   * Ancla lo que quede sin esperar el intervalo, cierra el contrato con la huella final y los totales,
+   * y guarda la evidencia (HU-105 §2). Si ya estaba cerrado, solo guarda la evidencia que falte.
+   */
   async closeContrato(eventoId: string): Promise<void> {
     const contratoId = await this.getContratoId(eventoId);
     if ((await this.stellar.getEstado(contratoId)) === 'cerrado') {
+      if (!(await this.getEvento(eventoId)).evidenciaSha256) {
+        await this.evidencia?.saveEvidencia(eventoId);
+      }
       return;
     }
     for (let paso = 0; ; paso++) {
@@ -186,6 +194,7 @@ export class ContratoService {
       await this.repositorio.updateLote(ultimoLote.id, { esCierre: true });
     }
     this.logger.log({ eventoId, contratoId, nFinal: ultimo.n }, 'Contrato del evento cerrado');
+    await this.evidencia?.saveEvidencia(eventoId);
   }
 
   /**

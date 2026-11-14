@@ -82,6 +82,7 @@ export class SelladorRepository {
         estado: eventos.estado,
         inicioAt: eventos.inicioAt,
         finAt: eventos.finAt,
+        evidenciaSha256: eventos.evidenciaSha256,
       })
       .from(eventos)
       .where(eq(eventos.id, eventoId));
@@ -101,6 +102,53 @@ export class SelladorRepository {
       .update(eventos)
       .set({ contratoId, updatedAt: sql`now()` })
       .where(eq(eventos.id, eventoId));
+  }
+
+  async setEvidenciaSha256(eventoId: string, sha256: string): Promise<void> {
+    await this.db
+      .update(eventos)
+      .set({ evidenciaSha256: sha256, updatedAt: sql`now()` })
+      .where(eq(eventos.id, eventoId));
+  }
+
+  /** Lotes confirmados del evento, en orden (verificación, HU-105 §3). */
+  listLotesConfirmados(eventoId: string): Promise<FilaLote[]> {
+    return this.db
+      .select()
+      .from(lotes)
+      .where(and(eq(lotes.eventoId, eventoId), eq(lotes.estado, 'confirmado')))
+      .orderBy(asc(lotes.numero));
+  }
+
+  /** Número de cada lote del evento, por id (evidencia, HU-105 §2). */
+  async listNumerosLote(eventoId: string): Promise<Map<string, number>> {
+    const filas = await this.db
+      .select({ id: lotes.id, numero: lotes.numero })
+      .from(lotes)
+      .where(eq(lotes.eventoId, eventoId));
+    return new Map(filas.map((fila) => [fila.id, fila.numero]));
+  }
+
+  /** Números de los retos que están en el contrato. */
+  async listNumerosRetosRegistrados(eventoId: string): Promise<number[]> {
+    const filas = await this.db
+      .select({ numero: retos.numero })
+      .from(retos)
+      .where(and(eq(retos.eventoId, eventoId), sql`${retos.registradoEnStellarAt} is not null`))
+      .orderBy(asc(retos.numero));
+    return filas.map((fila) => fila.numero);
+  }
+
+  /** Números de las pantallas que están en el contrato. */
+  async listNumerosPantallasRegistradas(eventoId: string): Promise<number[]> {
+    const filas = await this.db
+      .select({ numero: pantallas.numero })
+      .from(pantallas)
+      .where(
+        and(eq(pantallas.eventoId, eventoId), sql`${pantallas.registradaEnStellarAt} is not null`),
+      )
+      .orderBy(asc(pantallas.numero));
+    return filas.map((fila) => fila.numero);
   }
 
   /** Lotes sin confirmar del evento, en orden. */
