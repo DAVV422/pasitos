@@ -27,6 +27,8 @@
       "@pasitos/db": ["./libs/db/src/index.ts"],
       "@pasitos/db/pruebas": ["./libs/db/src/pruebas/base-de-prueba.ts"],
       "@pasitos/libro": ["./libs/libro/src/index.ts"],
+      "@pasitos/stellar": ["./libs/stellar/src/index.ts"],
+      "@pasitos/stellar/pruebas": ["./libs/stellar/src/pruebas/fake-stellar.ts"],
       "@pasitos/testing": ["./libs/testing/src/index.ts"],
       "@pasitos/ui": ["./libs/ui/src/index.ts"],
       "@pasitos/web-core": ["./libs/web-core/src/index.ts"]
