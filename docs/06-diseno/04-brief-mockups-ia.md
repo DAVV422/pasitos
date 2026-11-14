@@ -1,8 +1,8 @@
 # Brief de mockups para IA de diseño · Pasitos
 
-> **Estado:** vigente · **Última revisión:** 2026-11-03 · Mockup de referencia del nivel 1: [mockups/nivel-1.html](mockups/nivel-1.html) · Actualizado con el logo y con el design system de [tokens/DESIGN-dark.md](tokens/DESIGN-dark.md) y [tokens/DESIGN-light.md](tokens/DESIGN-light.md). La primera versión de este brief es anterior al logo.
+> **Estado:** vigente · **Última revisión:** 2026-11-13 · Pantallas nuevas del piloto en la sección 13 y en [mockups/piloto.html](mockups/piloto.html) · Mockup de referencia del nivel 1: [mockups/nivel-1.html](mockups/nivel-1.html) · Actualizado con el logo y con el design system de [tokens/DESIGN-dark.md](tokens/DESIGN-dark.md) y [tokens/DESIGN-light.md](tokens/DESIGN-light.md). La primera versión de este brief es anterior al logo.
 >
-> **Cómo usar este documento:** pásalo completo a la IA de diseño. Si la herramienta tiene un límite de texto, envía primero las secciones 0–4 (contexto, reglas, design system, datos) y después **una sección de pantallas a la vez** (5 a 11). Las secciones 0–4 aplican a todas las pantallas.
+> **Cómo usar este documento:** pásalo completo a la IA de diseño. Si la herramienta tiene un límite de texto, envía primero las secciones 0–4 (contexto, reglas, design system, datos) y después **una sección de pantallas a la vez** (5 a 13). Las secciones 0–4 aplican a todas las pantallas.
 
 ---
 
@@ -484,7 +484,7 @@ Página con pestañas horizontales con texto: `Datos` · `Sponsors` · `Mesa de 
 
 ### 8.9 Equipo y pausa de emergencia (nivel 3)
 - **Equipo:** lista de personas con acceso y su rol, según D19: *Dueño*, *Coorganizador*, *Registrador*, *Operador de mesa*, *Financiador (lector)*. Las *Pantallas de sala* son dispositivos y se listan aparte. Botón **+ Invitar** (por enlace de un solo uso o por email).
-- **Check-in en la puerta (rol Registrador):** buscador por nombre, email o código de entrada; resultado con nombre, entrada y estado; botón **Marcar como presente**. Para homónimos se muestra parte del email. Después del check-in se ofrece *"Vincular su celular"* (QR de un solo uso) o *"Imprimir tarjeta"* para quien no tiene celular (D20).
+- **Check-in en la puerta (rol Registrador):** reemplazado por la **vista Puerta** de la sección 13.1.
 - **Pausa de emergencia:** tarjeta con borde `danger`: *"Pausar todos los retos y canjes"* y botón peligro **Pausar el evento**, con confirmación.
 ---
 
@@ -563,7 +563,55 @@ Página simple, en tema claro, con una sola idea por bloque:
 
 ---
 
-## 13. Prioridad (si la herramienta tiene límite de generación)
+## 13. PANTALLAS NUEVAS DEL PILOTO
+
+Mockup de referencia: [mockups/piloto.html](mockups/piloto.html). Se diseñan en **tema claro** (D36); el oscuro sale de los mismos tokens. Los asistentes ya no tienen cuenta con contraseña: su celular queda **vinculado** a su inscripción y cada inscripción tiene un **código de asistente** (`A-0231`), que siempre se muestra en tipografía monoespaciada.
+
+**Datos ficticios extra para esta sección:**
+- Registrador: **Luis Condori**. Otro registrador: **Marcos A.**
+- Invitados: **Valeria Quispe · A-0231 · va•••@gmail.com** · **Luciano Ticona · A-0156 · lt•••@umsa.bo** · **Lucía Fernández · A-0003** · **Lucía Fernández Mamani · A-0298 (sin correo)** · **Carla Mendoza · A-0412 (registrada en la puerta)** · **Diego Rojas · A-0187**.
+- Dispositivos: **Samsung A14 · Chrome**, **Xiaomi Redmi 12 · Chrome**, **iPhone · Safari**.
+- Enlace corto de respaldo: **pasitos.app/v/K7Q2-M9XD**.
+- Contadores de la puerta: **187 presentes · 225 por llegar · te quedan 8 registros en la puerta**.
+
+### 13.1 Vista Puerta del registrador (celular 390 × 844 px)
+
+Una sola pantalla pensada para usarse con una mano y con fila. Header con el logo y *"Puerta"*, chip `TESTNET`, y debajo *"Foro Tech 2026 · Luis Condori"* con el chip *Registrador*.
+
+- **PU1 · Inicio:**
+  - arriba, un aviso rojo por cada *No fui yo* sin atender: *"No fui yo · Valeria Quispe · A-0231 · No reconoce un dispositivo · 10:45"* con botón **Atender**;
+  - buscador *"Nombre, correo o código"*;
+  - botón primario **Escanear entrada** y secundario **Registrar a alguien nuevo**;
+  - tres contadores: presentes, por llegar y cuántos registros en la puerta le quedan;
+  - lista corta *"Últimos que atendiste"*.
+- **PU2 · Resultados de búsqueda** (desde 3 letras): cada resultado con nombre, código y correo enmascarado, y un chip de estado: *Invitada* (gris), *Vinculado* (ámbar: abrió su enlace, sin check-in) o *Presente* (verde). Si hay dos parecidos, aviso: *"Hay dos personas parecidas. Compara el código y el correo antes de marcar."*
+- **PU3 · Ficha del invitado:** nombre (H1), código y correo; chip de estado; tarjeta *"Dispositivo actual"* con modelo, desde cuándo y cómo se vinculó; vinculaciones anteriores e intentos desde otro dispositivo. Abajo, **Marcar presente** (primario) y **Generar acceso nuevo** (secundario, pide el motivo). Si no tiene celular vinculado, el primario es **Generar QR de asistente**. **Nunca** se muestra la IP ni la huella del dispositivo.
+- **PU4 · Registrar a alguien nuevo:** *"Solo el nombre es obligatorio."* Campos *Nombre y apellido* y *Correo (opcional)*. Arriba a la derecha, chip *"Te quedan 8"*. Si el nombre se parece a alguien de la lista, aviso ámbar: *"¿Es Valeria Quispe · A-0231, que ya está en la lista?"*, con **Sí, es ella: abrir su ficha** y el primario **No, es otra persona: registrar**.
+- **PU5 · QR de asistente:** *"QR de asistente para Carla Mendoza"*; QR grande negro sobre blanco; chip *"Vence en 1:42"*; *"¿La cámara no lee el QR? Que abra pasitos.app/v/K7Q2-M9XD"*; aviso con indicador de carga *"Esperando que lo escanee con la cámara de su celular…"*. Botón **Cancelar** arriba.
+- **PU6 · Vinculado ✓:** ícono de éxito, *"Vinculado ✓"*, nombre y código; tarjeta con *Dispositivo: Samsung A14 · Chrome*, *Hora: 10:51*, *Asistencia: Presente ✓*; aviso: *"Comprueba que su celular muestre «Hola, Carla». Si no, toca No es su celular."* Primario **Siguiente persona**, secundario **No es su celular**.
+- **PU7 · Atender un *No fui yo*:** chip rojo *No fui yo*; nombre y *"Lo atiendes tú desde las 10:46"*; tarjeta *"No reconoce"* con el dispositivo (*iPhone · Safari, vinculado a las 10:38 en la puerta por Marcos A.*), el dispositivo anterior y los canjes desde ese momento. Tres botones: **Revincular a este celular** (primario), **Pasar a un coorganizador (canje)** y **Descartar con una nota**.
+
+### 13.2 Mi dispositivo (asistente, celular 390 × 844 px)
+
+- **A20 · Mi dispositivo:** volver a *Mi cuenta*; H1 *"Mi dispositivo"* y *"Tu entrada funciona en un solo celular: este."*; tarjeta *"Este celular · Samsung A14 · Chrome"* con *Desde* y *Cómo* (*Enlace del correo* o *QR en la puerta*); sección *Historial*; sección *Intentos desde otro dispositivo* con aviso ámbar *"21/11 · 09:15 · alguien intentó abrir tu enlace en un iPhone. No pudo entrar."*; abajo, botón secundario **No fui yo** y *"Si ves algo que no reconoces, avisa a la puerta."*
+- **A21 · *No fui yo*, elegir:** H1 *"¿Qué no reconoces?"*; tres opciones de selección única, cada una con su detalle: *Un intento desde otro dispositivo*, *Un cambio de celular*, *Un canje*. Primario **Avisar a la puerta**. Sin campo de texto libre.
+- **A22 · Aviso enviado:** ícono de enviar, *"Avisamos a la puerta"*, *"Acércate con este celular y di tu código:"* y el código grande `A-0231`; aviso *"Tus puntos están a salvo: viven en el servidor, no en el celular."*; secundario **Volver al inicio**.
+- **A23 · Dispositivo anulado** (pantalla completa en el celular que perdió la entrada): ícono de escudo en `danger`, *"Tu entrada se abrió en otro celular"*, *"El 21/11 a las 10:42, en la puerta. Desde este celular ya no puedes ganar ni canjear puntos."*; primario **No fui yo** y *"Si cambiaste de celular, no hagas nada."*
+
+### 13.3 Eventos y página del evento (web responsiva)
+
+- **P4 · Eventos** (`/eventos`, desktop): header con *Cómo funciona* · **Eventos** (activo) · *Ingresar* y botón primario **Quiero usar Pasitos en mi evento**; H1 *"Eventos"* y *"Eventos que usan Pasitos. Entra al tuyo o descubre otros."*; pestañas *Próximos · 3* · *En curso · 1* · *Pasados · 6*; grilla de tarjetas con portada, chip de estado (*En curso*, *Pasado*), nombre, fecha, lugar y organizador, y botón **Ver evento** (o **Ver reporte** en los pasados con reporte público). Solo aparecen los eventos *Público*.
+- **P5 · Página del evento** (`/eventos/foro-tech-2026`, desktop y móvil):
+  - portada con chip *En curso*, nombre (headline-xl), fecha, horario, lugar y *"Organiza Comunidad Dev La Paz"*;
+  - columna principal: *Sobre el evento*, *Agenda* (hora en ámbar, actividad, lugar, sponsor y chip de puntos si da puntos) y *Sponsors*;
+  - columna lateral: tarjeta *Cómo entrar* (*"¿Te invitaron? Abre el enlace de tu correo en el celular."* · *"¿No te inscribiste? También puedes registrarte en la puerta."*) con el primario **Ir a mi entrada**, que aparece solo si el navegador ya está vinculado; y tarjeta con el **mapa estático**, la dirección y **Cómo llegar**;
+  - en móvil, **Ir a mi entrada** va arriba de todo, debajo de la portada.
+  - Solo se muestran las secciones públicas. **El wifi nunca aparece.**
+- **P7 · Evento sin página pública:** ícono de candado en gris, *"Este evento no tiene página pública"*, *"Si te invitaron, abre el enlace de tu correo en el celular, o pregunta en la puerta."* y secundario **Ver otros eventos**. No confirma si el evento existe.
+
+---
+
+## 14. Prioridad (si la herramienta tiene límite de generación)
 
 Seguir los niveles del [Inventario de vistas](05-inventario-de-vistas.md). El **nivel 1** es el mockup inicial:
 
@@ -573,11 +621,11 @@ Seguir los niveles del [Inventario de vistas](05-inventario-de-vistas.md). El **
 4. **8.0** Ingreso al panel · **8.1** Resumen · **8.2** Retos con el modal Nuevo reto
 5. **9.1** Reporte público (tema claro)
 
-Después, el **nivel 2** (resto de las secciones 5 a 8, y 11.0 a 11.2) y por último el **nivel 3** (temas claros extra, sección 10, 8.9, 9.2 y 12).
+Después, el **nivel 2** (resto de las secciones 5 a 8, y 11.0 a 11.2), las **pantallas nuevas del piloto** (sección 13) y por último el **nivel 3** (temas claros extra, sección 10, 8.9, 9.2 y 12).
 
 ---
 
-## 14. Checklist para revisar los mockups generados
+## 15. Checklist para revisar los mockups generados
 
 - [ ] Se usa el logo existente de las dos flechas (no uno nuevo) junto a la palabra "Pasitos", y hay un chip `TESTNET` en todas las vistas.
 - [ ] Puntos siempre en ámbar. USD **solo** en la sección 10 y siempre en azul.
@@ -588,7 +636,8 @@ Después, el **nivel 2** (resto de las secciones 5 a 8, y 11.0 a 11.2) y por úl
 - [ ] Solo aparecen nombres ficticios: Comunidad Dev La Paz, Nimbora Cloud, Kodara Academy, Quillu Pay.
 - [ ] Los números coinciden con la sección 4 (80 PTS, 287 asistentes, 78 %, 173, 1 022…).
 - [ ] El reporte público tiene la sección "Verifícalo tú mismo" y el pie con el slogan.
-- [ ] No hay login de asistentes, catálogo de eventos, rankings ni NFTs.
+- [ ] No hay login con contraseña para asistentes, rankings ni NFTs. El listado de eventos existe solo en el sitio público (13.3).
+- [ ] En las pantallas del piloto nunca se muestra la IP ni la huella del dispositivo; solo el modelo y el navegador.
 - [ ] Todo el texto está en español.
 - [ ] Hay un solo botón principal por pantalla, de ancho completo y 56 px en móvil, con un verbo que dice lo que hace.
 - [ ] Ningún texto de lectura mide menos de 16 px, ni ningún chip menos de 12 px.

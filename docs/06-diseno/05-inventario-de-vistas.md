@@ -1,7 +1,7 @@
 # Inventario de vistas
 
-> **Estado:** vigente · **Última revisión:** 2026-11-04
-> **Mockups:** [nivel 1](mockups/nivel-1.html) (11 pantallas) y [nivel 2](mockups/nivel-2.html) (36 vistas), en tema oscuro y claro. Cada nivel es un solo archivo HTML que se edita directamente.
+> **Estado:** vigente · **Última revisión:** 2026-11-13
+> **Mockups:** [nivel 1](mockups/nivel-1.html) (11 pantallas), [nivel 2](mockups/nivel-2.html) (36 vistas) y [pantallas nuevas del piloto](mockups/piloto.html) (15 vistas), en tema oscuro y claro. Cada archivo HTML se edita directamente.
 > ⚠️ **Pendiente:** con D22 y los [flujos de la v1](../01-producto/07-flujos-v1.md) cambian A7 (ya no hay espera de Stellar), el historial (*Registrado en Stellar ✓*), A17 (sin la acción de demo) y se suman pantallas de la consola de plataforma, el equipo, los invitados y los modos de QR. Los mockups se actualizan después de cerrar los flujos.
 > Lista única de todas las pantallas de Pasitos, por perfil y por nivel de prioridad. El detalle de cada pantalla (textos y datos exactos) está en el [Brief de mockups](04-brief-mockups-ia.md); el número entre paréntesis es su sección en el brief.
 
@@ -23,7 +23,8 @@
 | Organizador | `/admin` | Desktop 1440 × 900 |
 | Reporte público | `/reporte/:evento` | Web responsiva (desktop 1440 y móvil 390) |
 | Sitio público | `/` | Web responsiva |
-| Equipo Pasitos (interno) | `/interno` | Desktop |
+| Equipo Pasitos (consola de plataforma) | `/plataforma` | Desktop |
+| Registrador (vista Puerta) | `/admin/eventos/:id/puerta` | Móvil 390 × 844 |
 
 ## 3. Nivel 1 · Esenciales
 
@@ -92,9 +93,37 @@
 | P1 | Landing de Pasitos (qué es, cómo funciona, por qué es verificable, eventos destacados, contacto) | 11.0 |
 | P2 | Solicitud del plan Comunidad *(P3 en el piloto)* | 11.1 |
 | P3 | Solicitud enviada *(P3 en el piloto)* | 11.2 |
-| P4 | Eventos: listado de próximos, en curso y pasados (D37) | ⏳ por agregar al brief |
-| P5 | Página pública del evento, con *Cómo entrar* e *Ir a mi entrada* (D37) | ⏳ por agregar al brief |
+| P4 | Eventos: listado de próximos, en curso y pasados (D37) | 13.3 |
+| P5 | Página pública del evento, con *Cómo entrar* e *Ir a mi entrada* (D37), desktop y móvil | 13.3 |
+| P7 | Evento sin página pública (privado o en borrador) | 13.3 |
 | P6 | Términos y política de privacidad | ⏳ por agregar al brief |
+
+## 4b. Pantallas nuevas del piloto
+
+Mockup: [piloto.html](mockups/piloto.html). Son las que necesitaban validación visual antes de construirse; el resto de las pantallas nuevas se construye directo con los componentes existentes.
+
+### Registrador · vista Puerta
+| ID | Pantalla | Brief |
+|---|---|---|
+| PU1 | Puerta · inicio (avisos *No fui yo*, buscar, escanear, registrar, contadores) | 13.1 |
+| PU2 | Resultados de búsqueda | 13.1 |
+| PU3 | Ficha del invitado | 13.1 |
+| PU4 | Registrar a alguien nuevo, con aviso de duplicado | 13.1 |
+| PU5 | QR de asistente | 13.1 |
+| PU6 | Vinculado ✓ | 13.1 |
+| PU7 | Atender un *No fui yo* | 13.1 |
+
+### Asistente · Mi dispositivo
+| ID | Pantalla | Brief |
+|---|---|---|
+| A20 | Mi dispositivo | 13.2 |
+| A21 | *No fui yo* · elegir qué no reconoce | 13.2 |
+| A22 | Aviso enviado | 13.2 |
+| A23 | Dispositivo anulado | 13.2 |
+
+### Sitio público
+P4, P5 y P7, en la sección 4 (brief 13.3).
+
 
 ## 5. Nivel 3 · Variantes y extras
 
@@ -108,8 +137,8 @@
 | F3 | Feria: reembolso | 10.3 |
 | F4 | Feria: mesa con selector de moneda | 10.4 |
 | O11 | Organizador: equipo y permisos (roles de D19) | 8.9 |
-| O13 | Registrador: check-in manual buscando por nombre (D20) | 8.9 |
-| O14 | Registrador: revincular la entrada de alguien que cambió de celular | 8.9 |
+| O13 | Registrador: check-in manual buscando por nombre (D20) · **reemplazada por PU1–PU3** | 13.1 |
+| O14 | Registrador: revincular la entrada de alguien que cambió de celular · **reemplazada por PU3 y PU5** | 13.1 |
 | O12 | Organizador: pausa de emergencia | 8.9 |
 | I1 | Interno: bandeja de solicitudes del plan Comunidad | 12.1 |
 | E1 | Página no encontrada / link inválido | 12.2 |

@@ -52,7 +52,7 @@
 | D41 | Conectividad en el piloto | ✅ Vigente | El piloto **asume que hay internet** en el lugar. No se construye modo sin conexión; la señal se verifica en el ensayo | 2026-11-13 |
 | D42 | Navegadores soportados | ✅ Vigente | Chrome y Edge 111+, Safari e iOS 16.4+, Samsung Internet 22+ y Firefox 128+. Fuera: navegadores dentro de otras apps (D33) e Internet Explorer. Ver [Frontend §14](09-desarrollo/03-frontend.md#14-navegadores-soportados-d42) | 2026-11-13 |
 | D43 | Sesiones y segundo factor | ✅ Vigente | Segundo factor obligatorio en la consola de plataforma y para dueño y coorganizadores; opcional para registradores y financiadores. Sesión del asistente hasta 30 días después del cierre (solo lectura desde el cierre). Panel: 12 h sin uso. Consola: segundo factor cada 8 h. Ver [Flujos §2.2](01-producto/07-flujos-v1.md#22-inicio-de-sesión-con-contraseña-d26) | 2026-11-13 |
-| D44 | Copias de seguridad | ⏳ Pendiente | **No se implementan por ahora.** Se definen más adelante (cuántos datos se pueden perder y en cuánto tiempo se vuelve a estar en línea) | — |
+| D44 | Copias de seguridad | ❌ Reemplazada por D56 | No se implementaban por ahora | — |
 | D45 | Licencia del código | ✅ Vigente | **Apache-2.0** para todo el repositorio. Ver [LICENSE](../LICENSE) | 2026-11-13 |
 | D46 | Puntos por check-in | ✅ Vigente | Cada evento configura **puntos de bienvenida** que se suman en el mismo check-in (0 por defecto). No hace falta un QR aparte: el check-in ya lo hace un registrador. Un reto de llegada con QR sigue siendo posible como cualquier otro reto | 2026-11-13 |
 | D47 | Aislamiento entre organizaciones | ✅ Vigente | Además del filtro en el código, **Row Level Security** en PostgreSQL desde el piloto: sin organización definida, una consulta no devuelve nada. El trabajador y la consola usan un rol aparte | 2026-11-13 |
@@ -64,6 +64,7 @@
 | D53 | Intervalo de anclaje | ✅ Vigente | **5 minutos por defecto, configurable por evento** (1, 2, 5, 10, 15 o 30 min) por un administrador de Pasitos. Cada ciclo ancla **un solo lote con todos los movimientos del evento**, en una sola transacción, sin importar cuántas salas o stands tenga. Ajusta D22 | 2026-11-13 |
 | D54 | Antivirus de archivos | ✅ Vigente | **Sin antivirus (ClamAV) en el piloto.** Alcanzan la validación propia y el reencodeo, porque solo se aceptan imágenes (se reencodean) y CSV (se leen como texto y se borran). Se suma un antivirus si se aceptan PDF, documentos o archivos comprimidos. Ajusta D48 | 2026-11-13 |
 | D55 | Proveedor de correo | ✅ Vigente | **Resend**, con dominio verificado (SPF, DKIM y DMARC) y rebotes por *webhook* | 2026-11-13 |
+| D56 | Copias de seguridad | ✅ Vigente | Copia de la base **cada noche, antes de cada migración y al cerrar un evento**, **cifrada** antes de salir del VPS y guardada en **Google Drive**. Se prueba una restauración antes del ensayo general. Reemplaza a D44 | 2026-11-13 |
 
 ## Notas
 

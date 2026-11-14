@@ -63,7 +63,7 @@ En un volumen del VPS:
 - **Nombres aleatorios** (el `id` del archivo). El nombre original solo se guarda en la base, limpio, como dato.
 - **Caddy sirve** `/archivos/publicos/...` como archivos estáticos con `Content-Type` fijo por extensión, `X-Content-Type-Options: nosniff` y caché larga. Cloudflare los cachea.
 - Los archivos de un evento **Privado** se sirven a través del API, que comprueba la sesión, y no como estáticos.
-- **Sin copias de seguridad por ahora** (D44): si el disco del VPS falla, se pierden también las imágenes. Conviene tenerlo en cuenta al revisar D44.
+- **Copias de seguridad** (D56): las imágenes se copian cifradas a Google Drive junto con la base.
 
 ## 4. Tabla `archivos`
 

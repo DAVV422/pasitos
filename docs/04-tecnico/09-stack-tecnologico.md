@@ -180,7 +180,7 @@ flowchart LR
 | Contenedores | Docker Compose: `caddy`, `api`, `trabajador`, `sitio`, `postgres` | **Sin staging en el piloto** (D51): cada PR se prueba en un entorno temporal del CI, y producción tiene una organización demo (D52) |
 | Proxy y HTTPS | Caddy | Certificados automáticos, HTTP/2 y 3, y archivos precomprimidos |
 | CDN y DNS | Cloudflare (plan gratuito) | Cachea los archivos estáticos y protege de ataques |
-| Copias de seguridad | ⏳ **No se implementan por ahora** (D44). Opción cuando se definan: `pg_dump` cada noche + respaldo continuo con WAL (`pgBackRest`) hacia el almacenamiento de objetos | Se definen más adelante |
+| Copias de seguridad | `pg_dump` cada noche, antes de cada migración y al cerrar un evento, **cifrado con `age`** y subido a **Google Drive** con `rclone` (D56) | Restauración probada antes del ensayo |
 | Monitoreo | Sentry (errores, nube gratuita o GlitchTip propio) + un monitor de disponibilidad externo gratuito + logs de `pino` | Alertas por errores, anclajes atrasados, disco y copias de seguridad fallidas |
 | CI/CD | GitHub Actions: tests y build → imágenes en GHCR → despliegue por SSH con `docker compose pull && up` | Producción con aprobación manual y copia de la base antes de cada migración |
 | Secretos | `sops` + `age`, nunca en el repositorio | `.env` en `.gitignore` |
