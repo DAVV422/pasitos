@@ -181,12 +181,12 @@ flowchart LR
 | Proxy y HTTPS | Caddy | Certificados automáticos, HTTP/2 y 3, y archivos precomprimidos |
 | CDN y DNS | Cloudflare (plan gratuito) | Cachea los archivos estáticos y protege de ataques |
 | Copias de seguridad | `pg_dump` cada noche, antes de cada migración y al cerrar un evento, **cifrado con `age`** y subido a **Google Drive** con `rclone` (D56) | Restauración probada antes del ensayo |
-| Monitoreo | Sentry (errores, nube gratuita o GlitchTip propio) + un monitor de disponibilidad externo gratuito + logs de `pino` | Alertas por errores, anclajes atrasados, disco y copias de seguridad fallidas |
+| Monitoreo | **Sentry**, plan gratuito en su nube (errores y tiempos, D58) + un monitor de disponibilidad externo gratuito + logs de `pino` | Alertas por errores, anclajes atrasados, disco y copias de seguridad fallidas |
 | CI/CD | GitHub Actions: tests y build → imágenes en GHCR → despliegue por SSH con `docker compose pull && up` | Producción con aprobación manual y copia de la base antes de cada migración |
 | Secretos | `sops` + `age`, nunca en el repositorio | `.env` en `.gitignore` |
 | Seguridad del VPS | SSH solo con llave y **solo por Tailscale**, firewall (80/443 desde Cloudflare), actualizaciones automáticas y `fail2ban` | |
 
-**Costo estimado del piloto** 🔍: VPS de 8 GB USD 30–50, correo USD 0–20, Google Maps dentro del crédito mensual gratuito, dominio y Sentry en sus planes gratuitos. Total: **unos USD 30–70 al mes**.
+**Costo estimado del piloto** 🔍: VPS de 8 GB USD 30–50, correo USD 0 (Resend gratuito, D57), Google Maps dentro del crédito mensual gratuito, dominio y Sentry en sus planes gratuitos. Total: **unos USD 30–70 al mes**.
 
 ## 7. Estructura del repositorio
 

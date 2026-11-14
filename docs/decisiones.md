@@ -65,6 +65,8 @@
 | D54 | Antivirus de archivos | ✅ Vigente | **Sin antivirus (ClamAV) en el piloto.** Alcanzan la validación propia y el reencodeo, porque solo se aceptan imágenes (se reencodean) y CSV (se leen como texto y se borran). Se suma un antivirus si se aceptan PDF, documentos o archivos comprimidos. Ajusta D48 | 2026-11-13 |
 | D55 | Proveedor de correo | ✅ Vigente | **Resend**, con dominio verificado (SPF, DKIM y DMARC) y rebotes por *webhook* | 2026-11-13 |
 | D56 | Copias de seguridad | ✅ Vigente | Copia de la base **cada noche, antes de cada migración y al cerrar un evento**, **cifrada** antes de salir del VPS y guardada en **Google Drive**. Se prueba una restauración antes del ensayo general. Reemplaza a D44 | 2026-11-13 |
+| D57 | Tope diario de correos | ✅ Vigente | **80 correos por día** en total (plan gratuito de Resend), con una cola por prioridad: seguridad (con reserva propia), equipo, aviso de registro en la puerta e invitaciones. Las invitaciones se reparten en varios días; en el piloto, la mayoría de los asistentes entra por registro en la puerta | 2026-11-13 |
+| D58 | Monitoreo de errores | ✅ Vigente | **Sentry**, plan gratuito en su nube, sin datos personales (se filtran nombre, correo, IP y tokens) | 2026-11-13 |
 
 ## Notas
 

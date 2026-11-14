@@ -65,7 +65,7 @@ flowchart LR
 | Bitácora | Tabla de PostgreSQL donde solo se agregan filas | Acciones administrativas ([Flujos §4.4](../01-producto/07-flujos-v1.md#44-bitácora)) |
 | Sellador | Trabajador con pg-boss + `@stellar/stellar-sdk` | Calcular la huella de cada lote, anclarla y publicar el lote |
 | Base de datos | PostgreSQL + Drizzle ORM | Todo lo off-chain. Las transacciones de la base garantizan que saldo, stock y movimiento cambien juntos |
-| Archivos | Almacenamiento de objetos + CDN | Lotes públicos, logos, mapas, fotos del catálogo |
+| Archivos | Volumen del VPS + Cloudflare (D48) | Lotes públicos, logos, planos, fotos del catálogo |
 | Correo | Proveedor transaccional (SPF, DKIM, DMARC) | Códigos, invitaciones, confirmaciones, avisos |
 | Llaves del servidor | En el VPS: cifradas con `sops` + `age`; KMS o HSM más adelante | La llave del operador que ancla nunca está en el repositorio ni en los logs, y su cuenta tiene poco XLM ([Stack §5](09-stack-tecnologico.md#llaves-en-un-vps-ajuste-a-d22)) |
 | Contrato | Soroban (Rust) · ⏳ | Requisitos en [Libro y anclaje §8](07-libro-y-anclaje.md#8-qué-tendrá-que-hacer-el-contrato) |

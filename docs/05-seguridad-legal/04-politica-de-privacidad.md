@@ -103,7 +103,7 @@ Para que nadie pueda inflar los números del evento, Pasitos guarda cada 5 minut
   - Red de distribución y protección del sitio: Cloudflare. Todo el tráfico pasa por sus servidores, que ven tu dirección IP para entregar el contenido y frenar ataques. También lo usamos para comprobar que quien completa el formulario de contacto no es un robot.
   - Copias de seguridad: Google Drive. Las copias se cifran antes de subirse: Google no puede leer su contenido.
   - Envío de correos: Resend. [Completar: región donde Resend guarda los datos].
-  - Monitoreo de errores: [Completar: proveedor de monitoreo].
+  - Monitoreo de errores: Sentry. Recibe los errores técnicos de la app, sin tu nombre, tu correo ni tu dirección IP.
   - Mapas: Google Maps. La app muestra una imagen del mapa que genera Pasitos, así que Google no recibe tus datos; solo si tocas *Cómo llegar* se abre Google Maps, con sus propias condiciones.
   - [Completar: indicar si algún proveedor guarda datos fuera de Bolivia].
 - **Autoridades,** solo si una ley u orden judicial lo exige.

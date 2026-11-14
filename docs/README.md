@@ -21,7 +21,7 @@ Pasitos convierte la participación en un evento en **puntos que solo valen dent
 ### Transversales
 | Documento | Para qué sirve | Estado |
 |---|---|---|
-| [Decisiones](decisiones.md) | Registro único de decisiones (D1…D56) | Vigente · D16 y D17 ⏳ |
+| [Decisiones](decisiones.md) | Registro único de decisiones (D1…D58) | Vigente · D16 y D17 ⏳ |
 | [Glosario](glosario.md) | Términos de producto, negocio y blockchain | Vigente |
 
 ### 01 · Producto

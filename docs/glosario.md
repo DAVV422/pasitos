@@ -16,6 +16,7 @@
 | **QR de asistente** | QR de un solo uso, que vence en 2 min, que genera el registrador en la puerta para vincular el celular de un invitado (D33) |
 | **Coorganizador** | Rol que configura el evento junto al dueño (ver [Flujos §2.4](01-producto/07-flujos-v1.md#24-roles-y-permisos-d19)) |
 | **Dispositivo conectado** | Tablet o celular de una sala o mesa, conectado con un QR o un enlace de un solo uso |
+| **Evento demo** | Evento con datos inventados de la organización demo, para mostrar Pasitos. No sale en *Eventos* ni en las métricas (D52) |
 | **Estadísticas avanzadas** | Paquete pago con análisis por hora, embudos, reportes con marca, etc. |
 | **Financiador** | Quien pone dinero o recursos en un evento: sponsor, fundación, ecosistema, universidad |
 | **Libro de movimientos** | Registro de todos los puntos del evento (ganados, canjeados, ajustados, vencidos). Solo se agregan líneas |
@@ -24,6 +25,7 @@
 | **MVP** | Producto mínimo viable: la primera versión que funciona |
 | **Plan Comunidad / Programa / Feria** | Los tres planes de Pasitos (ver modelo de ingresos *(interno)*) |
 | **Puntos (PTS)** | Fichas del evento: se ganan con retos, se canjean dentro del evento y vencen al cierre |
+| **Puntos de bienvenida** | Puntos que el evento puede dar al hacer el check-in en la puerta. Por defecto, 0 (D46) |
 | **QR rotativo** | Código que cambia cada 30 segundos para evitar fotos compartidas. Hay otros modos: de un solo uso, bajo demanda y usos limitados |
 | **Reporte verificable** | Informe cuyos números cualquiera puede comprobar en la blockchain |
 | **Reto** | Acción que da puntos: ir a una charla, quedarse al cierre, etc. |
