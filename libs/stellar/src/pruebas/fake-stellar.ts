@@ -1,7 +1,9 @@
 import { buildGenesis, buildHuella, equalBytes, sha256, toHex } from '@pasitos/firmas';
 import { ErrorContratoStellar, StellarNoDisponible } from '../errores';
 import type {
+  CierreContrato,
   EstadoContrato,
+  EventoContrato,
   LlamadaContrato,
   ResultadoTx,
   StellarPort,
@@ -11,7 +13,9 @@ import type {
 
 interface ContratoEnMemoria {
   estado: EstadoContrato;
+  evento: EventoContrato;
   idHash: Uint8Array;
+  cierre: CierreContrato | null;
   ultimo: UltimoLoteContrato;
   retos: Map<number, { tope: number; entregados: number }>;
   pantallas: Map<number, { llave: Uint8Array; registradaAt: Date }>;
@@ -34,6 +38,7 @@ const E = {
 const clonar = (c: ContratoEnMemoria): ContratoEnMemoria => ({
   ...c,
   ultimo: { ...c.ultimo },
+  cierre: c.cierre,
   retos: new Map([...c.retos].map(([k, v]) => [k, { ...v }])),
   pantallas: new Map(c.pantallas),
 });
@@ -54,6 +59,11 @@ export class FakeStellar implements StellarPort {
   noIncluir = false;
   /** Reloj de la red (para la validez de las transacciones). */
   ahora: () => Date = () => new Date();
+  /** Comisión que devuelve la simulación; la cobrada es el 90 % (HU-104). */
+  comisionEstimada = 100_000n;
+  /** Saldo del operador en stroops. Friendbot le suma 10 000 XLM. */
+  saldo = 10_000_000_000n;
+  fondosPedidos = 0;
 
   readonly contratos = new Map<string, ContratoEnMemoria>();
   readonly enviadas: LlamadaContrato[] = [];
@@ -74,8 +84,14 @@ export class FakeStellar implements StellarPort {
     this.preparadas.set(hash, llamada);
     return {
       hash,
-      comisionEstimadaStroops: 100_000n,
-      recursos: { prueba: true },
+      comisionEstimadaStroops: this.comisionEstimada,
+      recursos: {
+        instrucciones: 1_000_000,
+        bytesLeidos: 1_000,
+        bytesEscritos: 200,
+        comisionRecursosStroops: String(this.comisionEstimada - 100n),
+        entradasCreadas: llamada.operacion === 'anchor' ? 0 : 1,
+      },
       validaHasta: new Date(this.ahora().getTime() + 60_000),
       xdr: hash,
     };
@@ -97,11 +113,13 @@ export class FakeStellar implements StellarPort {
     try {
       const valor = await this.apply(llamada, false);
       this.enviadas.push(llamada);
+      const cobrada = (tx.comisionEstimadaStroops * 9n) / 10n;
+      this.saldo -= cobrada;
       this.resultados.set(tx.hash, {
         estado: 'incluida',
         ledger: this.ledger,
         fecha: this.ahora(),
-        comisionStroops: 90_000n,
+        comisionStroops: cobrada,
         valor,
         envelopeXdr: `envelope-${tx.hash}`,
         resultXdr: `result-${tx.hash}`,
@@ -111,6 +129,7 @@ export class FakeStellar implements StellarPort {
       if (!(error instanceof ErrorContratoStellar)) {
         throw error;
       }
+      this.saldo -= 50_000n;
       this.resultados.set(tx.hash, {
         estado: 'fallida',
         ledger: this.ledger,
@@ -148,12 +167,31 @@ export class FakeStellar implements StellarPort {
 
   async getPantalla(contratoId: string, numero: number) {
     const pantalla = this.getContrato(contratoId).pantallas.get(numero);
-    return pantalla ? { registradaAt: pantalla.registradaAt } : null;
+    return pantalla ? { llavePublica: pantalla.llave, registradaAt: pantalla.registradaAt } : null;
+  }
+
+  async getEventoContrato(contratoId: string): Promise<EventoContrato> {
+    return { ...this.getContrato(contratoId).evento };
+  }
+
+  async getCierre(contratoId: string): Promise<CierreContrato | null> {
+    return this.getContrato(contratoId).cierre;
   }
 
   async getSaldoOperador(): Promise<bigint> {
     this.assertDisponible();
-    return 10_000_000_000n;
+    return this.saldo;
+  }
+
+  async requestFondos(): Promise<void> {
+    this.assertDisponible();
+    this.fondosPedidos++;
+    this.saldo += 100_000_000_000n;
+  }
+
+  /** Para los tests: olvida una transacción, como el RPC cuando pasa su ventana de historia. */
+  forgetResultado(hash: string): void {
+    this.resultados.delete(hash);
   }
 
   /** Para los tests: baja el tope de un reto en la red (provoca un lote rechazado). */
@@ -204,6 +242,8 @@ export class FakeStellar implements StellarPort {
       if (!simular) {
         this.contratos.set(id, {
           estado: 'activo',
+          evento: { ...llamada.evento },
+          cierre: null,
           idHash: llamada.evento.idHash,
           ultimo: { n: 0, huella: await buildGenesis(llamada.evento.idHash) },
           retos: new Map(llamada.retos.map(([n, tope]) => [n, { tope, entregados: 0 }])),
@@ -213,7 +253,13 @@ export class FakeStellar implements StellarPort {
       return id;
     }
 
+    if (llamada.operacion === 'upload_wasm') {
+      return sha256(llamada.wasm);
+    }
     const original = this.getContrato(llamada.contratoId);
+    if (llamada.operacion === 'extend_ttl') {
+      return null;
+    }
     const c = simular ? clonar(original) : original;
     if (c.estado === 'cerrado') fallar(E.EventoCerrado);
 
@@ -268,6 +314,12 @@ export class FakeStellar implements StellarPort {
         if (llamada.nFinal !== c.ultimo.n) fallar(E.LoteFueraDeOrden);
         if (!equalBytes(llamada.huellaFinal, c.ultimo.huella)) fallar(E.HuellaAnteriorNoCoincide);
         c.estado = 'cerrado';
+        c.cierre = {
+          nFinal: llamada.nFinal,
+          huellaFinal: llamada.huellaFinal,
+          totales: llamada.totales,
+          cerradoAt: Math.floor(this.ahora().getTime() / 1000),
+        };
         return null;
     }
   }

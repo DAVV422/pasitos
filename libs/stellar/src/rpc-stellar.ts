@@ -5,6 +5,7 @@ import {
   Keypair,
   Networks,
   Operation,
+  SorobanDataBuilder,
   StrKey,
   TransactionBuilder,
   hash,
@@ -15,9 +16,12 @@ import {
 } from '@stellar/stellar-sdk';
 import { ErrorContratoStellar, StellarNoDisponible, findCodigoErrorContrato } from './errores';
 import type {
+  CierreContrato,
   EstadoContrato,
+  EventoContrato,
   LlamadaContrato,
   ParNumerico,
+  RecursosTx,
   RedStellar,
   ResultadoTx,
   StellarPort,
@@ -58,6 +62,20 @@ const struct = (campos: Record<string, xdr.ScVal>) =>
           new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol(clave), val: campos[clave] as xdr.ScVal }),
       ),
   );
+
+/** Recursos que pide la transacción según la simulación (HU-104 §1). */
+function readRecursos(simulacion: rpc.Api.SimulateTransactionSuccessResponse): RecursosTx {
+  const recursos = simulacion.transactionData.build().resources;
+  return {
+    instrucciones: recursos.instructions,
+    bytesLeidos: recursos.diskReadBytes,
+    bytesEscritos: recursos.writeBytes,
+    comisionRecursosStroops: simulacion.minResourceFee,
+    entradasCreadas: (simulacion.stateChanges ?? []).filter(
+      (cambio) => cambio.before === null && cambio.after !== null,
+    ).length,
+  };
+}
 
 /** Adaptador de Stellar con el RPC (Soroban RPC) y @stellar/stellar-sdk. Lo usa solo el trabajador. */
 export class RpcStellar implements StellarPort {
@@ -100,10 +118,19 @@ export class RpcStellar implements StellarPort {
   async prepare(llamada: LlamadaContrato): Promise<TransaccionFirmada> {
     const operacion = this.buildOperacion(llamada);
     const cuenta = await this.call(() => this.servidor.getAccount(this.operador));
-    const tx = new TransactionBuilder(cuenta, { fee: BASE_FEE, networkPassphrase: this.passphrase })
+    const constructor = new TransactionBuilder(cuenta, {
+      fee: BASE_FEE,
+      networkPassphrase: this.passphrase,
+    })
       .addOperation(operacion)
-      .setTimeout(VALIDEZ_SEGUNDOS)
-      .build();
+      .setTimeout(VALIDEZ_SEGUNDOS);
+    if (llamada.operacion === 'extend_ttl') {
+      // Extender el TTL no llama al contrato: hay que decir qué datos se extienden.
+      constructor.setSorobanData(
+        new SorobanDataBuilder().setReadOnly(this.buildClavesContrato(llamada)).build(),
+      );
+    }
+    const tx = constructor.build();
     const simulacion = await this.call(() => this.servidor.simulateTransaction(tx));
     if (rpc.Api.isSimulationError(simulacion)) {
       throw this.toError(simulacion.error);
@@ -114,7 +141,7 @@ export class RpcStellar implements StellarPort {
     return {
       hash: Buffer.from(armada.hash()).toString('hex'),
       comisionEstimadaStroops: BigInt(armada.fee),
-      recursos: { minResourceFee: simulacion.minResourceFee },
+      recursos: readRecursos(simulacion),
       validaHasta: new Date(maxTime * 1000),
       xdr: armada.toXDR(),
     };
@@ -190,13 +217,101 @@ export class RpcStellar implements StellarPort {
 
   async getPantalla(contratoId: string, numero: number) {
     const valor = (await this.read(contratoId, 'get_pantalla', [u32(numero)])) as
-      { registrada_at: bigint } | undefined;
-    return valor ? { registradaAt: new Date(Number(valor.registrada_at) * 1000) } : null;
+      { llave_publica: Buffer; registrada_at: bigint } | undefined;
+    return valor
+      ? {
+          llavePublica: new Uint8Array(valor.llave_publica),
+          registradaAt: new Date(Number(valor.registrada_at) * 1000),
+        }
+      : null;
+  }
+
+  async getEventoContrato(contratoId: string): Promise<EventoContrato> {
+    const valor = (await this.read(contratoId, 'get_evento')) as {
+      id_hash: Buffer;
+      inicio: bigint;
+      fin: bigint;
+    };
+    return {
+      idHash: new Uint8Array(valor.id_hash),
+      inicio: Number(valor.inicio),
+      fin: Number(valor.fin),
+    };
+  }
+
+  async getCierre(contratoId: string): Promise<CierreContrato | null> {
+    const valor = (await this.read(contratoId, 'get_cierre')) as
+      | {
+          n_final: number;
+          huella_final: Buffer;
+          cerrado_at: bigint;
+          totales: {
+            participaciones: [number, number][];
+            ganados: bigint;
+            canjeados: bigint;
+            ajustados: bigint;
+            vencidos: bigint;
+          };
+        }
+      | undefined;
+    if (!valor) {
+      return null;
+    }
+    return {
+      nFinal: Number(valor.n_final),
+      huellaFinal: new Uint8Array(valor.huella_final),
+      cerradoAt: Number(valor.cerrado_at),
+      totales: {
+        participaciones: valor.totales.participaciones.map(
+          ([numero, total]) => [Number(numero), Number(total)] as const,
+        ),
+        ganados: BigInt(valor.totales.ganados),
+        canjeados: BigInt(valor.totales.canjeados),
+        ajustados: BigInt(valor.totales.ajustados),
+        vencidos: BigInt(valor.totales.vencidos),
+      },
+    };
   }
 
   async getSaldoOperador(): Promise<bigint> {
     const cuenta = await this.call(() => this.servidor.getAccountEntry(this.operador));
     return BigInt(cuenta.balance);
+  }
+
+  async requestFondos(): Promise<void> {
+    await this.call(() => this.servidor.fundAddress(this.operador));
+  }
+
+  /** La instancia del contrato y su código: lo que vive mientras el contrato exista. */
+  private buildClavesContrato(
+    llamada: Extract<LlamadaContrato, { operacion: 'extend_ttl' }>,
+  ): xdr.LedgerKey[] {
+    const direccion = Address.fromString(llamada.contratoId).toScAddress();
+    // Clave::Reto(n) y Clave::Pantalla(n) del contrato: un enum de Soroban es [símbolo, valor].
+    const persistente = (variante: string, numero: number) =>
+      xdr.LedgerKey.contractData(
+        new xdr.LedgerKeyContractData({
+          contract: direccion,
+          key: xdr.ScVal.scvVec([xdr.ScVal.scvSymbol(variante), u32(numero)]),
+          durability: xdr.ContractDataDurability.persistent,
+        }),
+      );
+    const claves = [
+      new Contract(llamada.contratoId).getFootprint(),
+      ...llamada.retos.map((n) => persistente('Reto', n)),
+      ...llamada.pantallas.map((n) => persistente('Pantalla', n)),
+    ];
+    if (llamada.incluirCodigo) {
+      if (!this.wasmHash) {
+        throw new Error('Falta STELLAR_WASM_HASH para extender el código del contrato');
+      }
+      claves.push(
+        xdr.LedgerKey.contractCode(
+          new xdr.LedgerKeyContractCode({ hash: Buffer.from(this.wasmHash, 'hex') }),
+        ),
+      );
+    }
+    return claves;
   }
 
   /** Llama a un getter simulando: no se firma ni se paga. */
@@ -238,6 +353,12 @@ export class RpcStellar implements StellarPort {
           pares(llamada.retos),
         ],
       });
+    }
+    if (llamada.operacion === 'upload_wasm') {
+      return Operation.uploadContractWasm({ wasm: Buffer.from(llamada.wasm) });
+    }
+    if (llamada.operacion === 'extend_ttl') {
+      return Operation.extendFootprintTtl({ extendTo: llamada.ledgers });
     }
     const contrato = new Contract(llamada.contratoId);
     switch (llamada.operacion) {

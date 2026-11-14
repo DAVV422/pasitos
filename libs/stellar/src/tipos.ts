@@ -57,16 +57,56 @@ export type LlamadaContrato =
       readonly nFinal: number;
       readonly huellaFinal: Uint8Array;
       readonly totales: TotalesCierre;
+    }
+  | {
+      /** Instalar una versión del WASM (una vez por versión, HU-104 §5). */
+      readonly operacion: 'upload_wasm';
+      readonly wasm: Uint8Array;
+    }
+  | {
+      /** Extender el tiempo de vida de los datos del contrato (Contrato §2.1). */
+      readonly operacion: 'extend_ttl';
+      readonly contratoId: string;
+      /** Hasta cuántos ledgers desde el actual. */
+      readonly ledgers: number;
+      /** Los retos y pantallas viven aparte de la instancia (almacenamiento persistente), cada uno con su TTL. */
+      readonly retos: readonly number[];
+      readonly pantallas: readonly number[];
+      /** El código (WASM) es uno para todos los eventos: se extiende aparte, no con cada contrato. */
+      readonly incluirCodigo: boolean;
     };
 
-export type OperacionContrato = LlamadaContrato['operacion'];
+/** Toda operación que firma el operador; es la columna `operacion` de `transacciones_stellar` (HU-104 §1). */
+export type OperacionStellar = LlamadaContrato['operacion'];
+
+export const OPERACIONES_STELLAR = [
+  'upload_wasm',
+  'deploy',
+  'add_retos',
+  'raise_tope',
+  'add_pantallas',
+  'anchor',
+  'close',
+  'extend_ttl',
+] as const satisfies readonly OperacionStellar[];
+
+/** Recursos de la simulación (HU-104 §1). Sin datos del evento. */
+export interface RecursosTx {
+  readonly instrucciones: number;
+  readonly bytesLeidos: number;
+  readonly bytesEscritos: number;
+  /** Parte de recursos de la comisión (sin la base de 100 stroops). */
+  readonly comisionRecursosStroops: string;
+  /** Datos nuevos que la transacción crea en la red (pagan rent). */
+  readonly entradasCreadas: number;
+}
 
 /** Transacción simulada, armada y firmada; todavía no enviada. */
 export interface TransaccionFirmada {
   /** Hash de la transacción (hex), conocido antes de enviarla. */
   readonly hash: string;
   readonly comisionEstimadaStroops: bigint;
-  readonly recursos: Readonly<Record<string, unknown>>;
+  readonly recursos: RecursosTx;
   /** Hasta cuándo la red la acepta (validez de 60 s). Después, se sabe que no entra. */
   readonly validaHasta: Date;
   /** XDR firmado (lo usa el adaptador para enviar). */
@@ -98,6 +138,19 @@ export interface UltimoLoteContrato {
   readonly huella: Uint8Array;
 }
 
+export interface EventoContrato {
+  readonly idHash: Uint8Array;
+  readonly inicio: number;
+  readonly fin: number;
+}
+
+export interface CierreContrato {
+  readonly nFinal: number;
+  readonly huellaFinal: Uint8Array;
+  readonly totales: TotalesCierre;
+  readonly cerradoAt: number;
+}
+
 export interface StellarPort {
   readonly red: RedStellar;
   /** Dirección pública del operador. */
@@ -111,6 +164,14 @@ export interface StellarPort {
   getUltimo(contratoId: string): Promise<UltimoLoteContrato>;
   getEstado(contratoId: string): Promise<EstadoContrato>;
   getReto(contratoId: string, numero: number): Promise<{ tope: number; entregados: number } | null>;
-  getPantalla(contratoId: string, numero: number): Promise<{ registradaAt: Date } | null>;
+  getPantalla(
+    contratoId: string,
+    numero: number,
+  ): Promise<{ llavePublica: Uint8Array; registradaAt: Date } | null>;
+  getEventoContrato(contratoId: string): Promise<EventoContrato>;
+  getCierre(contratoId: string): Promise<CierreContrato | null>;
+  /** Saldo del operador en stroops. */
   getSaldoOperador(): Promise<bigint>;
+  /** Pide fondos a Friendbot para el operador. Solo existe en testnet y en la red local. */
+  requestFondos(): Promise<void>;
 }
