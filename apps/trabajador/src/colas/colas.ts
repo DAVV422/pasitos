@@ -16,6 +16,7 @@ export const TRABAJOS_STELLAR = [
   'sync-retos',
   'register-pantallas',
   'close-contrato',
+  'extend-contrato',
 ] as const;
 export type NombreTrabajoStellar = (typeof TRABAJOS_STELLAR)[number];
 
@@ -145,5 +146,7 @@ export async function runTrabajoStellar(
       return contrato.registerPantallas(eventoId);
     case 'close-contrato':
       return contrato.closeContrato(eventoId);
+    case 'extend-contrato':
+      return contrato.extendContrato(eventoId);
   }
 }

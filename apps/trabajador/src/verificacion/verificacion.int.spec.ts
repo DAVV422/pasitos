@@ -121,6 +121,40 @@ describe('intervalo, evidencia y verificación', () => {
     expect(contenido).not.toMatch(/@example\.com|Asistente de prueba/i);
   });
 
+  it('D59: al cerrar un evento real extiende 6 meses sus datos en la red; uno de prueba, no', async () => {
+    const entorno = createEntorno(base, { archivosDir });
+    const { eventoId, contratoId } = await createEventoConContrato(base, entorno.contrato);
+    await base.sistema.db.update(eventos).set({ tipo: 'real' }).where(eq(eventos.id, eventoId));
+    await entorno.sellador.processEvento(eventoId, { forzar: true });
+    await entorno.contrato.closeContrato(eventoId);
+
+    const extensiones = entorno.stellar.enviadas.filter((l) => l.operacion === 'extend_ttl');
+    expect(extensiones).toEqual([
+      expect.objectContaining({
+        contratoId,
+        ledgers: 3_110_000,
+        incluirCodigo: true,
+        retos: await entorno.repositorio.listNumerosRetosRegistrados(eventoId),
+      }),
+    ]);
+    const evento = await entorno.repositorio.getEvento(eventoId);
+    const dias = ((evento?.enRedHasta?.getTime() ?? 0) - Date.now()) / 86_400_000;
+    expect(dias).toBeGreaterThan(179);
+    expect(dias).toBeLessThan(181);
+    // La extensión está en la evidencia y en el costo, y cerrar de nuevo no la repite.
+    const [registrada] = (await entorno.transacciones.listIncluidas(eventoId)).filter(
+      (t) => t.operacion === 'extend_ttl',
+    );
+    expect(registrada).toBeDefined();
+    await entorno.contrato.closeContrato(eventoId);
+    expect(entorno.stellar.enviadas.filter((l) => l.operacion === 'extend_ttl')).toHaveLength(1);
+    expect(entorno.alertas.codigos()).not.toContain('COMISION_SOBRE_TOPE');
+
+    const prueba = await createEventoCerrado();
+    expect(prueba.stellar.enviadas.some((l) => l.operacion === 'extend_ttl')).toBe(false);
+    expect((await prueba.repositorio.getEvento(prueba.eventoId))?.enRedHasta).toBeNull();
+  });
+
   it('si el RPC ya no tiene una transacción, la evidencia sale incompleta con la lista de las que faltan', async () => {
     const { eventoId, stellar, transacciones, evidencia: servicio } = await createEventoCerrado();
     const [primera] = await transacciones.listIncluidas(eventoId);

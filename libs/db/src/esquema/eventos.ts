@@ -34,6 +34,8 @@ export const eventos = pgTable(
     ultimoNumeroPantalla: integer('ultimo_numero_pantalla').notNull().default(0),
     // SHA-256 (hex) de evidencia-stellar.json, guardado al cerrar el contrato (HU-105 §2).
     evidenciaSha256: text('evidencia_sha256'),
+    // Hasta cuándo los datos del contrato quedan consultables en la red sin restaurarlos (D59).
+    enRedHasta: timestamp('en_red_hasta', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

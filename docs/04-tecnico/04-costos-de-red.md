@@ -54,7 +54,7 @@ Medido el **2026-11-14** en testnet con `pnpm stellar:medir --red testnet` (HU-1
 **Qué se aprende:**
 - **Lo caro es crear datos, no anclar.** Un `anchor` cuesta entre 0,0006 y 0,009 XLM. Crear el contrato y registrar las pantallas cuestan de 15 a 50 veces más porque pagan el rent de cada dato nuevo.
 - **El costo de `anchor` crece con los retos que tuvieron movimientos en el lote**, no con los asistentes: con 50 retos escribe unos 8 KB.
-- **Mantener un contrato cerrado** con todos sus datos cuesta ~1,1 XLM cada 6 meses. Sin extenderlo, sus datos se archivan unos 31 días después del último uso; por eso la evidencia del evento se guarda aparte al cerrar (HU-105).
+- **Mantener un contrato cerrado** con todos sus datos cuesta ~1,1 XLM cada 6 meses. Sin extenderlo, sus datos se archivan unos 31 días después del último uso. Los eventos reales se extienden 6 meses al cerrar (D59); además, la evidencia del evento se guarda aparte (HU-105).
 - El valor del código sale de restar la extensión de la instancia sola (0,26 XLM) a la primera medición de instancia y código juntos (25,21 XLM).
 
 **Topes del sellador (HU-104 §2), con esta medición:** `STELLAR_COMISION_MAX_STROOPS` = 1 000 000 para `anchor` (unas 10 veces el más caro medido) y `STELLAR_COMISION_MAX_PREPARACION_STROOPS` = 10 000 000 para crear el contrato, sumar retos y registrar pantallas (2,3 veces la instancia con 50 retos). El cierre no tiene tope: se envía igual y alerta.
@@ -67,7 +67,7 @@ Medido el **2026-11-14** en testnet con `pnpm stellar:medir --red testnet` (HU-1
 | 120 `anchor` | 0,25 |
 | Cierre | 0,03 |
 | **Total del evento** | **~0,49** (unos USD 0,15 con el XLM a USD 0,30) |
-| Mantenerlo 6 meses más | +1,11 |
+| Mantenerlo 6 meses más (D59, solo eventos reales) | +1,11 |
 
 Queda dentro del escenario bajo de §2. La configuración de comisiones de testnet suele seguir a la de mainnet, pero **se vuelve a medir antes de pasar a mainnet**.
 

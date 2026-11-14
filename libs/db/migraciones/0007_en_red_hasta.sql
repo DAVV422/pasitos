@@ -1,0 +1,1 @@
+ALTER TABLE "eventos" ADD COLUMN "en_red_hasta" timestamp with time zone;

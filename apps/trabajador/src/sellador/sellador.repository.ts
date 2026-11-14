@@ -83,6 +83,8 @@ export class SelladorRepository {
         inicioAt: eventos.inicioAt,
         finAt: eventos.finAt,
         evidenciaSha256: eventos.evidenciaSha256,
+        tipo: eventos.tipo,
+        enRedHasta: eventos.enRedHasta,
       })
       .from(eventos)
       .where(eq(eventos.id, eventoId));
@@ -108,6 +110,13 @@ export class SelladorRepository {
     await this.db
       .update(eventos)
       .set({ evidenciaSha256: sha256, updatedAt: sql`now()` })
+      .where(eq(eventos.id, eventoId));
+  }
+
+  async setEnRedHasta(eventoId: string, hasta: Date): Promise<void> {
+    await this.db
+      .update(eventos)
+      .set({ enRedHasta: hasta, updatedAt: sql`now()` })
       .where(eq(eventos.id, eventoId));
   }
 

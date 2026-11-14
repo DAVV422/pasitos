@@ -8,6 +8,7 @@ Aplicación NestJS sin HTTP para las colas de pg-boss (esquema `pgboss`). Hoy co
 - `check-saldo-operador`, cada hora: alerta si el saldo alcanza para menos de 30 días y, debajo de 1 000 XLM, pide más a Friendbot (HU-104).
 - **Costo de red (HU-104):** cada intento enviado queda en `transacciones_stellar`. Si la simulación de un `anchor` pide más que `STELLAR_COMISION_MAX_STROOPS`, el lote espera al ciclo siguiente (alerta a los 30 min); la preparación del contrato tiene su propio tope; el cierre se envía igual y alerta. El tick alerta al pasar el 80 % y el 100 % del presupuesto del mes.
 - **Al cerrar el contrato (HU-105):** guarda `evidencia-stellar.json` en `ARCHIVOS_DIR/publicos/<organización>/<evento>/`, con el estado del contrato y el XDR de cada transacción que entró, y su SHA-256 en `eventos.evidencia_sha256`.
+- **Eventos reales (D59):** al cerrar, extiende ~6 meses sus datos en la red (instancia, retos, pantallas y el código compartido) y lo anota en `eventos.en_red_hasta`. El trabajo `extend-contrato` lo reintenta.
 - El intervalo de anclaje de cada evento se lee en cada ciclo: un cambio vale desde el minuto siguiente.
 - La llave del operador se lee de `STELLAR_OPERADOR_LLAVE_ARCHIVO` y solo vive en memoria. `STELLAR_RED=mainnet` no arranca (D50).
 
