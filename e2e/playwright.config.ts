@@ -6,7 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  *
  *   pnpm db:levantar && pnpm db:migrar && pnpm semilla demo
  *   pnpm build
- *   pnpm e2e
+ *   pnpm e2e        (o: pnpm exec playwright test --config e2e/playwright.config.ts)
  */
 const BASE = process.env['E2E_BASE_URL'] ?? 'http://localhost:8080';
 const enCi = !!process.env['CI'];
@@ -16,7 +16,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: enCi,
   retries: enCi ? 1 : 0,
-  reporter: enCi ? [['github'], ['html', { open: 'never' }]] : [['list']],
+  // Resultados en la raíz del repositorio, donde los busca el workflow para subirlos si falla.
+  outputDir: '../test-results',
+  reporter: enCi
+    ? [['github'], ['html', { open: 'never', outputFolder: '../playwright-report' }]]
+    : [['list']],
   use: {
     baseURL: BASE,
     trace: 'retain-on-failure',

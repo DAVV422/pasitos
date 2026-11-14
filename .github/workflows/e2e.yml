@@ -58,8 +58,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium webkit
 
       - name: Pruebas de punta a punta
-        working-directory: e2e
-        run: pnpm exec playwright test
+        # Desde la raíz: e2e/ no tiene package.json propio. Los webServer corren desde e2e/.
+        run: pnpm exec playwright test --config e2e/playwright.config.ts
 
       - name: Artefactos si falla
         if: failure()
