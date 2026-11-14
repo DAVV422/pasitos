@@ -12,7 +12,11 @@
         "cwd": "contracts"
       },
       "cache": true,
-      "inputs": ["{projectRoot}/**/*.rs", "{projectRoot}/**/Cargo.toml"],
+      "inputs": [
+        "{projectRoot}/**/*.rs",
+        "{projectRoot}/**/Cargo.toml",
+        "{workspaceRoot}/libs/firmas/vectores/huellas.json"
+      ],
       "outputs": ["{projectRoot}/target/wasm32v1-none/release"]
     },
     "test": {
@@ -22,7 +26,11 @@
         "cwd": "contracts"
       },
       "cache": true,
-      "inputs": ["{projectRoot}/**/*.rs", "{projectRoot}/**/Cargo.toml"]
+      "inputs": [
+        "{projectRoot}/**/*.rs",
+        "{projectRoot}/**/Cargo.toml",
+        "{workspaceRoot}/libs/firmas/vectores/huellas.json"
+      ]
     },
     "lint": {
       "executor": "nx:run-commands",

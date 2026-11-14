@@ -50,7 +50,7 @@ jobs:
   contrato:
     name: Contrato Soroban
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: contracts
@@ -62,9 +62,23 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: contracts
+      - name: Vectores de huellas al día (los mismos que prueba libs/firmas)
+        working-directory: .
+        run: python3 tools/vectores/generar.py --comprobar
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
+      - name: Stellar CLI (queda en la caché de ~/.cargo/bin)
+        run: cargo install --locked stellar-cli@30.0.1
+      - name: WASM y su tamaño
+        run: |
+          stellar contract build
+          tamano=$(stat -c %s target/wasm32v1-none/release/pasitos_evento.wasm)
+          echo "WASM: $tamano bytes"
+          if [ "$tamano" -gt 65536 ]; then
+            echo "::error::El WASM del contrato pasa de 64 KB ($tamano bytes)"
+            exit 1
+          fi
 
   secretos:
     name: Revisión de secretos
