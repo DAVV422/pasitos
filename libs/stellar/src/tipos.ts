@@ -153,6 +153,8 @@ export interface CierreContrato {
 
 export interface StellarPort {
   readonly red: RedStellar;
+  /** Frase de la red: con ella se comprueban las firmas de las transacciones (HU-105 §2). */
+  readonly passphrase: string;
   /** Dirección pública del operador. */
   readonly operador: string;
   /** Simula, arma con los recursos de la simulación y firma. Lanza ErrorContratoStellar si el contrato la rechaza. */

@@ -82,7 +82,7 @@ export class RpcStellar implements StellarPort {
   readonly red: RedStellar;
   readonly operador: string;
   private readonly servidor: rpc.Server;
-  private readonly passphrase: string;
+  readonly passphrase: string;
   private readonly adminDireccion: string;
   private readonly wasmHash: string | undefined;
   /** Campo privado de verdad: no sale en JSON.stringify, util.inspect ni en los logs. */

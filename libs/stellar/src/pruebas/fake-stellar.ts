@@ -49,6 +49,7 @@ const clonar = (c: ContratoEnMemoria): ContratoEnMemoria => ({
  */
 export class FakeStellar implements StellarPort {
   readonly red = 'local' as const;
+  readonly passphrase = 'Standalone Network ; February 2017';
   readonly operador = 'GOPERADORDEPRUEBA';
 
   /** Todas las llamadas fallan como si el RPC no respondiera. */
