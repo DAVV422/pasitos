@@ -39,6 +39,33 @@ export const CATALOGO_ERRORES = {
     mensaje: 'Tu sesión venció. Inicia sesión de nuevo.',
   },
   SIN_PERMISO: { status: 403, title: 'Sin permiso', mensaje: 'No tienes permiso para esto.' },
+  // Retos y puntos
+  RETO_YA_COMPLETADO: {
+    status: 409,
+    title: 'Reto ya completado',
+    mensaje: 'Ya completaste este reto.',
+  },
+  RETO_NO_DISPONIBLE: {
+    status: 422,
+    title: 'Reto no disponible',
+    mensaje: 'Este reto no está activo ahora.',
+  },
+  TOPE_ALCANZADO: {
+    status: 422,
+    title: 'Tope alcanzado',
+    mensaje: 'Este reto ya entregó todos sus premios.',
+  },
+  TOPE_PUNTOS_PERSONA: {
+    status: 422,
+    title: 'Máximo de puntos alcanzado',
+    mensaje: 'Llegaste al máximo de puntos de este evento.',
+  },
+  // Canjes
+  SALDO_INSUFICIENTE: {
+    status: 409,
+    title: 'Saldo insuficiente',
+    mensaje: 'Te faltan puntos para este canje.',
+  },
 } as const satisfies Record<string, DefinicionError>;
 
 export interface DefinicionError {
