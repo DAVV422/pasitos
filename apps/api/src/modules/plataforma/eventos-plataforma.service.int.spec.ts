@@ -52,16 +52,16 @@ describe('EventosPlataformaService.updateIntervaloAnclaje', () => {
       asistentes: 1,
       minutos: 0,
     });
-    await servicio.updateIntervaloAnclaje(eventoId, 1, SOPORTE, 'Hito A');
-    expect(await getIntervalo(eventoId)).toBe(1);
+    await servicio.updateIntervaloAnclaje(eventoId, 2, SOPORTE, 'Hito A');
+    expect(await getIntervalo(eventoId)).toBe(2);
 
     await servicio.updateIntervaloAnclaje(eventoId, null, SOPORTE);
     expect(await getIntervalo(eventoId)).toBeNull();
 
     const filas = await listBitacora(eventoId);
     expect(filas.map((f) => [f.antes, f.despues])).toEqual([
-      [{ intervaloAnclajeMin: null }, { intervaloAnclajeMin: 1, motivo: 'Hito A' }],
-      [{ intervaloAnclajeMin: 1 }, { intervaloAnclajeMin: null }],
+      [{ intervaloAnclajeMin: null }, { intervaloAnclajeMin: 2, motivo: 'Hito A' }],
+      [{ intervaloAnclajeMin: 2 }, { intervaloAnclajeMin: null }],
     ]);
     expect(filas[0]).toMatchObject({
       actorTipo: 'sistema',
@@ -81,7 +81,7 @@ describe('EventosPlataformaService.updateIntervaloAnclaje', () => {
       minutos: 0,
     });
     const error = await servicio
-      .updateIntervaloAnclaje(eventoId, 3 as IntervaloAnclajeMin, SOPORTE)
+      .updateIntervaloAnclaje(eventoId, 1 as IntervaloAnclajeMin, SOPORTE)
       .catch((e: unknown) => e);
     expect(error).toBeInstanceOf(AppError);
     expect(error).toMatchObject({

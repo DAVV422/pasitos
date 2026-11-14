@@ -43,6 +43,13 @@
       "when": 1794671693940,
       "tag": "0005_evidencia",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794673312168,
+      "tag": "0006_intervalo_minimo",
+      "breakpoints": true
     }
   ]
 }

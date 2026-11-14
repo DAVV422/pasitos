@@ -47,7 +47,7 @@ export const eventos = pgTable(
     check('eventos_fechas', sql`${t.finAt} > ${t.inicioAt}`),
     check(
       'eventos_intervalo_anclaje',
-      sql`${t.intervaloAnclajeMin} is null or ${t.intervaloAnclajeMin} in (1, 2, 5, 10, 15, 30)`,
+      sql`${t.intervaloAnclajeMin} is null or ${t.intervaloAnclajeMin} in (2, 5, 10, 15, 30)`,
     ),
     check(
       'eventos_tope_puntos_persona',

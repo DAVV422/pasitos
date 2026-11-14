@@ -27,8 +27,11 @@ export const VISIBILIDAD_POR_DEFECTO: VisibilidadEvento = 'privado';
 
 export const ZONA_HORARIA_POR_DEFECTO = 'America/La_Paz';
 
-/** Cada cuántos minutos se ancla un evento (D53, Contrato y sellador §3.1.2). La base tiene el mismo CHECK. */
-export const INTERVALOS_ANCLAJE_MIN = [1, 2, 5, 10, 15, 30] as const;
+/**
+ * Cada cuántos minutos se ancla un evento (D53, Contrato y sellador §3.1.2). La base tiene el mismo CHECK.
+ * El mínimo es 2: cada anclaje cuesta y 1 minuto no aporta frente a 2.
+ */
+export const INTERVALOS_ANCLAJE_MIN = [2, 5, 10, 15, 30] as const;
 export type IntervaloAnclajeMin = (typeof INTERVALOS_ANCLAJE_MIN)[number];
 
 export function isIntervaloAnclaje(valor: unknown): valor is IntervaloAnclajeMin {

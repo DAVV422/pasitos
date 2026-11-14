@@ -53,16 +53,16 @@ describe('intervalo, evidencia y verificación', () => {
     expect(await sellador.processEvento(eventoId)).toBe('al_dia');
     expect(await listNumerosLote(eventoId)).toEqual([1]);
 
-    // Sin intervalo propio: el de la plataforma (5 min en este sellador). Al minuto no arma.
+    // Sin intervalo propio: el de la plataforma (5 min en este sellador). A los 2 minutos no arma.
     await addMovimientos(base, eventoId, 3);
-    reloj.adelantar(61_000);
+    reloj.adelantar(121_000);
     await sellador.processEvento(eventoId);
     expect(await listNumerosLote(eventoId)).toEqual([1]);
 
-    // Con 1 minuto (lo que escribe EventosPlataformaService), el ciclo siguiente ya arma.
+    // Con 2 minutos (lo que escribe EventosPlataformaService), el ciclo siguiente ya arma.
     await base.sistema.db
       .update(eventos)
-      .set({ intervaloAnclajeMin: 1 })
+      .set({ intervaloAnclajeMin: 2 })
       .where(eq(eventos.id, eventoId));
     await sellador.processEvento(eventoId);
     expect(await listNumerosLote(eventoId)).toEqual([1, 2]);
@@ -70,20 +70,20 @@ describe('intervalo, evidencia y verificación', () => {
     // El tick siguiente llega un poco antes del minuto exacto desde que se armó (el armado tarda
     // unos segundos): igual arma, no espera otro minuto.
     await addMovimientos(base, eventoId, 3);
-    reloj.adelantar(52_000);
+    reloj.adelantar(112_000);
     await sellador.processEvento(eventoId);
     expect(await listNumerosLote(eventoId)).toEqual([1, 2, 3]);
     // Pero no antes de tiempo.
     await addMovimientos(base, eventoId, 3);
-    reloj.adelantar(20_000);
+    reloj.adelantar(60_000);
     await sellador.processEvento(eventoId);
     expect(await listNumerosLote(eventoId)).toEqual([1, 2, 3]);
 
-    // La base rechaza un valor fuera de la lista.
+    // La base rechaza un valor fuera de la lista (1 ya no está: el mínimo es 2).
     await expect(
       base.sistema.db
         .update(eventos)
-        .set({ intervaloAnclajeMin: 3 })
+        .set({ intervaloAnclajeMin: 1 })
         .where(eq(eventos.id, eventoId)),
     ).rejects.toMatchObject({ cause: { message: expect.stringContaining('check constraint') } });
   });
