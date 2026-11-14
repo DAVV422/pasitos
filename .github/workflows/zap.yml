@@ -1,0 +1,51 @@
+# Pasitos · escaneo de seguridad semanal con OWASP ZAP (T-009 §5, Pruebas §6).
+name: ZAP semanal
+
+on:
+  schedule:
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zap:
+    name: Escaneo básico
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      POSTGRES_PASSWORD: postgres-ci
+      PASITOS_OWNER_PASSWORD: owner-ci
+      PASITOS_APP_PASSWORD: app-ci
+      PASITOS_SISTEMA_PASSWORD: sistema-ci
+      PASITOS_COPIAS_PASSWORD: copias-ci
+      POSTGRES_PORT: '55432'
+      DATABASE_URL_OWNER: postgres://pasitos_owner:owner-ci@localhost:55432/pasitos
+      DATABASE_URL_APP: postgres://pasitos_app:app-ci@localhost:55432/pasitos
+      DATABASE_URL_SISTEMA: postgres://pasitos_sistema:sistema-ci@localhost:55432/pasitos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: env | grep -E '^(POSTGRES|PASITOS|DATABASE)_' > .env && echo "NODE_ENV=test" >> .env
+      - run: docker compose -f infra/compose.dev.yml --env-file .env up -d --wait
+      - run: pnpm db:migrar && pnpm semilla demo
+      - run: pnpm exec nx run-many -t build -p api app sala mesa admin plataforma sitio
+      - name: Levantar el entorno
+        run: |
+          node --env-file=.env dist/apps/api/main.js &
+          PORT=4000 node dist/apps/sitio/server/server.mjs &
+          node tools/servidor-local.mjs &
+          npx wait-on http://localhost:8080/api/v1/salud http://localhost:8080/app/
+      - name: OWASP ZAP (básico)
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: http://localhost:8080
+          allow_issue_writing: true
+          issue_title: 'ZAP: hallazgos del escaneo semanal'
