@@ -1,0 +1,452 @@
+/*
+ * Pasitos · estilos base y de los componentes compartidos (T-004 §5).
+ * Se cargan una vez por app; así los componentes no repiten CSS y se cuida el peso de /app.
+ * Solo tokens: nada de colores literales.
+ */
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  margin: 0;
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.px-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Íconos ---------- */
+.px-icono {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Botón ---------- */
+.px-boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--alto-boton);
+  padding: 0 20px;
+  border-radius: var(--radio-chico);
+  border: 0;
+  font: 700 17px/1.2 var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.px-boton--primario {
+  background: var(--grad);
+  color: var(--on-points);
+}
+
+.px-boton--secundario {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--line-strong);
+}
+
+.px-boton--peligro {
+  background: var(--danger-fill);
+  color: var(--surface);
+}
+
+.px-boton--chico {
+  width: auto;
+  min-height: 44px;
+  font-size: 15px;
+  padding: 0 16px;
+}
+
+.px-boton:disabled,
+.px-boton[aria-disabled='true'] {
+  background: var(--track);
+  color: var(--muted);
+  border: 0;
+  cursor: not-allowed;
+}
+
+.px-boton[aria-busy='true'] {
+  cursor: progress;
+}
+
+.px-boton[aria-busy='true']::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid currentcolor;
+  border-right-color: transparent;
+  animation: px-girar 0.8s linear infinite;
+}
+
+@keyframes px-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Chip ---------- */
+.px-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.px-chip--testnet {
+  background: var(--net-bg);
+  color: var(--net-fg);
+}
+
+.px-chip--puntos {
+  background: var(--pts-bg);
+  color: var(--pts-fg);
+}
+
+.px-chip--ok {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+
+.px-chip--atenuado {
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.px-chip--peligro {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+}
+
+/* ---------- Aviso ---------- */
+.px-aviso {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radio-chico);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.px-aviso--info {
+  background: var(--surface2);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.px-aviso--info .px-icono {
+  color: var(--points);
+}
+
+.px-aviso--advertencia {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+
+.px-aviso--ok {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+
+.px-aviso--peligro {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  align-items: center;
+}
+
+/* ---------- Tarjeta y fila de dato ---------- */
+.px-tarjeta {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radio-grande);
+  padding: 14px;
+}
+
+.px-tarjeta--destacada {
+  border: 2px solid var(--points-fill);
+}
+
+.px-fila-dato {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.px-fila-dato:first-child {
+  border-top: 0;
+}
+
+.px-fila-dato__valor {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ---------- Campo ---------- */
+.px-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.px-campo__etiqueta {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.px-campo__opcional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.px-campo__ayuda {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.px-campo__error {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.px-campo input,
+.px-campo select,
+.px-campo textarea {
+  min-height: var(--area-tactil);
+  border-radius: var(--radio-chico);
+  background: var(--surface);
+  border: 1.5px solid var(--line-strong);
+  padding: 0 14px;
+  font: 16px var(--font-body);
+  color: var(--text);
+}
+
+.px-campo input:focus-visible {
+  outline: 0;
+  border-color: var(--points-fill);
+  box-shadow: 0 0 0 3px var(--pts-bg);
+}
+
+.px-campo--invalido input {
+  border-color: var(--danger);
+}
+
+/* ---------- Opción (radio grande) ---------- */
+.px-opcion {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radio-medio);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.px-opcion:has(input:checked) {
+  border-color: var(--points-fill);
+  box-shadow: 0 0 0 3px var(--pts-bg);
+}
+
+.px-opcion input {
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--points-fill);
+  flex: none;
+}
+
+.px-opcion__titulo {
+  display: block;
+  font-weight: 700;
+}
+
+.px-opcion__detalle {
+  display: block;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ---------- Código monoespaciado (A-0231) ---------- */
+.px-codigo {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- QR ---------- */
+.px-qr {
+  display: inline-block;
+  line-height: 0;
+  padding: 14px;
+  border-radius: var(--radio-grande);
+  background: var(--qr-fondo);
+  border: 1px solid var(--line);
+}
+
+.px-qr svg {
+  display: block;
+}
+
+/* ---------- Hoja inferior y diálogo ---------- */
+.px-hoja {
+  position: fixed;
+  inset: auto 0 0;
+  background: var(--sheet);
+  border-radius: var(--radio-hoja) var(--radio-hoja) 0 0;
+  border-top: 1px solid var(--line);
+  padding: 12px 22px 26px;
+}
+
+.px-hoja__asa {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--handle);
+  margin: 0 auto 12px;
+}
+
+.px-dialogo {
+  border: 1px solid var(--line);
+  border-radius: var(--radio-grande);
+  background: var(--sheet);
+  color: var(--text);
+  padding: 22px;
+  max-width: min(480px, calc(100vw - 32px));
+}
+
+.px-dialogo::backdrop {
+  background: var(--dim);
+}
+
+/* ---------- Estados de pantalla ---------- */
+.px-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.px-estado__titulo {
+  color: var(--text);
+  font-size: 20px;
+}
+
+.px-esqueleto {
+  border-radius: var(--radio-chico);
+  background: var(--surface2);
+  animation: px-pulso 1.4s ease-in-out infinite;
+}
+
+@keyframes px-pulso {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ---------- Encabezado ---------- */
+.px-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 4px 20px 0;
+}
+
+.px-encabezado__marca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.px-encabezado__marca svg {
+  width: 30px;
+  height: 30px;
+}
+
+.px-encabezado__marca b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+}
+
+.px-encabezado__volver {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--area-tactil);
+  background: none;
+  border: 0;
+  padding: 0;
+  font: 600 16px var(--font-body);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.px-encabezado__chips {
+  display: flex;
+  gap: 6px;
+}

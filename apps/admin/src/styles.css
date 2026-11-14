@@ -1,0 +1,7 @@
+/* Pasitos · estilos de la app: Tailwind v4 + tokens y componentes de @pasitos/ui (T-004). */
+@import 'tailwindcss';
+@import '../../../libs/ui/src/estilos/tokens.css';
+@import '../../../libs/ui/src/estilos/tema-tailwind.css';
+@import '../../../libs/ui/src/estilos/base.css';
+
+@source '../../../libs/ui/src';

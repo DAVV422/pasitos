@@ -1,0 +1,85 @@
+{
+  "name": "plataforma",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "plt",
+  "sourceRoot": "apps/plataforma/src",
+  "tags": ["scope:panel"],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/plataforma",
+        "browser": "apps/plataforma/src/main.ts",
+        "tsConfig": "apps/plataforma/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/plataforma/public"
+          }
+        ],
+        "styles": ["apps/plataforma/src/styles.css"],
+        "baseHref": "/plataforma/"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1600kb",
+              "maximumError": "1800kb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kb",
+              "maximumError": "10kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "readyWhen": {
+        "signal": true
+      },
+      "executor": "@angular/build:dev-server",
+      "defaultConfiguration": "development",
+      "configurations": {
+        "production": {
+          "buildTarget": "plataforma:build:production"
+        },
+        "development": {
+          "buildTarget": "plataforma:build:development"
+        }
+      }
+    },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "options": {
+        "watch": false
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "readyWhen": {
+        "signal": true
+      },
+      "dependsOn": ["build"],
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "plataforma:build",
+        "staticFilePath": "dist/apps/plataforma/browser",
+        "spa": true
+      }
+    }
+  }
+}

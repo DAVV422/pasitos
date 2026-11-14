@@ -1,0 +1,33 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2022",
+    "module": "esnext",
+    "lib": ["es2023", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@pasitos/dominio": ["./libs/dominio/src/index.ts"],
+      "@pasitos/firmas": ["./libs/firmas/src/index.ts"],
+      "@pasitos/db": ["./libs/db/src/index.ts"],
+      "@pasitos/testing": ["./libs/testing/src/index.ts"],
+      "@pasitos/ui": ["./libs/ui/src/index.ts"],
+      "@pasitos/web-core": ["./libs/web-core/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

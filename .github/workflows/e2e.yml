@@ -1,0 +1,76 @@
+# Pasitos · entorno temporal de punta a punta (T-009, reemplaza a staging, D51).
+name: E2E
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Flujos de punta a punta
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      POSTGRES_PASSWORD: postgres-ci
+      PASITOS_OWNER_PASSWORD: owner-ci
+      PASITOS_APP_PASSWORD: app-ci
+      PASITOS_SISTEMA_PASSWORD: sistema-ci
+      PASITOS_COPIAS_PASSWORD: copias-ci
+      POSTGRES_PORT: '55432'
+      DATABASE_URL_OWNER: postgres://pasitos_owner:owner-ci@localhost:55432/pasitos
+      DATABASE_URL_APP: postgres://pasitos_app:app-ci@localhost:55432/pasitos
+      DATABASE_URL_SISTEMA: postgres://pasitos_sistema:sistema-ci@localhost:55432/pasitos
+      SENTRY_ENVIRONMENT: ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Variables de entorno del entorno temporal
+        run: env | grep -E '^(POSTGRES|PASITOS|DATABASE|SENTRY)_' > .env && echo "NODE_ENV=test" >> .env
+
+      - name: Base de datos
+        run: docker compose -f infra/compose.dev.yml --env-file .env up -d --wait
+
+      - name: Migraciones y semilla
+        run: pnpm db:migrar && pnpm semilla demo
+
+      - name: Build
+        run: pnpm exec nx run-many -t build -p api app sala mesa admin plataforma sitio
+
+      - name: Navegadores de Playwright
+        run: pnpm exec playwright install --with-deps chromium webkit
+
+      - name: Pruebas de punta a punta
+        # Desde la raíz: e2e/ no tiene package.json propio. Los webServer corren desde e2e/.
+        run: pnpm exec playwright test --config e2e/playwright.config.ts
+
+      - name: Artefactos si falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-resultados
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+      - name: Logs de la base si falla
+        if: failure()
+        run: docker compose -f infra/compose.dev.yml --env-file .env logs --no-color > docker.log; tail -200 docker.log

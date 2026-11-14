@@ -1,0 +1,64 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "color-no-hex": [
+      true,
+      {
+        "message": "Usa un token de libs/ui/src/estilos/tokens.css, no un color literal (T-004 §1)."
+      }
+    ],
+    "color-named": [
+      "never",
+      {
+        "message": "Usa un token de libs/ui/src/estilos/tokens.css (T-004 §1)."
+      }
+    ],
+    "function-disallowed-list": [
+      ["rgb", "rgba", "hsl", "hsla"],
+      {
+        "message": "Usa un token de libs/ui/src/estilos/tokens.css (T-004 §1)."
+      }
+    ],
+    "selector-class-pattern": null,
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "theme",
+          "source",
+          "utility",
+          "variant",
+          "custom-variant",
+          "apply",
+          "reference",
+          "config",
+          "plugin"
+        ]
+      }
+    ],
+    "import-notation": null,
+    "no-descending-specificity": null,
+    "property-no-vendor-prefix": [
+      true,
+      {
+        "ignoreProperties": ["text-size-adjust"]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["libs/ui/src/estilos/tokens.css"],
+      "rules": {
+        "color-no-hex": null,
+        "color-named": null,
+        "function-disallowed-list": null
+      }
+    },
+    {
+      "files": ["libs/ui/src/estilos/tema-tailwind.css"],
+      "rules": {
+        "custom-property-pattern": null
+      }
+    }
+  ]
+}

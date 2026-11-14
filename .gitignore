@@ -41,3 +41,9 @@ test_snapshots/
 # Pruebas
 playwright-report/
 test-results/
+
+.angular
+
+__screenshots__/
+vitest.config.*.timestamp*
+.vitest

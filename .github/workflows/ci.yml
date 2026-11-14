@@ -1,0 +1,78 @@
+# Pasitos · CI de cada PR (T-001 §5, T-006).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Lint, tests, build y peso
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: nrwl/nx-set-shas@v4
+
+      - name: Formato y estilos
+        run: pnpm format:check && pnpm lint:css
+
+      - name: Lint, tests y build (proyectos afectados)
+        # Los tests de la base usan Testcontainers: el runner de GitHub ya trae Docker.
+        run: pnpm exec nx affected -t lint test build --exclude=contrato-evento
+
+      - name: Peso comprimido de cada app
+        run: pnpm exec nx run-many -t build -p app sala mesa admin plataforma sitio && node tools/peso.mjs
+
+      - name: Auditoría de dependencias
+        run: pnpm audit --audit-level high
+
+  contrato:
+    name: Contrato Soroban
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  secretos:
+    name: Revisión de secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
