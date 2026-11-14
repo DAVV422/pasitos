@@ -1,0 +1,101 @@
+/*
+ * Pasitos · tokens de diseño (T-004 §1).
+ * Los mismos valores que los mockups (docs/06-diseno/mockups). Tema claro por defecto (D36).
+ * ÚNICO archivo donde se permiten colores literales (Stylelint lo hace cumplir).
+ */
+
+:root,
+[data-tema='claro'] {
+  --bg: #f8fafc;
+  --surface: #fff;
+  --surface2: #f1f5f9;
+  --sheet: #fff;
+  --line: #cbd5e1;
+  --line-strong: #64748b;
+  --track: #e2e8f0;
+  --text: #0b0f19;
+  --muted: #475569;
+  --points: #b45309;
+  --points-fill: #d97706;
+  --success: #047857;
+  --danger: #b91c1c;
+  --danger-fill: #b91c1c;
+  --danger-bg: #fee2e2;
+  --danger-fg: #b91c1c;
+  --net-bg: #d1fae5;
+  --net-fg: #065f46;
+  --pts-bg: #fef3c7;
+  --pts-fg: #92400e;
+  --ok-bg: #d1fae5;
+  --ok-fg: #047857;
+  --ok-border: #34d399;
+  --warn-bg: #fef3c7;
+  --warn-fg: #92400e;
+  --nav-on: #fef3c7;
+  --dim: rgb(15 23 42 / 45%);
+  --handle: #cbd5e1;
+  --code-bg: #f1f5f9;
+  --dock: #fff;
+  --focus: #1d4ed8;
+
+  color-scheme: light;
+}
+
+[data-tema='oscuro'] {
+  --bg: #0b0f19;
+  --surface: #111827;
+  --surface2: #161f30;
+  --sheet: #161f30;
+  --line: rgb(255 255 255 / 12%);
+  --line-strong: rgb(255 255 255 / 30%);
+  --track: rgb(255 255 255 / 10%);
+  --text: #f9fafb;
+  --muted: #a1aab8;
+  --points: #f59e0b;
+  --points-fill: #f59e0b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --danger-fill: #dc2626;
+  --danger-bg: rgb(239 68 68 / 14%);
+  --danger-fg: #fca5a5;
+  --net-bg: rgb(16 185 129 / 14%);
+  --net-fg: #6ee7b7;
+  --pts-bg: rgb(245 158 11 / 16%);
+  --pts-fg: #f59e0b;
+  --ok-bg: rgb(16 185 129 / 16%);
+  --ok-fg: #34d399;
+  --ok-border: rgb(16 185 129 / 50%);
+  --warn-bg: #3a2a0b;
+  --warn-fg: #fcd34d;
+  --nav-on: rgb(245 158 11 / 14%);
+  --dim: rgb(3 5 10 / 68%);
+  --handle: rgb(255 255 255 / 25%);
+  --code-bg: #0b0f19;
+  --dock: #0b0f19;
+  --focus: #fde68a;
+
+  color-scheme: dark;
+}
+
+:root {
+  /* Comunes a los dos temas */
+  --grad: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  --logo-amarillo: #ecc223;
+  --logo-naranja: #e3832b;
+  --on-points: #0b0f19;
+  --qr-fondo: #fff;
+  --qr-tinta: #000;
+
+  /* Tipografía. El peso de las fuentes se fija en T-008; mientras tanto, la del sistema. */
+  --font-display: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', consolas, monospace;
+
+  /* Forma */
+  --radio-chico: 12px;
+  --radio-medio: 14px;
+  --radio-grande: 16px;
+  --radio-hoja: 24px;
+  --area-tactil: 48px;
+  --alto-boton: 56px;
+}

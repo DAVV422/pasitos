@@ -1,0 +1,28 @@
+/*
+ * Tailwind v4 mapeado a los tokens (T-004 §2).
+ * `inline` hace que las utilidades usen var(--…): cambiar data-tema cambia todo.
+ * Los colores por defecto de Tailwind se desactivan para no usarlos por error.
+ */
+@theme inline {
+  --color-*: initial;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-points: var(--points);
+  --color-points-fill: var(--points-fill);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-on-points: var(--on-points);
+  --color-transparent: transparent;
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+  --radius-chico: var(--radio-chico);
+  --radius-medio: var(--radio-medio);
+  --radius-grande: var(--radio-grande);
+  --radius-hoja: var(--radio-hoja);
+}
