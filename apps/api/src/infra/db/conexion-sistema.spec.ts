@@ -12,6 +12,8 @@ const PERMITIDOS = [
   'modules/invitaciones/',
   'modules/auth/',
   'common/permisos/',
+  // Conectar una terminal y su latido: llegan sin sesión del equipo, con un token global.
+  'modules/terminales/conexion.service.ts',
   'pruebas/',
   // Los comandos de soporte (pnpm plataforma): actúan como la consola.
   'cli/',

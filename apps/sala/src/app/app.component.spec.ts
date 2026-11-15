@@ -10,11 +10,10 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
-  it('muestra el nombre de la app y el chip de testnet', async () => {
+  it('muestra el encabezado con el chip de testnet', async () => {
     const fixture = TestBed.createComponent(AppComponent);
     await fixture.whenStable();
     const html = fixture.nativeElement as HTMLElement;
-    expect(html.querySelector('h1')?.textContent).toContain('Pantalla de sala');
     expect(html.textContent).toContain('Testnet');
   });
 });

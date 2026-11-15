@@ -134,6 +134,13 @@
       "when": 1794757217336,
       "tag": "0018_premios",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794758453478,
+      "tag": "0019_terminales",
+      "breakpoints": true
     }
   ]
 }

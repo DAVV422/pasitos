@@ -125,10 +125,30 @@ export const pantallas = pgTable(
     nombre: text('nombre').notNull(),
     llavePublica: bytea('llave_publica'),
     registradaEnStellarAt: timestamp('registrada_en_stellar_at', { withTimezone: true }),
+    // HU-209: lugar, PIN de los controles, conexión y reemplazo de la tablet.
+    // FK a lugares en la migración (0019), como retos.lugar_id: evita el ciclo con contenido.ts.
+    lugarId: uuid('lugar_id'),
+    pinHash: text('pin_hash'),
+    epoca: integer('epoca').notNull().default(0),
+    estado: text('estado').notNull().default('desconectada'),
+    retoActualId: uuid('reto_actual_id').references((): AnyPgColumn => retos.id),
+    sessionTokenHash: bytea('session_token_hash').unique(),
+    conectadaPor: uuid('conectada_por').references(() => usuarios.id),
+    conectadaAt: timestamp('conectada_at', { withTimezone: true }),
+    ultimoContactoAt: timestamp('ultimo_contacto_at', { withTimezone: true }),
+    reemplazadaPor: uuid('reemplazada_por').references((): AnyPgColumn => pantallas.id),
+    motivoReemplazo: text('motivo_reemplazo'),
+    createdBy: uuid('created_by').references(() => usuarios.id),
     createdAt: creadoEn(),
     updatedAt: actualizadoEn(),
   },
   (t) => [
+    check('pantallas_estado', sql`${t.estado} in ('activa', 'pausada', 'desconectada')`),
+    check(
+      'pantallas_motivo_reemplazo',
+      sql`${t.motivoReemplazo} is null or char_length(${t.motivoReemplazo}) between 5 and 300`,
+    ),
+    index('pantallas_lugar').on(t.lugarId),
     unique('pantallas_numero').on(t.eventoId, t.numero),
     check('pantallas_numero_positivo', sql`${t.numero} >= 1`),
     check(

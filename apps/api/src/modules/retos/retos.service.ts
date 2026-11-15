@@ -1,4 +1,4 @@
-import { and, asc, count, eq, getTableColumns } from 'drizzle-orm';
+import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import {
   actividades,
   eventos,
@@ -238,26 +238,17 @@ export class RetosService {
     }
   }
 
-  /** ¿Ese lugar tiene pantalla? Hasta que las pantallas tengan lugar (HU-209), alcanza con una en el evento. */
+  /** ¿Ese lugar tiene pantalla? Las reemplazadas no cuentan (HU-209). */
   private async getLugaresConPantalla(
     tx: Tx,
     eventoId: string,
   ): Promise<(lugarId: string | null) => boolean> {
-    const columnas = getTableColumns(pantallas) as Record<string, unknown>;
-    if ('lugarId' in columnas) {
-      const filas = (await tx
-        .select({ lugarId: columnas['lugarId'] as typeof pantallas.id })
-        .from(pantallas)
-        .where(eq(pantallas.eventoId, eventoId))) as { lugarId: string | null }[];
-      const conPantalla = new Set(filas.map((f) => f.lugarId));
-      return (lugarId) => lugarId !== null && conPantalla.has(lugarId);
-    }
-    const [hay] = await tx
-      .select({ total: count() })
+    const filas = await tx
+      .selectDistinct({ lugarId: pantallas.lugarId })
       .from(pantallas)
-      .where(eq(pantallas.eventoId, eventoId));
-    const alguna = (hay?.total ?? 0) > 0;
-    return () => alguna;
+      .where(and(eq(pantallas.eventoId, eventoId), isNull(pantallas.reemplazadaPor)));
+    const conPantalla = new Set(filas.map((f) => f.lugarId));
+    return (lugarId) => lugarId !== null && conPantalla.has(lugarId);
   }
 
   // ── Ayudantes ──────────────────────────────────────────────────────────────

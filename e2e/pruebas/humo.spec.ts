@@ -19,9 +19,11 @@ function capturarErrores(pagina: Page): string[] {
   const errores: string[] = [];
   pagina.on('pageerror', (error) => errores.push(error.message));
   pagina.on('console', (mensaje) => {
-    // Sin sesión, GET /auth/yo responde 401 a propósito (HU-201) y el navegador lo anota.
+    // Sin sesión, /auth/yo (HU-201) y el latido de una terminal sin conectar (HU-209) responden
+    // 401 a propósito y el navegador lo anota.
     const sesionEsperada =
-      mensaje.text().includes('status of 401') && mensaje.location().url.endsWith('/auth/yo');
+      mensaje.text().includes('status of 401') &&
+      ['/auth/yo', '/terminales/latido'].some((ruta) => mensaje.location().url.endsWith(ruta));
     if (mensaje.type() === 'error' && !sesionEsperada) errores.push(mensaje.text());
   });
   return errores;

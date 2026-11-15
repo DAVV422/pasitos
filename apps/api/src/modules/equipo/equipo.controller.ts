@@ -19,7 +19,12 @@ import { EquipoService } from './equipo.service';
 const esquemaRol = z
   .enum(ROLES_INVITABLES as [string, ...string[]])
   .transform((rol) => rol as (typeof ROLES_INVITABLES)[number]);
-const esquemaTerminales = z.object({ pantallas: z.array(z.uuid()).max(50).optional() }).optional();
+const esquemaTerminales = z
+  .object({
+    pantallas: z.array(z.uuid()).max(50).optional(),
+    mesas: z.array(z.uuid()).max(50).optional(),
+  })
+  .optional();
 const esquemaTope = z.number().int().min(1).max(100_000).nullable().optional();
 
 const esquemaInvitar = z.object({

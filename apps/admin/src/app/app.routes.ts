@@ -48,6 +48,13 @@ export const appRoutes: Route[] = [
         title: 'Catálogo · Pasitos',
         loadComponent: () => import('./eventos/catalogo.page').then((m) => m.CatalogoPage),
       },
+      ...(['pantalla', 'mesa'] as const).map((tipo) => ({
+        path: tipo === 'pantalla' ? 'pantallas' : 'mesas',
+        canActivate: [canDoActivate('terminales.read')],
+        title: `${tipo === 'pantalla' ? 'Pantallas' : 'Mesas'} · Pasitos`,
+        data: { tipo },
+        loadComponent: () => import('./eventos/terminales.page').then((m) => m.TerminalesPage),
+      })),
       ...(['lugares', 'agenda', 'sponsors', 'preguntas'] as const).map((ruta) => ({
         path: ruta,
         canActivate: [canDoActivate('contenido.read')],

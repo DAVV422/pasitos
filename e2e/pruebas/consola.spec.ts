@@ -42,6 +42,8 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   page,
   browser,
 }) => {
+  // Recorre varias HU seguidas: con toda la suite en paralelo, 30 s no alcanzan.
+  test.setTimeout(90_000);
   const adminEmail = createEmailPrueba('admin-consola');
   const password = 'una frase larga para la consola';
   await createPersona({ email: adminEmail, password, nombre: 'Admin e2e', rolPlataforma: 'admin' });
@@ -120,6 +122,47 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await page.getByRole('link', { name: 'Resumen' }).click();
   await expect(page.getByText('El reto «Charla de apertura» no tiene pantalla')).toBeVisible();
   await expect(page.getByText('Crea al menos un reto')).toHaveCount(0);
+
+  // HU-209: crea una pantalla y una mesa, y las conecta con su enlace desde otro navegador.
+  await page.getByRole('link', { name: 'Pantallas' }).click();
+  await page.getByRole('button', { name: 'Nueva pantalla' }).click();
+  await page.getByLabel('Nombre').fill('Tablet Auditorio');
+  await page.getByLabel('Lugar').selectOption({ label: 'Auditorio principal' });
+  await page.getByLabel('PIN de los controles').fill('4821');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Tablet Auditorio')).toBeVisible();
+  const tablet = await browser.newContext();
+  const sala = await tablet.newPage();
+  await sala.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
+  await page.getByRole('button', { name: 'Conectar' }).click();
+  await expect(page.getByRole('img', { name: 'QR para conectar la tablet' })).toBeVisible();
+  const enlaceSala = (await page.locator('code').textContent()) ?? '';
+  await sala.goto(new URL(enlaceSala).pathname);
+  await expect(sala.getByText('Conectada')).toBeVisible();
+  await expect(sala.getByText('Tablet Auditorio · Auditorio principal')).toBeVisible();
+  // El enlace sirve una vez (V12).
+  await sala.goto(new URL(enlaceSala).pathname);
+  await expect(
+    sala.getByText('Este enlace ya se usó. Pide uno nuevo al organizador.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Listo' }).click();
+  await expect(page.getByText('En línea')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Mesas' }).click();
+  await page.getByRole('button', { name: 'Nueva mesa' }).click();
+  await page.getByLabel('Nombre').fill('Mesa 1');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await page.getByRole('button', { name: 'Conectar' }).click();
+  const enlaceMesa = (await page.locator('code').textContent()) ?? '';
+  const mesa = await tablet.newPage();
+  await mesa.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
+  await mesa.goto(new URL(enlaceMesa).pathname);
+  await expect(mesa.getByText('Conectada')).toBeVisible();
+  await page.getByRole('button', { name: 'Listo' }).click();
+  await expect(page.getByText('En línea')).toBeVisible();
+  await tablet.close();
+  await page.getByRole('link', { name: 'Resumen' }).click();
+  await expect(page.getByText('El reto «Charla de apertura» no tiene pantalla')).toHaveCount(0);
 
   // HU-203: invita a un registrador, que acepta desde otro navegador y ve solo lo suyo.
   await page.getByRole('link', { name: 'Equipo' }).click();

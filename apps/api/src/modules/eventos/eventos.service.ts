@@ -1,10 +1,11 @@
-import { and, count, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import {
   asistentes,
   eventos,
   miembrosOrganizacion,
   organizaciones,
   outbox,
+  mesas,
   pantallas,
   premios,
   retos,
@@ -346,7 +347,7 @@ export class EventosService {
   }
 
   private async buildChequeo(tx: Tx, evento: typeof eventos.$inferSelect) {
-    const [lista, [conPantallas]] = await Promise.all([
+    const [lista, conPantallas] = await Promise.all([
       tx
         .select({
           nombre: retos.nombre,
@@ -358,15 +359,17 @@ export class EventosService {
         })
         .from(retos)
         .where(eq(retos.eventoId, evento.id)),
-      tx.select({ total: count() }).from(pantallas).where(eq(pantallas.eventoId, evento.id)),
+      tx
+        .selectDistinct({ lugarId: pantallas.lugarId })
+        .from(pantallas)
+        .where(and(eq(pantallas.eventoId, evento.id), isNull(pantallas.reemplazadaPor))),
     ]);
     const [premiosActivos] = await tx
       .select({ total: count() })
       .from(premios)
       .where(and(eq(premios.eventoId, evento.id), eq(premios.estado, 'activo')));
-    // Hasta que las pantallas tengan lugar (HU-209), un reto de QR con lugar "tiene pantalla" si
-    // el evento tiene al menos una. El catálogo y las mesas entran con HU-208 y HU-209.
-    const hayPantalla = (conPantallas?.total ?? 0) > 0;
+    // Un reto de QR "tiene pantalla" si su lugar tiene alguna (sin contar las reemplazadas).
+    const lugaresConPantalla = new Set(conPantallas.map((p) => p.lugarId));
     const dentro = (fecha: Date | null) =>
       fecha === null || (fecha >= evento.inicioAt && fecha <= evento.finAt);
     return buildListaChequeo({
@@ -377,19 +380,12 @@ export class EventosService {
         nombre: r.nombre,
         tipo: r.tipo,
         activo: r.estado === 'activo',
-        tienePantalla: r.lugarId !== null && hayPantalla,
+        tienePantalla: r.lugarId !== null && lugaresConPantalla.has(r.lugarId),
         enHorario: dentro(r.disponibleDesde) && dentro(r.disponibleHasta),
       })),
       premiosActivos: premiosActivos?.total ?? 0,
-      mesas: await this.countMesas(tx, evento.id),
+      mesas: await tx.$count(mesas, eq(mesas.eventoId, evento.id)),
     });
-  }
-
-  /** Las mesas llegan con HU-209: hasta entonces, ninguna. */
-  private async countMesas(tx: Tx, eventoId: string): Promise<number> {
-    void tx;
-    void eventoId;
-    return 0;
   }
 
   private async getContadores(tx: Tx, eventoId: string) {
@@ -398,11 +394,14 @@ export class EventosService {
         .select({ total: count() })
         .from(retos)
         .where(and(eq(retos.eventoId, eventoId), eq(retos.estado, 'activo'))),
-      tx.select({ total: count() }).from(pantallas).where(eq(pantallas.eventoId, eventoId)),
       tx
         .select({ total: count() })
         .from(pantallas)
-        .where(and(eq(pantallas.eventoId, eventoId), isNotNull(pantallas.llavePublica))),
+        .where(and(eq(pantallas.eventoId, eventoId), isNull(pantallas.reemplazadaPor))),
+      tx
+        .select({ total: count() })
+        .from(pantallas)
+        .where(and(eq(pantallas.eventoId, eventoId), isNotNull(pantallas.sessionTokenHash))),
       tx
         .select({ total: sql<number>`count(*)::int` })
         .from(asistentes)
@@ -412,7 +411,7 @@ export class EventosService {
       retos: retosActivos?.total ?? 0,
       pantallas: totalPantallas?.total ?? 0,
       pantallasConectadas: conectadas?.total ?? 0,
-      mesas: 0,
+      mesas: await tx.$count(mesas, eq(mesas.eventoId, eventoId)),
       invitados: invitados?.total ?? 0,
     };
   }

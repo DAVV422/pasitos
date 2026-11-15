@@ -47,6 +47,8 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: 'configuracion', texto: 'Configuración', accion: 'evento.update' },
   { ruta: 'retos', texto: 'Retos', accion: 'contenido.read' },
   { ruta: 'catalogo', texto: 'Catálogo', accion: 'contenido.read' },
+  { ruta: 'pantallas', texto: 'Pantallas', accion: 'terminales.read' },
+  { ruta: 'mesas', texto: 'Mesas', accion: 'terminales.read' },
   { ruta: 'lugares', texto: 'Lugares', accion: 'contenido.read' },
   { ruta: 'agenda', texto: 'Agenda', accion: 'contenido.read' },
   { ruta: 'sponsors', texto: 'Sponsors', accion: 'contenido.read' },

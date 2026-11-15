@@ -12,7 +12,8 @@ import {
 import { eventos } from './eventos';
 import { pantallas } from './libro';
 import { organizaciones, usuarios } from './plataforma';
-import { citext } from './tipos';
+import { lugares } from './contenido';
+import { bytea, citext } from './tipos';
 
 /**
  * El equipo de cada evento (D19, HU-204 y HU-203), con RLS por organización. El dueño de la
@@ -63,6 +64,34 @@ export const miembrosEvento = pgTable(
 );
 
 /** Qué mesas o pantallas tiene asignadas un operador (²). La FK a `mesas` llega con HU-209. */
+/** Mesas de canje (HU-209, Modelo §4). Con RLS. */
+export const mesas = pgTable(
+  'mesas',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+    nombre: text('nombre').notNull(),
+    lugarId: uuid('lugar_id').references(() => lugares.id),
+    estado: text('estado').notNull().default('desconectada'),
+    sessionTokenHash: bytea('session_token_hash').unique(),
+    conectadaPor: uuid('conectada_por').references(() => usuarios.id),
+    conectadaAt: timestamp('conectada_at', { withTimezone: true }),
+    ultimoContactoAt: timestamp('ultimo_contacto_at', { withTimezone: true }),
+    createdBy: uuid('created_by').references(() => usuarios.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check('mesas_estado', sql`${t.estado} in ('activa', 'desconectada')`),
+    index('mesas_evento').on(t.eventoId),
+  ],
+);
+
 export const miembroTerminales = pgTable(
   'miembro_terminales',
   {
@@ -74,7 +103,7 @@ export const miembroTerminales = pgTable(
       .notNull()
       .references(() => miembrosEvento.id),
     pantallaId: uuid('pantalla_id').references(() => pantallas.id),
-    mesaId: uuid('mesa_id'),
+    mesaId: uuid('mesa_id').references(() => mesas.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

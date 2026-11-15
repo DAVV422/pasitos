@@ -38,6 +38,11 @@ export const CATALOGO_ERRORES = {
     title: 'Sesión vencida',
     mensaje: 'Tu sesión venció. Inicia sesión de nuevo.',
   },
+  TERMINAL_DESCONECTADA: {
+    status: 401,
+    title: 'Terminal desconectada',
+    mensaje: 'Esta pantalla se desconectó. Pide que la conecten de nuevo.',
+  },
   SIN_PERMISO: { status: 403, title: 'Sin permiso', mensaje: 'No tienes permiso para esto.' },
   CREDENCIALES_INVALIDAS: {
     status: 401,

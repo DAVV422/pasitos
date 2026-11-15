@@ -8,3 +8,4 @@ export const VERSION_FORMATO_QR = 'PX1' as const;
 export * from './bytes';
 export * from './jcs';
 export * from './huellas';
+export * from './llaves';

@@ -20,6 +20,7 @@ export const TABLAS_RECURSO = {
   sponsors: 'sponsors',
   preguntas: 'preguntas_frecuentes',
   premios: 'premios',
+  mesas: 'mesas',
 } as const;
 export type RecursoEvento = keyof typeof TABLAS_RECURSO;
 

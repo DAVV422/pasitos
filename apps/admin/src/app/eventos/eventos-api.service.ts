@@ -90,6 +90,32 @@ export interface MiembroEquipo {
 /** Una fila de lugares, agenda, sponsors o preguntas: campos según el recurso. */
 export type FilaContenido = { readonly id: string } & Readonly<Record<string, unknown>>;
 
+/** Una pantalla o una mesa en el panel (HU-209). Las de mesa no tienen número ni Stellar. */
+export interface TerminalPanel {
+  readonly id: string;
+  readonly numero?: number;
+  readonly nombre: string;
+  readonly lugar: { readonly id: string; readonly nombre: string } | null;
+  readonly estado: string;
+  readonly conexion: 'en_linea' | 'sin_conexion' | 'desconectada';
+  readonly conectadaPor: { readonly nombre: string } | null;
+  readonly conectadaAt: string | null;
+  readonly registradaEnStellarAt?: string | null;
+  readonly reemplazadaPor?: string | null;
+  readonly reemplazaA?: string | null;
+  readonly motivoReemplazo?: string | null;
+  readonly operadores: readonly string[];
+}
+
+export interface ConexionTerminal {
+  readonly qr: string;
+  readonly enlace: string;
+  readonly expiraQrAt: string;
+  readonly expiraEnlaceAt: string;
+}
+
+const RUTA_TERMINAL = { pantalla: 'pantallas', mesa: 'mesas' } as const;
+
 export interface PremioPanel {
   readonly id: string;
   readonly nombre: string;
@@ -277,6 +303,52 @@ export class EventosApi {
     );
   }
 
+  async listTerminales(
+    eventoId: string,
+    tipo: 'pantalla' | 'mesa',
+  ): Promise<readonly TerminalPanel[]> {
+    return (
+      await firstValueFrom(
+        this.http.get<Pagina<TerminalPanel>>(`${BASE}/eventos/${eventoId}/${RUTA_TERMINAL[tipo]}`),
+      )
+    ).items;
+  }
+
+  createTerminal(
+    eventoId: string,
+    tipo: 'pantalla' | 'mesa',
+    datos: Record<string, unknown>,
+  ): Promise<{ id: string }> {
+    return firstValueFrom(
+      this.http.post<{ id: string }>(`${BASE}/eventos/${eventoId}/${RUTA_TERMINAL[tipo]}`, datos),
+    );
+  }
+
+  updateTerminal(
+    id: string,
+    tipo: 'pantalla' | 'mesa',
+    datos: Record<string, unknown>,
+  ): Promise<void> {
+    return firstValueFrom(this.http.patch<void>(`${BASE}/${RUTA_TERMINAL[tipo]}/${id}`, datos));
+  }
+
+  createConexion(
+    id: string,
+    tipo: 'pantalla' | 'mesa',
+    motivo?: string,
+  ): Promise<ConexionTerminal> {
+    return firstValueFrom(
+      this.http.post<ConexionTerminal>(
+        `${BASE}/${RUTA_TERMINAL[tipo]}/${id}/conexion`,
+        motivo ? { motivo } : {},
+      ),
+    );
+  }
+
+  disconnectTerminal(id: string, tipo: 'pantalla' | 'mesa'): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${BASE}/${RUTA_TERMINAL[tipo]}/${id}/conexion`));
+  }
+
   getListaChequeo(id: string): Promise<ListaChequeo> {
     return firstValueFrom(this.http.get<ListaChequeo>(`${BASE}/eventos/${id}/lista-de-chequeo`));
   }
@@ -295,7 +367,13 @@ export class EventosApi {
 
   inviteMiembro(
     eventoId: string,
-    datos: { email: string; nombre?: string; rol: string; topeRegistrosPuerta?: number | null },
+    datos: {
+      email: string;
+      nombre?: string;
+      rol: string;
+      topeRegistrosPuerta?: number | null;
+      terminales?: { pantallas?: readonly string[]; mesas?: readonly string[] };
+    },
   ): Promise<{ id: string }> {
     return firstValueFrom(
       this.http.post<{ id: string }>(`${BASE}/eventos/${eventoId}/miembros`, datos),
@@ -304,7 +382,11 @@ export class EventosApi {
 
   updateMiembro(
     id: string,
-    datos: { rol?: string; topeRegistrosPuerta?: number | null },
+    datos: {
+      rol?: string;
+      topeRegistrosPuerta?: number | null;
+      terminales?: { pantallas?: readonly string[]; mesas?: readonly string[] };
+    },
   ): Promise<void> {
     return firstValueFrom(this.http.patch<void>(`${BASE}/miembros/${id}`, datos));
   }

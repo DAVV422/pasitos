@@ -24,6 +24,7 @@ const FLUJOS_2_4: Readonly<Record<AccionEvento, string>> = {
   'contenido.update': 'DC', // Crear y editar retos, agenda, mapa, stands y catálogo
   'equipo.read': 'DC',
   'equipo.update': 'DC', // Invitar y quitar colaboradores ¹
+  'terminales.read': 'DC',
   'terminales.update': 'DC', // Conectar y desconectar pantallas y mesas
   'pantallas.control': 'DCS', // Controlar pantallas ²
   'mesas.cobrar': 'DCM', // Cobrar canjes ²

@@ -6,6 +6,7 @@ import {
   miembrosEvento,
   miembrosOrganizacion,
   organizaciones,
+  mesas,
   pantallas,
   preguntasFrecuentes,
   premios,
@@ -38,6 +39,7 @@ export interface EventoDePrueba {
     readonly sponsors: string;
     readonly preguntas: string;
     readonly premios: string;
+    readonly mesas: string;
   };
 }
 
@@ -63,14 +65,18 @@ export async function createEventoDePrueba(
     estado: opciones.estado ?? 'borrador',
   });
 
-  const pantallaId = uuidv7();
-  await base.sistema.db
-    .insert(pantallas)
-    .values({ id: pantallaId, organizacionId, eventoId, nombre: 'Tablet Sala A' });
   const lugarId = uuidv7();
   await base.sistema.db
     .insert(lugares)
     .values({ id: lugarId, organizacionId, eventoId, tipo: 'sala', nombre: 'Sala A' });
+  const pantallaId = uuidv7();
+  await base.sistema.db
+    .insert(pantallas)
+    .values({ id: pantallaId, organizacionId, eventoId, nombre: 'Tablet Sala A', lugarId });
+  const mesaId = uuidv7();
+  await base.sistema.db
+    .insert(mesas)
+    .values({ id: mesaId, organizacionId, eventoId, nombre: 'Mesa 1', lugarId });
   const retoId = uuidv7();
   await base.sistema.db.insert(retos).values({
     id: retoId,
@@ -126,6 +132,7 @@ export async function createEventoDePrueba(
       sponsors: sponsorId,
       preguntas: preguntaId,
       premios: premioId,
+      mesas: mesaId,
     },
   };
 }
@@ -172,7 +179,7 @@ export async function addRol(
   evento: EventoDePrueba,
   persona: PersonaDePrueba,
   rol: RolEvento,
-  terminales: { pantallas?: string[] } = {},
+  terminales: { pantallas?: string[]; mesas?: string[] } = {},
 ): Promise<string | null> {
   if (rol === 'dueno') {
     await base.sistema.db.insert(miembrosOrganizacion).values({
@@ -200,6 +207,14 @@ export async function addRol(
       organizacionId: evento.organizacionId,
       miembroEventoId: miembroId,
       pantallaId,
+    });
+  }
+  for (const mesaId of terminales.mesas ?? []) {
+    await base.sistema.db.insert(miembroTerminales).values({
+      id: uuidv7(),
+      organizacionId: evento.organizacionId,
+      miembroEventoId: miembroId,
+      mesaId,
     });
   }
   return miembroId;
@@ -263,6 +278,16 @@ export async function createRecursoDePrueba(
       await base.sistema.db
         .insert(retos)
         .values({ id, organizacionId, eventoId, nombre: 'Reto V9', puntos: 5, topeTotal: 10 });
+      return id;
+    case 'pantallas':
+      await base.sistema.db
+        .insert(pantallas)
+        .values({ id, organizacionId, eventoId, nombre: 'Pantalla V9' });
+      return id;
+    case 'mesas':
+      await base.sistema.db
+        .insert(mesas)
+        .values({ id, organizacionId, eventoId, nombre: 'Mesa V9' });
       return id;
     case 'premios':
       await base.sistema.db

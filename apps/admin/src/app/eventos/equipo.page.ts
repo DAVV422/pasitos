@@ -19,7 +19,7 @@ import {
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
-import { EventosApi, type MiembroEquipo } from './eventos-api.service';
+import { EventosApi, type MiembroEquipo, type TerminalPanel } from './eventos-api.service';
 
 type RolInvitable = Exclude<RolEvento, 'dueno'>;
 
@@ -122,10 +122,26 @@ const ESTADOS: Readonly<Record<MiembroEquipo['estado'], string>> = {
             </px-campo>
           }
           @if (rol() === 'operador_stand' || rol() === 'operador_mesa') {
-            <px-aviso variante="info"
-              >Las pantallas y mesas se asignan cuando existan (pantallas y mesas del
-              evento).</px-aviso
-            >
+            <fieldset class="flex flex-col gap-2">
+              <legend class="mb-1 font-bold">
+                {{ rol() === 'operador_stand' ? 'Sus pantallas' : 'Sus mesas' }}
+              </legend>
+              @for (t of opcionesTerminal(rol()); track t.id) {
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    [checked]="asignadas().includes(t.id)"
+                    (change)="toggleAsignada(t.id)"
+                  />
+                  {{ t.nombre }}
+                </label>
+              } @empty {
+                <p class="text-muted text-sm">
+                  Todavía no hay {{ rol() === 'operador_stand' ? 'pantallas' : 'mesas' }}: las
+                  asignas después, desde esta lista.
+                </p>
+              }
+            </fieldset>
           }
           <div class="flex gap-3">
             <button type="submit" pxBoton [cargando]="enviando()" [deshabilitado]="!valido()">
@@ -203,6 +219,28 @@ const ESTADOS: Readonly<Record<MiembroEquipo['estado'], string>> = {
                   Quitar
                 </button>
               </div>
+              @if (miembro.rol === 'operador_stand' || miembro.rol === 'operador_mesa') {
+                <fieldset class="mt-3 flex flex-wrap gap-3">
+                  <legend class="mb-1 text-sm font-bold">
+                    {{ miembro.rol === 'operador_stand' ? 'Sus pantallas' : 'Sus mesas' }}
+                  </legend>
+                  @for (t of opcionesTerminal(miembro.rol); track t.id) {
+                    <label class="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        [checked]="getAsignadas(miembro).includes(t.id)"
+                        (change)="updateTerminales(miembro, t.id)"
+                      />
+                      {{ t.nombre }}
+                    </label>
+                  } @empty {
+                    <span class="text-muted text-sm">
+                      Crea {{ miembro.rol === 'operador_stand' ? 'pantallas' : 'mesas' }} para
+                      asignarlas.
+                    </span>
+                  }
+                </fieldset>
+              }
             }
           </px-tarjeta>
         } @empty {
@@ -230,6 +268,9 @@ export class EquipoPage implements OnInit {
   protected readonly tope = signal('');
   protected readonly enviando = signal(false);
   protected readonly errorEmail = signal<string | null>(null);
+  protected readonly asignadas = signal<readonly string[]>([]);
+  private readonly pantallas = signal<readonly TerminalPanel[]>([]);
+  private readonly mesas = signal<readonly TerminalPanel[]>([]);
 
   private readonly miRol = computed(() => this.actual.evento()?.miRol ?? null);
   /** El coorganizador no ve *Coorganizador* (¹). */
@@ -242,6 +283,36 @@ export class EquipoPage implements OnInit {
 
   ngOnInit(): void {
     void this.load();
+  }
+
+  protected opcionesTerminal(rol: RolEvento): readonly TerminalPanel[] {
+    const lista = rol === 'operador_stand' ? this.pantallas() : this.mesas();
+    return lista.filter((t) => !t.reemplazadaPor);
+  }
+
+  protected toggleAsignada(id: string): void {
+    const actuales = this.asignadas();
+    this.asignadas.set(
+      actuales.includes(id) ? actuales.filter((a) => a !== id) : [...actuales, id],
+    );
+  }
+
+  protected getAsignadas(miembro: MiembroEquipo): readonly string[] {
+    return miembro.rol === 'operador_stand'
+      ? miembro.terminales.pantallas
+      : miembro.terminales.mesas;
+  }
+
+  protected async updateTerminales(miembro: MiembroEquipo, id: string): Promise<void> {
+    const actuales = this.getAsignadas(miembro);
+    const nuevas = actuales.includes(id) ? actuales.filter((a) => a !== id) : [...actuales, id];
+    await this.run(
+      () =>
+        this.api.updateMiembro(miembro.id, {
+          terminales: miembro.rol === 'operador_stand' ? { pantallas: nuevas } : { mesas: nuevas },
+        }),
+      'Guardamos sus terminales.',
+    );
   }
 
   protected nombreRol(rol: RolEvento): string {
@@ -277,7 +348,13 @@ export class EquipoPage implements OnInit {
         ...(this.nombre().trim() ? { nombre: this.nombre().trim() } : {}),
         rol: this.rol(),
         ...(tope ? { topeRegistrosPuerta: tope } : {}),
+        ...(this.rol() === 'operador_stand'
+          ? { terminales: { pantallas: this.asignadas() } }
+          : this.rol() === 'operador_mesa'
+            ? { terminales: { mesas: this.asignadas() } }
+            : {}),
       });
+      this.asignadas.set([]);
       this.mensaje.set({
         variante: 'ok',
         texto: `Enviamos la invitación a ${this.email().trim()}. Vale 7 días.`,
@@ -337,7 +414,14 @@ export class EquipoPage implements OnInit {
     const actual = this.actual.evento();
     if (!actual) return;
     try {
-      this.miembros.set(await this.api.listMiembros(actual.id));
+      const [miembros, pantallas, mesas] = await Promise.all([
+        this.api.listMiembros(actual.id),
+        this.api.listTerminales(actual.id, 'pantalla'),
+        this.api.listTerminales(actual.id, 'mesa'),
+      ]);
+      this.miembros.set(miembros);
+      this.pantallas.set(pantallas);
+      this.mesas.set(mesas);
       this.estado.set('listo');
     } catch (error) {
       this.traceId.set(error instanceof ErrorApi ? error.traceId : null);

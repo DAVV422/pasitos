@@ -44,6 +44,8 @@ export const PERMISOS = {
   'equipo.read': DC,
   /** Con la regla ¹: un coorganizador no toca a otro coorganizador ni al dueño (HU-203). */
   'equipo.update': DC,
+  /** Ver las pantallas y mesas, con su conexión. */
+  'terminales.read': DC,
   /** Crear, conectar y desconectar pantallas y mesas. */
   'terminales.update': DC,
   /** ² Solo las pantallas asignadas al operador de stand. */

@@ -4,6 +4,7 @@ import {
   eventos,
   miembroTerminales,
   miembrosEvento,
+  mesas,
   miembrosOrganizacion,
   pantallas,
   sessions,
@@ -30,13 +31,23 @@ export interface DatosInvitar {
   readonly email: string;
   readonly nombre?: string | undefined;
   readonly rol: RolInvitable;
-  readonly terminales?: { readonly pantallas?: readonly string[] | undefined } | undefined;
+  readonly terminales?:
+    | {
+        readonly pantallas?: readonly string[] | undefined;
+        readonly mesas?: readonly string[] | undefined;
+      }
+    | undefined;
   readonly topeRegistrosPuerta?: number | null | undefined;
 }
 
 export interface DatosEditarMiembro {
   readonly rol?: RolInvitable | undefined;
-  readonly terminales?: { readonly pantallas?: readonly string[] | undefined } | undefined;
+  readonly terminales?:
+    | {
+        readonly pantallas?: readonly string[] | undefined;
+        readonly mesas?: readonly string[] | undefined;
+      }
+    | undefined;
   readonly topeRegistrosPuerta?: number | null | undefined;
 }
 
@@ -91,6 +102,7 @@ export class EquipoService {
         .select({
           miembroId: miembroTerminales.miembroEventoId,
           pantallaId: miembroTerminales.pantallaId,
+          mesaId: miembroTerminales.mesaId,
         })
         .from(miembroTerminales)
         .where(
@@ -105,7 +117,9 @@ export class EquipoService {
           pantallas: terminales
             .filter((t) => t.miembroId === fila.id && t.pantallaId)
             .map((t) => t.pantallaId as string),
-          mesas: [] as string[],
+          mesas: terminales
+            .filter((t) => t.miembroId === fila.id && t.mesaId)
+            .map((t) => t.mesaId as string),
         },
       }));
     });
@@ -349,23 +363,39 @@ export class EquipoService {
     rol: RolInvitable,
     terminales: DatosInvitar['terminales'],
   ): Promise<void> {
-    const ids = rol === 'operador_stand' ? [...new Set(terminales?.pantallas ?? [])] : [];
-    if (ids.length === 0) {
+    const deStand = rol === 'operador_stand' ? [...new Set(terminales?.pantallas ?? [])] : [];
+    const deMesa = rol === 'operador_mesa' ? [...new Set(terminales?.mesas ?? [])] : [];
+    if (deStand.length > 0) {
+      const delEvento = await tx
+        .select({ id: pantallas.id })
+        .from(pantallas)
+        .where(and(eq(pantallas.eventoId, contexto.eventoId), inArray(pantallas.id, deStand)));
+      if (delEvento.length !== deStand.length) {
+        throw new AppError('NO_ENCONTRADO');
+      }
+    }
+    if (deMesa.length > 0) {
+      const delEvento = await tx
+        .select({ id: mesas.id })
+        .from(mesas)
+        .where(and(eq(mesas.eventoId, contexto.eventoId), inArray(mesas.id, deMesa)));
+      if (delEvento.length !== deMesa.length) {
+        throw new AppError('NO_ENCONTRADO');
+      }
+    }
+    const filas = [
+      ...deStand.map((pantallaId) => ({ pantallaId, mesaId: null })),
+      ...deMesa.map((mesaId) => ({ pantallaId: null, mesaId })),
+    ];
+    if (filas.length === 0) {
       return;
     }
-    const delEvento = await tx
-      .select({ id: pantallas.id })
-      .from(pantallas)
-      .where(and(eq(pantallas.eventoId, contexto.eventoId), inArray(pantallas.id, ids)));
-    if (delEvento.length !== ids.length) {
-      throw new AppError('NO_ENCONTRADO');
-    }
     await tx.insert(miembroTerminales).values(
-      ids.map((pantallaId) => ({
+      filas.map((fila) => ({
         id: uuidv7(),
         organizacionId: contexto.organizacionId,
         miembroEventoId: miembroId,
-        pantallaId,
+        ...fila,
       })),
     );
   }
