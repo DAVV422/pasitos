@@ -30,6 +30,20 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/resumen.page').then((m) => m.ResumenPage),
       },
       {
+        path: 'configuracion',
+        canActivate: [canDoActivate('evento.update')],
+        title: 'Configuración · Pasitos',
+        loadComponent: () =>
+          import('./eventos/configuracion.page').then((m) => m.ConfiguracionPage),
+      },
+      ...(['lugares', 'agenda', 'sponsors', 'preguntas'] as const).map((ruta) => ({
+        path: ruta,
+        canActivate: [canDoActivate('contenido.read')],
+        title: 'Contenido · Pasitos',
+        data: { recurso: ruta === 'agenda' ? 'actividades' : ruta },
+        loadComponent: () => import('./eventos/contenido.page').then((m) => m.ContenidoPage),
+      })),
+      {
         path: 'equipo',
         canActivate: [canDoActivate('equipo.read')],
         title: 'Equipo · Pasitos',

@@ -20,6 +20,12 @@ function buildEvento(miRol: RolEvento): EventoDetalle {
     publicadoAt: null,
     iniciadoAt: null,
     nombrePuntos: 'puntos',
+    descripcion: null,
+    contacto: null,
+    wifi: null,
+    seccionesPublicas: [],
+    imagenes: { logoArchivoId: null, portadaArchivoId: null, planoArchivoId: null },
+    ubicacion: { nombre: null, direccion: null, lat: null, lng: null, mapaEstaticoArchivoId: null },
     miRol,
     stellar: { contratoId: null, enlace: null },
     contadores: { retos: 0, pantallas: 0, pantallasConectadas: 0, mesas: 0, invitados: 0 },
@@ -32,10 +38,36 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
   });
 
   it.each([
-    ['dueno', ['← Mis eventos', 'Resumen', 'Equipo', 'Bitácora']],
-    ['coorganizador', ['← Mis eventos', 'Resumen', 'Equipo', 'Bitácora']],
-    ['registrador', ['← Mis eventos', 'Resumen']],
-    ['financiador', ['← Mis eventos', 'Resumen']],
+    [
+      'dueno',
+      [
+        '← Mis eventos',
+        'Resumen',
+        'Configuración',
+        'Lugares',
+        'Agenda',
+        'Sponsors',
+        'Preguntas',
+        'Equipo',
+        'Bitácora',
+      ],
+    ],
+    [
+      'coorganizador',
+      [
+        '← Mis eventos',
+        'Resumen',
+        'Configuración',
+        'Lugares',
+        'Agenda',
+        'Sponsors',
+        'Preguntas',
+        'Equipo',
+        'Bitácora',
+      ],
+    ],
+    ['registrador', ['← Mis eventos', 'Resumen', 'Lugares', 'Agenda', 'Sponsors', 'Preguntas']],
+    ['financiador', ['← Mis eventos', 'Resumen', 'Lugares', 'Agenda', 'Sponsors', 'Preguntas']],
   ] as const)('%s ve: %j', async (rol, esperado) => {
     TestBed.inject(EventoActualService).set(buildEvento(rol));
     expect(TestBed.inject(ContextoEventoService).rol()).toBe(rol);

@@ -20,6 +20,11 @@ export interface FixturesV9 {
   readonly recursos: Partial<Record<RecursoEvento, string>>;
   /** Para las rutas con `:id` propio de otro parámetro. */
   readonly parametros?: Readonly<Record<string, string>>;
+  /**
+   * Para las rutas `DELETE`: un recurso nuevo por actor, porque el primero que puede lo borra y los
+   * siguientes recibirían 404 por eso y no por su rol.
+   */
+  readonly recrear?: (recurso: RecursoEvento) => Promise<string>;
 }
 
 export interface ResultadoV9 {
@@ -27,6 +32,15 @@ export interface ResultadoV9 {
   readonly actor: string;
   readonly esperado: 'pasa' | 'SIN_PERMISO' | 'NO_ENCONTRADO';
   readonly obtenido: string;
+}
+
+async function buildUrlParaActor(ruta: RutaRegistrada, fixtures: FixturesV9): Promise<string> {
+  const recurso = ruta.permiso?.recurso;
+  if (ruta.metodo === 'DELETE' && recurso && fixtures.recrear) {
+    const nuevo = await fixtures.recrear(recurso);
+    return buildUrl(ruta, { ...fixtures, recursos: { ...fixtures.recursos, [recurso]: nuevo } });
+  }
+  return buildUrl(ruta, fixtures);
 }
 
 function buildUrl(ruta: RutaRegistrada, fixtures: FixturesV9): string {
@@ -73,8 +87,8 @@ export async function runV9(
   const rutas = listRutas(app).filter((r) => r.permiso);
   const resultados: ResultadoV9[] = [];
   for (const ruta of rutas) {
-    const url = buildUrl(ruta, fixtures);
     for (const actor of actores) {
+      const url = await buildUrlParaActor(ruta, fixtures);
       const respuesta = await app.inject({
         method: ruta.metodo as 'GET',
         url,

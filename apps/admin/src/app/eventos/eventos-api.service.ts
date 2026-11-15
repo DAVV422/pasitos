@@ -31,6 +31,22 @@ export interface EventoDetalle {
   readonly publicadoAt: string | null;
   readonly iniciadoAt: string | null;
   readonly nombrePuntos: string;
+  readonly descripcion: string | null;
+  readonly contacto: string | null;
+  readonly wifi: string | null;
+  readonly seccionesPublicas: readonly string[];
+  readonly imagenes: {
+    readonly logoArchivoId: string | null;
+    readonly portadaArchivoId: string | null;
+    readonly planoArchivoId: string | null;
+  };
+  readonly ubicacion: {
+    readonly nombre: string | null;
+    readonly direccion: string | null;
+    readonly lat: number | null;
+    readonly lng: number | null;
+    readonly mapaEstaticoArchivoId: string | null;
+  };
   readonly miRol: RolEvento;
   readonly stellar: { readonly contratoId: string | null; readonly enlace: string | null };
   readonly contadores: {
@@ -70,6 +86,9 @@ export interface MiembroEquipo {
   readonly aceptadoAt: string | null;
   readonly terminales: { readonly pantallas: readonly string[]; readonly mesas: readonly string[] };
 }
+
+/** Una fila de lugares, agenda, sponsors o preguntas: campos según el recurso. */
+export type FilaContenido = { readonly id: string } & Readonly<Record<string, unknown>>;
 
 export type TransicionPanel = 'publicar' | 'abrir' | 'pausar' | 'reanudar';
 
@@ -113,6 +132,61 @@ export class EventosApi {
 
   getEvento(id: string): Promise<EventoDetalle> {
     return firstValueFrom(this.http.get<EventoDetalle>(`${BASE}/eventos/${id}`));
+  }
+
+  updateEvento(id: string, cambios: Record<string, unknown>): Promise<EventoDetalle> {
+    return firstValueFrom(this.http.patch<EventoDetalle>(`${BASE}/eventos/${id}`, cambios));
+  }
+
+  updateUbicacion(
+    id: string,
+    datos: { nombre: string; direccion: string; lat: number | null; lng: number | null },
+  ): Promise<unknown> {
+    return firstValueFrom(this.http.put(`${BASE}/eventos/${id}/ubicacion`, datos));
+  }
+
+  async listContenido(eventoId: string, recurso: string): Promise<readonly FilaContenido[]> {
+    return (
+      await firstValueFrom(
+        this.http.get<Pagina<FilaContenido>>(`${BASE}/eventos/${eventoId}/${recurso}`),
+      )
+    ).items;
+  }
+
+  createContenido(
+    eventoId: string,
+    recurso: string,
+    datos: Record<string, unknown>,
+  ): Promise<FilaContenido> {
+    return firstValueFrom(
+      this.http.post<FilaContenido>(`${BASE}/eventos/${eventoId}/${recurso}`, datos),
+    );
+  }
+
+  updateContenido(
+    recurso: string,
+    id: string,
+    datos: Record<string, unknown>,
+  ): Promise<FilaContenido> {
+    return firstValueFrom(this.http.patch<FilaContenido>(`${BASE}/${recurso}/${id}`, datos));
+  }
+
+  deleteContenido(recurso: string, id: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${BASE}/${recurso}/${id}`));
+  }
+
+  async reorderContenido(
+    eventoId: string,
+    recurso: string,
+    ids: readonly string[],
+  ): Promise<readonly FilaContenido[]> {
+    return (
+      await firstValueFrom(
+        this.http.put<Pagina<FilaContenido>>(`${BASE}/eventos/${eventoId}/${recurso}/orden`, {
+          ids,
+        }),
+      )
+    ).items;
   }
 
   getListaChequeo(id: string): Promise<ListaChequeo> {

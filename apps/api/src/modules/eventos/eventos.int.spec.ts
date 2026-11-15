@@ -5,6 +5,7 @@ import { ROLES_EVENTO } from '@pasitos/dominio';
 import { startApiDePrueba, type ApiDePrueba } from '../../pruebas/api-de-prueba';
 import {
   addInvitado,
+  createRecursoDePrueba,
   addRol,
   createEventoDePrueba,
   createPersonaConSesion,
@@ -220,11 +221,8 @@ describe('Eventos (HU-205)', () => {
     actores.push({ nombre: 'ajena', cookie: ajena.cookie, rol: null });
     const { resultados, rutas } = await runV9(api.app, actores, {
       eventoId: evento.eventoId,
-      recursos: {
-        retos: evento.retoId,
-        pantallas: evento.pantallaId,
-        miembros: await addInvitado(base, evento),
-      },
+      recursos: { ...evento.recursos, miembros: await addInvitado(base, evento) },
+      recrear: (recurso) => createRecursoDePrueba(base, evento, recurso),
     });
     expect(rutas).toBeGreaterThanOrEqual(7);
     expect(resultados.filter((r) => r.esperado !== r.obtenido)).toEqual([]);

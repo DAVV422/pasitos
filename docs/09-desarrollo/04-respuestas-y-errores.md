@@ -205,6 +205,8 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `CANJE_YA_CONFIRMADO` | 409 | Este canje ya se confirmó. |
 | **Evento** | | |
 | `EVENTO_CERRADO` | 422 | El evento ya cerró. Los puntos vencieron. |
+| `LUGAR_EN_USO` | 409 | Este lugar se usa en otra parte. Quita esa referencia primero. |
+| `RECURSO_EN_USO` | 409 | Se usa en otra parte. Quita esa referencia primero. |
 | `EVENTO_NO_PUBLICABLE` | 422 | Todavía falta completar algo para publicar el evento. |
 | `EVENTO_SIN_CONTRATO` | 409 | Todavía estamos registrando el evento en Stellar. Prueba en un minuto. |
 | `TRANSICION_NO_PERMITIDA` | 409 | El evento no está en un estado que permita este cambio. Recarga la página. |

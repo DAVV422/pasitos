@@ -15,14 +15,18 @@ import { AppError, type RolEvento } from '@pasitos/dominio';
 import {
   buildListaChequeo,
   canTransicion,
+  DURACION_MAXIMA_EVENTO_MS,
+  type esquemaEditarEvento,
   TRANSICIONES_EVENTO,
   type TransicionEvento,
 } from '@pasitos/dominio/esquemas';
 import { uuidv7 } from 'uuidv7';
+import type { z } from 'zod';
 import type { ContextoEvento } from '../../common/permisos/marcas';
 import type { ContextoSesion, Reloj } from '../auth/sesiones.service';
 import { toActor } from '../bitacora/actores';
-import { BitacoraService } from '../bitacora/bitacora.service';
+import { BitacoraService, diff } from '../bitacora/bitacora.service';
+import type { ArchivosService } from '../archivos/archivos.service';
 import { toSlug } from '../plataforma/slug';
 
 export interface DatosCrearEvento {
@@ -46,6 +50,12 @@ const OUTBOX_POR_TRANSICION: Partial<Record<TransicionEvento, string>> = {
   reanudar: 'evento.reanudado',
 };
 
+export type DatosEditarEvento = z.infer<typeof esquemaEditarEvento>;
+
+function errorCampo(field: string, message: string): AppError {
+  return new AppError('VALIDACION', { errors: [{ field, code: 'NO_VALIDO', message }] });
+}
+
 function isSlugRepetido(error: unknown): boolean {
   const causa = (error as { cause?: { code?: string; constraint?: string } }).cause ?? error;
   const { code, constraint } = causa as { code?: string; constraint?: string };
@@ -63,6 +73,7 @@ export class EventosService {
     private readonly db: Db,
     private readonly reloj: Reloj,
     private readonly red: 'local' | 'testnet',
+    private readonly archivos: ArchivosService,
   ) {}
 
   /** Solo el dueño de la organización; una organización suspendida no crea eventos. */
@@ -123,6 +134,110 @@ export class EventosService {
       const contadores = await this.getContadores(tx, contexto.eventoId);
       return this.toEvento(evento, contexto.rol, contadores);
     });
+  }
+
+  /**
+   * `PATCH /eventos/:eventoId` (HU-206 §1). El slug, solo en borrador y privado; con el evento
+   * publicado, el inicio no pasa a antes de ahora. Las imágenes, aprobadas y del propósito correcto.
+   * La bitácora guarda solo lo que cambió.
+   */
+  async update(contexto: ContextoEvento, datos: DatosEditarEvento) {
+    const imagenes = [
+      ['logoArchivoId', 'logo_evento'],
+      ['portadaArchivoId', 'portada'],
+      ['planoArchivoId', 'plano'],
+    ] as const;
+    for (const [campo, proposito] of imagenes) {
+      const id = datos[campo];
+      if (typeof id === 'string') {
+        await this.archivos.checkUsable(contexto, id, proposito, campo);
+      }
+    }
+    const resultado = await withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
+      const [actual] = await tx
+        .select()
+        .from(eventos)
+        .where(eq(eventos.id, contexto.eventoId))
+        .for('update');
+      if (!actual) {
+        throw new AppError('NO_ENCONTRADO');
+      }
+      if (datos.slug !== undefined && datos.slug !== actual.slug) {
+        if (actual.estado !== 'borrador' || actual.visibilidad !== 'privado') {
+          throw errorCampo('slug', 'El enlace solo se cambia con el evento en borrador y privado.');
+        }
+      }
+      const inicio = datos.inicioAt ? new Date(datos.inicioAt) : actual.inicioAt;
+      const fin = datos.finAt ? new Date(datos.finAt) : actual.finAt;
+      if (!(fin > inicio)) {
+        throw errorCampo('finAt', 'El fin tiene que ser después del inicio.');
+      }
+      if (fin.getTime() - inicio.getTime() > DURACION_MAXIMA_EVENTO_MS) {
+        throw errorCampo('finAt', 'Un evento dura como mucho 7 días.');
+      }
+      const movioElInicio =
+        datos.inicioAt !== undefined && inicio.getTime() !== actual.inicioAt.getTime();
+      if (actual.estado !== 'borrador' && movioElInicio && inicio < this.reloj.now()) {
+        throw errorCampo(
+          'inicioAt',
+          'Con el evento publicado, el inicio no puede quedar en el pasado.',
+        );
+      }
+      const resto: Omit<DatosEditarEvento, 'inicioAt' | 'finAt'> = { ...datos };
+      delete (resto as DatosEditarEvento).inicioAt;
+      delete (resto as DatosEditarEvento).finAt;
+      const cambios = {
+        ...resto,
+        ...(datos.inicioAt ? { inicioAt: inicio } : {}),
+        ...(datos.finAt ? { finAt: fin } : {}),
+      };
+      try {
+        await tx.transaction((sub) =>
+          sub
+            .update(eventos)
+            .set({ ...cambios, updatedAt: this.reloj.now() })
+            .where(eq(eventos.id, actual.id)),
+        );
+      } catch (error) {
+        if (isSlugRepetido(error)) {
+          throw errorCampo('slug', 'Ese enlace ya lo usa otro evento.');
+        }
+        throw error;
+      }
+      const antes = Object.fromEntries(
+        Object.keys(cambios).map((campo) => [campo, actual[campo as keyof typeof actual]]),
+      );
+      const recortado = diff(antes, cambios);
+      if (Object.keys(recortado.despues).length > 0) {
+        await this.bitacora.record(tx, {
+          actor: toActor(contexto),
+          accion: 'evento.update',
+          organizacionId: actual.organizacionId,
+          eventoId: actual.id,
+          objeto: { tipo: 'evento', id: actual.id, nombre: datos.nombre ?? actual.nombre },
+          antes: recortado.antes,
+          despues: recortado.despues,
+        });
+        await tx.insert(outbox).values({
+          id: uuidv7(),
+          tipo: 'evento.contenido_actualizado',
+          eventoId: actual.id,
+          payload: { eventoId: actual.id },
+        });
+      }
+      const fila = await this.getFila(tx, actual.id);
+      return {
+        reemplazados: imagenes
+          .map(([campo]) => campo)
+          .filter((campo) => datos[campo] !== undefined && datos[campo] !== actual[campo])
+          .map((campo) => actual[campo]),
+        evento: this.toEvento(fila, contexto.rol, await this.getContadores(tx, actual.id)),
+      };
+    });
+    for (const anterior of resultado.reemplazados) {
+      await this.archivos.markReemplazado(contexto, anterior);
+    }
+    return resultado.evento;
   }
 
   getListaChequeo(contexto: ContextoEvento) {
@@ -300,6 +415,23 @@ export class EventosService {
       publicadoAt: evento.publicadoAt,
       iniciadoAt: evento.iniciadoAt,
       nombrePuntos: evento.nombrePuntos,
+      descripcion: evento.descripcion,
+      contacto: evento.contacto,
+      // El wifi lo ve el equipo; nunca es público (HU-206 §1).
+      wifi: evento.wifi,
+      seccionesPublicas: evento.seccionesPublicas,
+      imagenes: {
+        logoArchivoId: evento.logoArchivoId,
+        portadaArchivoId: evento.portadaArchivoId,
+        planoArchivoId: evento.planoArchivoId,
+      },
+      ubicacion: {
+        nombre: evento.lugarNombre,
+        direccion: evento.lugarDireccion,
+        lat: evento.ubicacionLat,
+        lng: evento.ubicacionLng,
+        mapaEstaticoArchivoId: evento.mapaEstaticoArchivoId,
+      },
       miRol: rol,
       stellar: {
         contratoId: evento.contratoId,

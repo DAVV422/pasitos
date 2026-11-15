@@ -13,6 +13,7 @@ import {
 import { startApiDePrueba, type ApiDePrueba } from '../../pruebas/api-de-prueba';
 import {
   addInvitado,
+  createRecursoDePrueba,
   addRol,
   createEventoDePrueba,
   createPersonaConSesion,
@@ -109,11 +110,8 @@ describe('Permisos por rol (HU-204)', () => {
     ];
     const { resultados, rutas } = await runV9(api.app, actores, {
       eventoId: eventoA.eventoId,
-      recursos: {
-        retos: eventoA.retoId,
-        pantallas: eventoA.pantallaId,
-        miembros: await addInvitado(base, eventoA),
-      },
+      recursos: { ...eventoA.recursos, miembros: await addInvitado(base, eventoA) },
+      recrear: (recurso) => createRecursoDePrueba(base, eventoA, recurso),
     });
     expect(rutas).toBeGreaterThanOrEqual(ACCIONES_EVENTO.length);
     const distintos = resultados.filter((r) => r.esperado !== r.obtenido);

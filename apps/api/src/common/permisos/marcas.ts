@@ -15,6 +15,10 @@ export const TABLAS_RECURSO = {
   retos: 'retos',
   pantallas: 'pantallas',
   miembros: 'miembros_evento',
+  lugares: 'lugares',
+  actividades: 'actividades',
+  sponsors: 'sponsors',
+  preguntas: 'preguntas_frecuentes',
 } as const;
 export type RecursoEvento = keyof typeof TABLAS_RECURSO;
 

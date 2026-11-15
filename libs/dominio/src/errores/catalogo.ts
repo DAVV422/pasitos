@@ -100,6 +100,17 @@ export const CATALOGO_ERRORES = {
     title: 'Archivo inválido',
     mensaje: 'El archivo no cumple los requisitos.',
   },
+  // Contenido
+  LUGAR_EN_USO: {
+    status: 409,
+    title: 'Lugar en uso',
+    mensaje: 'Este lugar se usa en otra parte. Quita esa referencia primero.',
+  },
+  RECURSO_EN_USO: {
+    status: 409,
+    title: 'En uso',
+    mensaje: 'Se usa en otra parte. Quita esa referencia primero.',
+  },
   // Evento
   EVENTO_NO_PUBLICABLE: {
     status: 422,

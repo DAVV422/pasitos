@@ -1,5 +1,9 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post } from '@nestjs/common';
-import { esquemaCrearEvento, type TransicionEvento } from '@pasitos/dominio/esquemas';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import {
+  esquemaCrearEvento,
+  esquemaEditarEvento,
+  type TransicionEvento,
+} from '@pasitos/dominio/esquemas';
 import { Contexto, Permiso, SoloSesion, type ContextoEvento } from '../../common/permisos/marcas';
 import { MisEventosService } from '../../common/permisos/roles.repository';
 import { Sesion } from '../../common/sesion/sesion';
@@ -61,6 +65,13 @@ export class EventosController {
   @Permiso('evento.read')
   get(@Contexto() contexto: ContextoEvento) {
     return this.eventos.get(contexto);
+  }
+
+  @Patch('eventos/:eventoId')
+  @Permiso('evento.update')
+  @AccionBitacoraDe('evento.update')
+  update(@Contexto() contexto: ContextoEvento, @Body() cuerpo: unknown) {
+    return this.eventos.update(contexto, esquemaEditarEvento.parse(cuerpo));
   }
 
   /** Todos los roles la leen: dice qué falta, sin datos sensibles. Publicar es de D C. */

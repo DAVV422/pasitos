@@ -51,6 +51,15 @@ export const eventos = pgTable(
     topeAjuste: integer('tope_ajuste').notNull().default(100),
     // D30: si los retos piden haber pasado por la puerta (ajuste 10).
     retosRequierenCheckIn: boolean('retos_requieren_check_in').notNull().default(true),
+    // HU-206: información para asistentes y la página pública.
+    descripcion: text('descripcion'),
+    contacto: text('contacto'),
+    // Nunca es público (HU-206 §1).
+    wifi: text('wifi'),
+    seccionesPublicas: text('secciones_publicas')
+      .array()
+      .notNull()
+      .default(sql`'{descripcion,fecha,lugar,agenda,sponsors,preguntas}'::text[]`),
     // HU-214 y HU-206: imágenes (archivos aprobados) y ubicación marcada en el mapa (ajuste 8).
     logoArchivoId: uuid('logo_archivo_id'),
     portadaArchivoId: uuid('portada_archivo_id'),
@@ -78,6 +87,7 @@ export const eventos = pgTable(
       'eventos_ubicacion',
       sql`(${t.ubicacionLat} is null) = (${t.ubicacionLng} is null) and (${t.ubicacionLat} is null or (${t.ubicacionLat} between -90 and 90 and ${t.ubicacionLng} between -180 and 180))`,
     ),
+    check('eventos_secciones_sin_wifi', sql`not ('wifi' = any(${t.seccionesPublicas}))`),
     check('eventos_modo_registro', sql`${t.modoRegistro} in ('lista')`),
     check('eventos_puntos_check_in', sql`${t.puntosCheckIn} between 0 and 1000`),
     check('eventos_tope_ajuste', sql`${t.topeAjuste} between 1 and 10000`),

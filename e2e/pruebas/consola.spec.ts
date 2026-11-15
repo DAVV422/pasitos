@@ -12,6 +12,12 @@ test.beforeEach(async ({ browserName, page }, testInfo) => {
   await page.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
 });
 
+/** Un PNG de 1 × 1 válido, para la subida (HU-214). */
+const LOGO_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 async function addAutenticadorVirtual(page: Page): Promise<void> {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('WebAuthn.enable');
@@ -82,6 +88,25 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await expect(page.getByRole('button', { name: 'Publicar' })).toBeDisabled();
   await page.getByRole('link', { name: 'Bitácora' }).click();
   await expect(page.getByText('Creó el evento')).toBeVisible();
+
+  // HU-206 y HU-214: configura el evento, sube el logo y crea un lugar.
+  await page.getByRole('link', { name: 'Configuración' }).click();
+  await page.getByLabel('Descripción').fill('Un encuentro para probar Pasitos.');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Guardado.')).toBeVisible();
+  await page.getByRole('tab', { name: 'Imágenes' }).click();
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: LOGO_PNG });
+  await expect(page.getByRole('img', { name: 'Vista previa: Logo' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Quitar la imagen' })).toBeVisible();
+  await page.getByRole('link', { name: 'Lugares' }).click();
+  await page.getByRole('button', { name: 'Agregar lugar' }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill('Auditorio principal');
+  await page.getByLabel('Número en el plano').fill('1');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Auditorio principal')).toBeVisible();
 
   // HU-203: invita a un registrador, que acepta desde otro navegador y ve solo lo suyo.
   await page.getByRole('link', { name: 'Equipo' }).click();

@@ -44,6 +44,11 @@ export const eventoGuard: CanActivateFn = async (ruta) => {
 /** Menú del evento según el rol: cada HU suma sus pantallas. */
 const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: '', texto: 'Resumen', accion: 'evento.read' },
+  { ruta: 'configuracion', texto: 'Configuración', accion: 'evento.update' },
+  { ruta: 'lugares', texto: 'Lugares', accion: 'contenido.read' },
+  { ruta: 'agenda', texto: 'Agenda', accion: 'contenido.read' },
+  { ruta: 'sponsors', texto: 'Sponsors', accion: 'contenido.read' },
+  { ruta: 'preguntas', texto: 'Preguntas', accion: 'contenido.read' },
   { ruta: 'equipo', texto: 'Equipo', accion: 'equipo.read' },
   { ruta: 'bitacora', texto: 'Bitácora', accion: 'bitacora.read' },
 ];

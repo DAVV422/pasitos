@@ -1,12 +1,16 @@
 import {
+  actividades,
   eventos,
+  lugares,
   miembroTerminales,
   miembrosEvento,
   miembrosOrganizacion,
   organizaciones,
   pantallas,
+  preguntasFrecuentes,
   retos,
   sessions,
+  sponsors,
   usuarios,
 } from '@pasitos/db';
 import type { BaseDePrueba } from '@pasitos/db/pruebas';
@@ -24,6 +28,15 @@ export interface EventoDePrueba {
   readonly eventoId: string;
   readonly retoId: string;
   readonly pantallaId: string;
+  /** Un recurso de cada tabla del evento, para V9 (`recursos`). */
+  readonly recursos: {
+    readonly retos: string;
+    readonly pantallas: string;
+    readonly lugares: string;
+    readonly actividades: string;
+    readonly sponsors: string;
+    readonly preguntas: string;
+  };
 }
 
 export async function createEventoDePrueba(
@@ -55,7 +68,45 @@ export async function createEventoDePrueba(
   await base.sistema.db
     .insert(pantallas)
     .values({ id: pantallaId, organizacionId, eventoId, nombre: 'Tablet Sala A' });
-  return { organizacionId, eventoId, retoId, pantallaId };
+  const lugarId = uuidv7();
+  await base.sistema.db
+    .insert(lugares)
+    .values({ id: lugarId, organizacionId, eventoId, tipo: 'sala', nombre: 'Sala A' });
+  const sponsorId = uuidv7();
+  await base.sistema.db
+    .insert(sponsors)
+    .values({ id: sponsorId, organizacionId, eventoId, nombre: 'Sponsor de prueba' });
+  const actividadId = uuidv7();
+  await base.sistema.db.insert(actividades).values({
+    id: actividadId,
+    organizacionId,
+    eventoId,
+    titulo: 'Charla de apertura',
+    inicioAt: inicio,
+    finAt: new Date(inicio.getTime() + 3_600_000),
+  });
+  const preguntaId = uuidv7();
+  await base.sistema.db.insert(preguntasFrecuentes).values({
+    id: preguntaId,
+    organizacionId,
+    eventoId,
+    pregunta: '¿Hay estacionamiento?',
+    respuesta: 'Sí, en el subsuelo.',
+  });
+  return {
+    organizacionId,
+    eventoId,
+    retoId,
+    pantallaId,
+    recursos: {
+      retos: retoId,
+      pantallas: pantallaId,
+      lugares: lugarId,
+      actividades: actividadId,
+      sponsors: sponsorId,
+      preguntas: preguntaId,
+    },
+  };
 }
 
 export interface PersonaDePrueba {
@@ -149,4 +200,52 @@ export async function addInvitado(
     estado: 'invitado',
   });
   return id;
+}
+
+/** Un recurso nuevo del evento, para las rutas `DELETE` de V9. */
+export async function createRecursoDePrueba(
+  base: BaseDePrueba,
+  evento: EventoDePrueba,
+  recurso: string,
+): Promise<string> {
+  const id = uuidv7();
+  const { organizacionId, eventoId } = evento;
+  switch (recurso) {
+    case 'lugares':
+      await base.sistema.db
+        .insert(lugares)
+        .values({ id, organizacionId, eventoId, tipo: 'stand', nombre: 'Stand V9' });
+      return id;
+    case 'sponsors':
+      await base.sistema.db
+        .insert(sponsors)
+        .values({ id, organizacionId, eventoId, nombre: 'Sponsor V9' });
+      return id;
+    case 'actividades': {
+      const inicio = new Date('2026-12-01T13:00:00Z');
+      await base.sistema.db.insert(actividades).values({
+        id,
+        organizacionId,
+        eventoId,
+        titulo: 'Actividad V9',
+        inicioAt: inicio,
+        finAt: new Date(inicio.getTime() + 3_600_000),
+      });
+      return id;
+    }
+    case 'preguntas':
+      await base.sistema.db
+        .insert(preguntasFrecuentes)
+        .values({ id, organizacionId, eventoId, pregunta: '¿V9?', respuesta: 'Sí.' });
+      return id;
+    case 'retos':
+      await base.sistema.db
+        .insert(retos)
+        .values({ id, organizacionId, eventoId, nombre: 'Reto V9', puntos: 5, topeTotal: 10 });
+      return id;
+    case 'miembros':
+      return addInvitado(base, evento);
+    default:
+      throw new Error(`V9: no sé crear ${recurso}`);
+  }
 }

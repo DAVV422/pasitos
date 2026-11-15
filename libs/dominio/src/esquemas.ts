@@ -5,3 +5,4 @@ export * from './movimientos/publico';
 export * from './auth/esquemas';
 export * from './plataforma/esquemas';
 export * from './eventos/ciclo';
+export * from './eventos/esquemas';
