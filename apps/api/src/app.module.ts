@@ -6,6 +6,7 @@ import { buildLoggerParams } from './common/observabilidad/logger';
 import { type AppConfig } from './config/app.config';
 import { ConfigModule } from './config/config.module';
 import { DbModule } from './infra/db/db.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { MovimientosModule } from './modules/movimientos/movimientos.module';
 import { SaludModule } from './modules/salud/salud.module';
 
@@ -18,6 +19,7 @@ export class AppModule {
         LoggerModule.forRoot(buildLoggerParams(config)),
         ConfigModule.forConfig(config),
         DbModule,
+        AuthModule,
         SaludModule,
         MovimientosModule,
       ],

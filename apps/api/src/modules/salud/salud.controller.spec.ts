@@ -24,6 +24,8 @@ describe('GET /api/v1/salud', () => {
           provide: APP_CONFIG,
           useValue: loadAppConfig({
             DATABASE_URL_APP: 'postgres://x:y@localhost/z',
+            DATABASE_URL_SISTEMA: 'postgres://x:y@localhost/z',
+            LLAVE_CIFRADO_DATOS: Buffer.alloc(32, 1).toString('base64'),
             VERSION: 'abc123',
           }),
         },

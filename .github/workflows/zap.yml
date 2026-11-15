@@ -33,7 +33,11 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: env | grep -E '^(POSTGRES|PASITOS|DATABASE)_' > .env && echo "NODE_ENV=test" >> .env
+      - run: |
+          env | grep -E '^(POSTGRES|PASITOS|DATABASE)_' > .env
+          echo "NODE_ENV=test" >> .env
+          echo "LLAVE_CIFRADO_DATOS=$(openssl rand -base64 32)" >> .env
+          echo "HIBP_ACTIVO=false" >> .env
       - run: docker compose -f infra/compose.dev.yml --env-file .env up -d --wait
       - run: pnpm db:migrar && pnpm semilla demo
       - run: pnpm exec nx run-many -t build -p api app sala mesa admin plataforma sitio

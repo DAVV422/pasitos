@@ -15,6 +15,8 @@ export interface BaseDePrueba {
   readonly owner: ConexionDb;
   readonly app: ConexionDb;
   readonly sistema: ConexionDb;
+  /** Para armar la configuración de una app (por ejemplo, el API completo en un test). */
+  readonly urls: { readonly app: string; readonly sistema: string };
   stop(): Promise<void>;
 }
 
@@ -55,6 +57,7 @@ export async function startBaseDePrueba(): Promise<BaseDePrueba> {
     owner,
     app,
     sistema,
+    urls: { app: url('pasitos_app', CLAVES.app), sistema: url('pasitos_sistema', CLAVES.sistema) },
     async stop() {
       await Promise.all([owner.pool.end(), app.pool.end(), sistema.pool.end()]);
       await contenedor.stop();

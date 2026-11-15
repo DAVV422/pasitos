@@ -39,6 +39,31 @@ export const CATALOGO_ERRORES = {
     mensaje: 'Tu sesión venció. Inicia sesión de nuevo.',
   },
   SIN_PERMISO: { status: 403, title: 'Sin permiso', mensaje: 'No tienes permiso para esto.' },
+  CREDENCIALES_INVALIDAS: {
+    status: 401,
+    title: 'Correo o contraseña incorrectos',
+    mensaje: 'El correo o la contraseña no son correctos.',
+  },
+  SEGUNDO_FACTOR_REQUERIDO: {
+    status: 401,
+    title: 'Falta el segundo factor',
+    mensaje: 'Confirma tu identidad con tu segundo factor.',
+  },
+  CODIGO_INVALIDO: {
+    status: 401,
+    title: 'Código incorrecto',
+    mensaje: 'El código no es correcto o ya venció. Prueba con el que muestra tu app ahora.',
+  },
+  PASSWORD_INSEGURA: {
+    status: 422,
+    title: 'Contraseña insegura',
+    mensaje: 'Elige otra contraseña: esta es muy corta o muy conocida.',
+  },
+  ENLACE_VENCIDO: {
+    status: 422,
+    title: 'Enlace vencido',
+    mensaje: 'Este enlace ya no sirve. Pide uno nuevo.',
+  },
   // Retos y puntos
   RETO_YA_COMPLETADO: {
     status: 409,

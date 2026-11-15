@@ -1,6 +1,7 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { AppError } from '../../common/errors/app-error';
+import { Publica } from '../../common/sesion/sesion';
 import { SaludService } from './salud.service';
 
 export interface EstadoSalud {
@@ -16,6 +17,7 @@ export interface EstadoSalud {
  * Responde 503 si la base no responde.
  */
 @Controller('salud')
+@Publica()
 export class SaludController {
   constructor(
     private readonly saludService: SaludService,

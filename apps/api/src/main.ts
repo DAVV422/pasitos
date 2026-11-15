@@ -1,5 +1,6 @@
 import './instrument';
 import type { IncomingMessage } from 'node:http';
+import fastifyCookie from '@fastify/cookie';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Logger } from 'nestjs-pino';
@@ -29,6 +30,7 @@ async function bootstrap(): Promise<void> {
     },
   );
   app.useLogger(app.get(Logger));
+  await app.register(fastifyCookie);
   app.setGlobalPrefix('api/v1');
   app.enableShutdownHooks();
 

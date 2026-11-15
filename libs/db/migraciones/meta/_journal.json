@@ -71,6 +71,13 @@
       "when": 1794727867837,
       "tag": "0009_envios_correo",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794728547345,
+      "tag": "0010_equipo",
+      "breakpoints": true
     }
   ]
 }

@@ -43,7 +43,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Variables de entorno del entorno temporal
-        run: env | grep -E '^(POSTGRES|PASITOS|DATABASE|SENTRY)_' > .env && echo "NODE_ENV=test" >> .env
+        # La llave de cifrado se genera en cada corrida: el entorno temporal no guarda nada.
+        run: |
+          env | grep -E '^(POSTGRES|PASITOS|DATABASE|SENTRY)_' > .env
+          echo "NODE_ENV=test" >> .env
+          echo "LLAVE_CIFRADO_DATOS=$(openssl rand -base64 32)" >> .env
+          echo "HIBP_ACTIVO=false" >> .env
+          echo "CORREO_ADAPTADOR=archivo" >> .env
 
       - name: Base de datos
         run: docker compose -f infra/compose.dev.yml --env-file .env up -d --wait

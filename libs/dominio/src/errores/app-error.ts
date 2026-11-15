@@ -9,6 +9,8 @@ export class AppError extends Error {
   readonly code: CodigoError;
   readonly meta: Readonly<Record<string, unknown>> | undefined;
   readonly errors: readonly ErrorDeCampo[] | undefined;
+  /** Texto para la persona en lugar del del catálogo (por ejemplo, por qué no sirve una contraseña). */
+  readonly detail: string | undefined;
 
   constructor(
     code: CodigoError,
@@ -23,5 +25,6 @@ export class AppError extends Error {
     this.code = code;
     this.meta = opciones.meta;
     this.errors = opciones.errors;
+    this.detail = opciones.detail;
   }
 }

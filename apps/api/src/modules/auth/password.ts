@@ -1,4 +1,5 @@
 import { Algorithm, hash, verify } from '@node-rs/argon2';
+import { PASSWORD_LARGO_MAX, PASSWORD_LARGO_MIN } from '@pasitos/dominio/esquemas';
 
 /**
  * Contraseñas del equipo y de Pasitos (HU-201 §2, D26). Argon2id con la recomendación de OWASP.
@@ -11,8 +12,7 @@ export const PARAMETROS_ARGON2 = {
   parallelism: 1,
 } as const;
 
-export const PASSWORD_LARGO_MIN = 8;
-export const PASSWORD_LARGO_MAX = 128;
+export { PASSWORD_LARGO_MAX, PASSWORD_LARGO_MIN } from '@pasitos/dominio/esquemas';
 
 export function hashPassword(password: string): Promise<string> {
   return hash(password, PARAMETROS_ARGON2);

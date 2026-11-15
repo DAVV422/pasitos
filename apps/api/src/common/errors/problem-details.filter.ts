@@ -44,6 +44,12 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       ...(meta ? { meta } : {}),
     };
 
+    // DEMASIADOS_INTENTOS (y cualquier otro que lo pida): cuántos segundos esperar.
+    const espera = meta?.['reintentarEnSegundos'];
+    if (typeof espera === 'number' && espera > 0) {
+      void reply.header('Retry-After', String(Math.ceil(espera)));
+    }
+
     void reply
       .status(definicion.status)
       .header('Content-Type', 'application/problem+json')
@@ -61,6 +67,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
         code: error.code,
         ...(error.errors ? { errors: error.errors } : {}),
         ...(error.meta ? { meta: error.meta } : {}),
+        ...(error.detail ? { detail: error.detail } : {}),
       };
     }
     if (error instanceof ZodError) {

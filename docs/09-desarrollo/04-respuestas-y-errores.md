@@ -161,6 +161,9 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `CREDENCIALES_INVALIDAS` | 401 | El correo o la contraseña no son correctos. |
 | `SIN_PERMISO` | 403 | No tienes permiso para esto. |
 | `SEGUNDO_FACTOR_REQUERIDO` | 401 | Confirma tu identidad con tu segundo factor. |
+| `CODIGO_INVALIDO` | 401 | El código no es correcto o ya venció. Prueba con el que muestra tu app ahora. |
+| `PASSWORD_INSEGURA` | 422 | Elige otra contraseña: esta es muy corta o muy conocida. |
+| `ENLACE_VENCIDO` | 422 | Este enlace ya no sirve. Pide uno nuevo. |
 | `AJUSTE_PROPIO` | 403 | No puedes ajustar tus propios puntos. |
 | `PIN_INVALIDO` | 403 | El PIN no es correcto. |
 | **Acceso del asistente** | | |

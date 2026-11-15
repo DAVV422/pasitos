@@ -9,6 +9,24 @@ const esquemaConfig = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   DATABASE_URL_APP: z.string().url(),
+  // Sesiones, tokens y la consola de plataforma: tablas globales y búsquedas entre
+  // organizaciones (ajuste 13 de la fase 2). Solo lo inyectan los módulos auth y plataforma.
+  DATABASE_URL_SISTEMA: z.string().url(),
+  // 32 bytes en base64 (`base64` o `version:base64`). Cifra el secreto de TOTP y los enlaces de
+  // invitación (HU-201 §6). Las anteriores, para leer lo cifrado antes de rotarla.
+  LLAVE_CIFRADO_DATOS: z.string().min(40),
+  LLAVES_CIFRADO_ANTERIORES: z.string().default(''),
+  // Origen de las apps: los enlaces de los correos y el origen de WebAuthn.
+  PUBLIC_URL: z.string().url().default('http://localhost:8080'),
+  WEBAUTHN_RP_ID: z.string().min(1).default('localhost'),
+  WEBAUTHN_RP_NAME: z.string().min(1).default('Pasitos'),
+  // Have I Been Pwned (k-anonimato). Apagado en los tests y el CI.
+  HIBP_ACTIVO: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((valor) => valor === 'true'),
+  CORREO_TOPE_DIARIO: z.coerce.number().int().min(1).default(80),
+  CORREO_RESERVA_SEGURIDAD: z.coerce.number().int().min(0).default(10),
   SENTRY_DSN: z.string().url().optional().or(z.literal('')),
   SENTRY_ENVIRONMENT: z.string().default('desarrollo'),
   VERSION: z.string().default('local'),
