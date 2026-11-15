@@ -61,8 +61,10 @@ En un volumen del VPS:
 ```
 
 - **Nombres aleatorios** (el `id` del archivo). El nombre original solo se guarda en la base, limpio, como dato.
-- **Caddy sirve** `/archivos/publicos/...` como archivos estáticos con `Content-Type` fijo por extensión, `X-Content-Type-Options: nosniff` y caché larga. Cloudflare los cachea.
-- Los archivos de un evento **Privado** se sirven a través del API, que comprueba la sesión, y no como estáticos.
+- **Todos los archivos los sirve el API** (`GET /archivos/:id/:variante`), con `Content-Type` fijo por extensión y `X-Content-Type-Options: nosniff`:
+  - Evento *Público* o *Solo con enlace*: `Cache-Control: public` con caché larga, y Cloudflare los cachea.
+  - Evento *Privado*: comprueba la sesión y responde `Cache-Control: private`.
+- Así, una sola regla decide quién ve qué, y cambiar la visibilidad del evento no obliga a mover carpetas. La carpeta se sigue llamando `publicos/` porque ahí están los aprobados, listos para servir.
 - **Copias de seguridad** (D56): las imágenes se copian cifradas a Google Drive junto con la base.
 
 ## 4. Tabla `archivos`
@@ -70,7 +72,7 @@ En un volumen del VPS:
 | Columna | Nota |
 |---|---|
 | `organizacion_id`, `evento_id` | Aislamiento por organización (D47) |
-| `proposito` | `logo_evento` · `portada` · `plano` · `logo_sponsor` · `imagen_premio` · `importacion_csv` |
+| `proposito` | `logo_evento` · `portada` · `plano` · `logo_sponsor` · `imagen_premio` · `importacion_csv` · `mapa_estatico` (lo pide el servidor, sección 5) |
 | `nombre_original` | Limpio, solo para mostrar |
 | `mime`, `tamano_bytes`, `ancho`, `alto`, `sha256` | Del archivo procesado. El `sha256` permite detectar el mismo archivo subido dos veces |
 | `estado` | `cuarentena` · `aprobado` · `rechazado` |
@@ -86,12 +88,13 @@ El **plano del lugar** es una imagen que sube el organizador (sección 1). La **
 
 | Dónde | Cómo | Por qué |
 |---|---|---|
-| Panel del organizador | Buscador de lugares (*Places Autocomplete*) para elegir la dirección. Se guardan `place_id`, latitud y longitud | Evita direcciones mal escritas |
+| Panel del organizador | El organizador escribe el nombre del lugar y la dirección, y **marca el punto en un mapa** (*Maps JavaScript API*: un clic pone el marcador y se puede arrastrar). Se guardan latitud y longitud. **No se buscan direcciones** | Lo que importa es el punto en el mapa; sin buscador, menos llamadas a Google y menos costo |
 | Sitio público y app del asistente | Una **imagen estática del mapa**, que el servidor pide una sola vez a Google (*Static Maps*) y guarda como un archivo más | No carga el JavaScript de Google en `/app` (cuida el peso) y Google no recibe la IP de cada asistente |
 | Botón *Cómo llegar* | Abre Google Maps con la ubicación (`https://www.google.com/maps/search/?api=1&query=…`) | No necesita la llave; abre la app de mapas del celular |
 
 **La llave de Google:**
-- **Una llave por uso:** la del panel, restringida por dominio (*HTTP referrer*) y solo a *Places*; la del servidor, restringida por IP del VPS y solo a *Static Maps*.
+- **Una llave por uso:** la del panel, restringida por dominio (*HTTP referrer*) y solo a *Maps JavaScript API*; la del servidor, restringida por IP del VPS y solo a *Static Maps*.
+- **Sin llaves** (desarrollo y CI), la latitud y la longitud se escriben a mano y no hay imagen del mapa.
 - Con un tope de uso diario en la consola de Google, para que un abuso no genere costos.
 - Se guarda como secreto (sops + age), nunca en el repositorio.
 

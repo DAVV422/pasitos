@@ -190,7 +190,7 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `RETO_NO_DISPONIBLE` | 422 | Este reto no está activo ahora. |
 | `TOPE_ALCANZADO` | 422 | Este reto ya entregó todos sus premios. |
 | `RETO_CON_PARTICIPACIONES` | 409 | Este reto ya tiene participaciones. Puedes desactivarlo. |
-| `TOPE_MENOR_A_ENTREGADOS` | 422 | El tope no puede ser menor que lo ya entregado. |
+| `TOPE_NO_BAJA` | 422 | Una vez publicado, el tope de un reto solo puede subir. |
 | `TOPE_PUNTOS_PERSONA` | 422 | Llegaste al máximo de puntos de este evento. |
 | **Canjes** | | |
 | `SALDO_INSUFICIENTE` | 409 | Te faltan puntos para este canje. |
