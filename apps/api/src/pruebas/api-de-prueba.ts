@@ -1,10 +1,12 @@
 import fastifyCookie from '@fastify/cookie';
+import type { Type } from '@nestjs/common';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
 import { miembrosOrganizacion, organizaciones, usuarios } from '@pasitos/db';
 import type { BaseDePrueba } from '@pasitos/db/pruebas';
 import { uuidv7 } from 'uuidv7';
 import { AppModule } from '../app.module';
+import { checkMarcasDeRutas } from '../common/permisos/rutas';
 import { loadAppConfig } from '../config/app.config';
 import { hashPassword } from '../modules/auth/password';
 import {
@@ -40,7 +42,10 @@ export interface ApiDePrueba {
 }
 
 /** El API completo (AppModule) contra la base de prueba, con reloj y HIBP falsos. */
-export async function startApiDePrueba(base: BaseDePrueba): Promise<ApiDePrueba> {
+export async function startApiDePrueba(
+  base: BaseDePrueba,
+  opciones: { controladores?: Type[] } = {},
+): Promise<ApiDePrueba> {
   const reloj = new RelojDePrueba();
   const filtradas = new FiltradasDePrueba();
   const config = loadAppConfig({
@@ -52,7 +57,10 @@ export async function startApiDePrueba(base: BaseDePrueba): Promise<ApiDePrueba>
     PUBLIC_URL: 'http://localhost:8080',
     HIBP_ACTIVO: 'false',
   });
-  const modulo = await Test.createTestingModule({ imports: [AppModule.forConfig(config)] })
+  const modulo = await Test.createTestingModule({
+    imports: [AppModule.forConfig(config)],
+    controllers: opciones.controladores ?? [],
+  })
     .overrideProvider(RELOJ)
     .useValue(reloj)
     .overrideProvider(PASSWORDS_FILTRADAS)
@@ -64,6 +72,7 @@ export async function startApiDePrueba(base: BaseDePrueba): Promise<ApiDePrueba>
   await app.register(fastifyCookie);
   app.setGlobalPrefix('api/v1');
   await app.init();
+  checkMarcasDeRutas(app);
   await app.getHttpAdapter().getInstance().ready();
   return { app, reloj, filtradas, close: () => app.close() };
 }

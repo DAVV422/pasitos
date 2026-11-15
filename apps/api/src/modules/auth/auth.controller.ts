@@ -24,6 +24,7 @@ import type { AuthenticationResponseJSON, RegistrationResponseJSON } from '@simp
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
+import { SoloSesion } from '../../common/permisos/marcas';
 import { Publica, Sesion, SinSegundoFactor } from '../../common/sesion/sesion';
 import { AuthService } from './auth.service';
 import { describeDispositivo } from './dispositivo';
@@ -42,6 +43,7 @@ const esquemaAltaPasskey = esquemaNombrePasskey.extend({ respuesta: esquemaRespu
 
 /** `/auth` (API §3.1, HU-201). El controlador solo valida y arma la respuesta. */
 @Controller('auth')
+@SoloSesion()
 export class AuthController {
   constructor(
     private readonly auth: AuthService,

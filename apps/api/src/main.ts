@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { checkMarcasDeRutas } from './common/permisos/rutas';
 import { resolveTraceId } from './common/observabilidad/trace-id';
 import { loadAppConfig } from './config/app.config';
 
@@ -32,6 +33,8 @@ async function bootstrap(): Promise<void> {
   app.useLogger(app.get(Logger));
   await app.register(fastifyCookie);
   app.setGlobalPrefix('api/v1');
+  // HU-204: ninguna ruta sin marca de acceso (@Publica, @SoloSesion, @Permiso o @Plataforma).
+  checkMarcasDeRutas(app);
   app.enableShutdownHooks();
 
   await app.listen(config.PORT, '0.0.0.0');

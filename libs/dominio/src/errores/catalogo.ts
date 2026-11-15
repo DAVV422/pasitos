@@ -64,6 +64,12 @@ export const CATALOGO_ERRORES = {
     title: 'Enlace vencido',
     mensaje: 'Este enlace ya no sirve. Pide uno nuevo.',
   },
+  // Evento
+  EVENTO_CERRADO: {
+    status: 422,
+    title: 'Evento cerrado',
+    mensaje: 'El evento ya cerró. Los puntos vencieron.',
+  },
   // Retos y puntos
   RETO_YA_COMPLETADO: {
     status: 409,

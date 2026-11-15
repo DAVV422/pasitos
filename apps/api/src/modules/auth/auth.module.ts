@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD, Reflector } from '@nestjs/core';
 import { CorreosService } from '@pasitos/correos';
 import { buildCifrador } from '../../common/cifrado';
-import { SessionGuard } from '../../common/sesion/sesion';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { DbService, DbSistemaService } from '../../infra/db/db.module';
 import { AuthController } from './auth.controller';
@@ -20,8 +18,8 @@ import { RELOJ, RELOJ_SISTEMA, SesionesService, type Reloj } from './sesiones.se
 export const CIFRADOR = Symbol('CIFRADOR');
 
 /**
- * Sesión del equipo (HU-201). Registra el `SessionGuard` global: toda ruta pide sesión salvo
- * `@Publica()`. Los servicios son clases sin decoradores; aquí se arman.
+ * Sesión del equipo (HU-201). Los guards globales están en SeguridadModule. Los servicios son
+ * clases sin decoradores; aquí se arman.
  */
 @Module({
   controllers: [AuthController],
@@ -100,12 +98,6 @@ export const CIFRADOR = Symbol('CIFRADOR');
           rpNombre: config.WEBAUTHN_RP_NAME,
           origen: new URL(config.PUBLIC_URL).origin,
         }),
-    },
-    {
-      provide: APP_GUARD,
-      inject: [Reflector, SesionesService],
-      useFactory: (reflector: Reflector, sesiones: SesionesService) =>
-        new SessionGuard(reflector, sesiones),
     },
   ],
   exports: [SesionesService, CorreosService, CIFRADOR, RELOJ],

@@ -13,8 +13,8 @@ import {
   type SesionesService,
 } from '../../modules/auth/sesiones.service';
 
-const META_PUBLICA = 'pasitos:publica';
-const META_SEGUNDO_FACTOR = 'pasitos:segundo-factor';
+export const META_PUBLICA = 'pasitos:publica';
+export const META_SEGUNDO_FACTOR = 'pasitos:segundo-factor';
 
 /** Ruta sin sesión (`/auth/login`, `/salud`, `/publico/*`…). */
 export const Publica = () => SetMetadata(META_PUBLICA, true);
