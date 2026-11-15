@@ -5,3 +5,4 @@
 @import '../../../libs/ui/src/estilos/base.css';
 
 @source '../../../libs/ui/src';
+@source '../../../libs/panel/src';

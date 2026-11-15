@@ -37,8 +37,14 @@ export default [
               onlyDependOnLibsWithTags: ['scope:compartido', 'scope:ui', 'scope:web'],
             },
             {
+              // libs/panel (ajuste 12 de la fase 2): lo común de /admin y /plataforma.
               sourceTag: 'scope:panel',
-              onlyDependOnLibsWithTags: ['scope:compartido', 'scope:ui', 'scope:web'],
+              onlyDependOnLibsWithTags: [
+                'scope:compartido',
+                'scope:ui',
+                'scope:web',
+                'scope:panel',
+              ],
             },
             {
               sourceTag: 'scope:publico',

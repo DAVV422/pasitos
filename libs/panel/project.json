@@ -1,0 +1,32 @@
+{
+  "name": "panel",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/panel/src",
+  "prefix": "pnl",
+  "projectType": "library",
+  "tags": ["scope:panel"],
+  "targets": {
+    "paquete": {
+      "executor": "@nx/angular:ng-packagr-lite",
+      "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "project": "libs/panel/ng-package.json",
+        "tsConfig": "libs/panel/tsconfig.lib.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "libs/panel/tsconfig.lib.prod.json"
+        },
+        "development": {}
+      }
+    },
+    "test": {
+      "executor": "@nx/angular:unit-test",
+      "options": {
+        "watch": false,
+        "buildTarget": "panel:paquete:development"
+      }
+    }
+  }
+}

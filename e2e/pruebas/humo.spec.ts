@@ -10,15 +10,19 @@ const APPS = [
   { ruta: '/app/', titulo: 'Tu entrada a Pasitos' },
   { ruta: '/sala/', titulo: 'Pantalla de sala' },
   { ruta: '/mesa/', titulo: 'Mesa de canje' },
-  { ruta: '/admin/', titulo: 'Panel del organizador' },
-  { ruta: '/plataforma/', titulo: 'Consola de plataforma' },
+  // Sin sesión, el panel y la consola llevan a entrar (HU-201).
+  { ruta: '/admin/', titulo: 'Entrar' },
+  { ruta: '/plataforma/', titulo: 'Entrar' },
 ];
 
 function capturarErrores(pagina: Page): string[] {
   const errores: string[] = [];
   pagina.on('pageerror', (error) => errores.push(error.message));
   pagina.on('console', (mensaje) => {
-    if (mensaje.type() === 'error') errores.push(mensaje.text());
+    // Sin sesión, GET /auth/yo responde 401 a propósito (HU-201) y el navegador lo anota.
+    const sesionEsperada =
+      mensaje.text().includes('status of 401') && mensaje.location().url.endsWith('/auth/yo');
+    if (mensaje.type() === 'error' && !sesionEsperada) errores.push(mensaje.text());
   });
   return errores;
 }
