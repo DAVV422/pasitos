@@ -132,3 +132,21 @@ export async function addRol(
   }
   return miembroId;
 }
+
+/** Un miembro invitado que todavía no aceptó (para las rutas `/miembros/:id` en V9). */
+export async function addInvitado(
+  base: BaseDePrueba,
+  evento: EventoDePrueba,
+  rol: Exclude<RolEvento, 'dueno'> = 'registrador',
+): Promise<string> {
+  const id = uuidv7();
+  await base.sistema.db.insert(miembrosEvento).values({
+    id,
+    organizacionId: evento.organizacionId,
+    eventoId: evento.eventoId,
+    emailInvitado: `invitado-${id}@example.com`,
+    rol,
+    estado: 'invitado',
+  });
+  return id;
+}

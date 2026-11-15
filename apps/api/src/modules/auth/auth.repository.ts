@@ -1,14 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { and, desc, eq, gt, isNull, lt, ne, or, sql } from 'drizzle-orm';
-import {
-  miembrosOrganizacion,
-  passkeys,
-  sessions,
-  tokens,
-  usuarios,
-  type Db,
-  type Tx,
-} from '@pasitos/db';
+import { passkeys, sessions, tokens, usuarios, type Db, type Tx } from '@pasitos/db';
 import { uuidv7 } from 'uuidv7';
 
 type Ejecutor = Db | Tx;
@@ -103,17 +95,17 @@ export class AuthRepository {
     if (usuario.rolPlataforma !== null) {
       return true;
     }
-    const [fila] = await this.sistema
-      .select({ id: miembrosOrganizacion.id })
-      .from(miembrosOrganizacion)
-      .where(
-        and(
-          eq(miembrosOrganizacion.usuarioId, usuario.id),
-          eq(miembrosOrganizacion.estado, 'activo'),
-        ),
-      )
-      .limit(1);
-    return fila !== undefined;
+    // Dueña de una organización, o coorganizador de un evento que no terminó (HU-201 §4, HU-203).
+    const { rows } = await this.sistema.execute<{ requerido: boolean }>(sql`
+      select exists (
+        select 1 from miembros_organizacion m
+         where m.usuario_id = ${usuario.id} and m.estado = 'activo'
+      ) or exists (
+        select 1 from miembros_evento me join eventos e on e.id = me.evento_id
+         where me.usuario_id = ${usuario.id} and me.estado = 'activo'
+           and me.rol = 'coorganizador' and e.estado not in ('cerrado', 'archivado')
+      ) as requerido`);
+    return rows[0]?.requerido === true;
   }
 
   // ── Sesiones ────────────────────────────────────────────────────────────────

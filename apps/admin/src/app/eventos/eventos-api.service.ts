@@ -59,6 +59,18 @@ export interface FilaBitacoraEvento {
   readonly dispositivo: string | null;
 }
 
+export interface MiembroEquipo {
+  readonly id: string;
+  readonly email: string;
+  readonly nombre: string | null;
+  readonly rol: Exclude<RolEvento, 'dueno'>;
+  readonly estado: 'invitado' | 'activo' | 'vencido' | 'revocado';
+  readonly topeRegistrosPuerta: number | null;
+  readonly invitadoPor: string | null;
+  readonly aceptadoAt: string | null;
+  readonly terminales: { readonly pantallas: readonly string[]; readonly mesas: readonly string[] };
+}
+
 export type TransicionPanel = 'publicar' | 'abrir' | 'pausar' | 'reanudar';
 
 interface Pagina<T> {
@@ -109,6 +121,38 @@ export class EventosApi {
 
   transition(id: string, transicion: TransicionPanel): Promise<EventoDetalle> {
     return firstValueFrom(this.http.post<EventoDetalle>(`${BASE}/eventos/${id}/${transicion}`, {}));
+  }
+
+  async listMiembros(eventoId: string): Promise<readonly MiembroEquipo[]> {
+    return (
+      await firstValueFrom(
+        this.http.get<Pagina<MiembroEquipo>>(`${BASE}/eventos/${eventoId}/miembros`),
+      )
+    ).items;
+  }
+
+  inviteMiembro(
+    eventoId: string,
+    datos: { email: string; nombre?: string; rol: string; topeRegistrosPuerta?: number | null },
+  ): Promise<{ id: string }> {
+    return firstValueFrom(
+      this.http.post<{ id: string }>(`${BASE}/eventos/${eventoId}/miembros`, datos),
+    );
+  }
+
+  updateMiembro(
+    id: string,
+    datos: { rol?: string; topeRegistrosPuerta?: number | null },
+  ): Promise<void> {
+    return firstValueFrom(this.http.patch<void>(`${BASE}/miembros/${id}`, datos));
+  }
+
+  resendMiembro(id: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${BASE}/miembros/${id}/reenviar`, {}));
+  }
+
+  removeMiembro(id: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${BASE}/miembros/${id}`));
   }
 
   listBitacora(

@@ -4,6 +4,7 @@ import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import { ROLES_EVENTO } from '@pasitos/dominio';
 import { startApiDePrueba, type ApiDePrueba } from '../../pruebas/api-de-prueba';
 import {
+  addInvitado,
   addRol,
   createEventoDePrueba,
   createPersonaConSesion,
@@ -219,7 +220,11 @@ describe('Eventos (HU-205)', () => {
     actores.push({ nombre: 'ajena', cookie: ajena.cookie, rol: null });
     const { resultados, rutas } = await runV9(api.app, actores, {
       eventoId: evento.eventoId,
-      recursos: { retos: evento.retoId, pantallas: evento.pantallaId },
+      recursos: {
+        retos: evento.retoId,
+        pantallas: evento.pantallaId,
+        miembros: await addInvitado(base, evento),
+      },
     });
     expect(rutas).toBeGreaterThanOrEqual(7);
     expect(resultados.filter((r) => r.esperado !== r.obtenido)).toEqual([]);

@@ -30,6 +30,12 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/resumen.page').then((m) => m.ResumenPage),
       },
       {
+        path: 'equipo',
+        canActivate: [canDoActivate('equipo.read')],
+        title: 'Equipo · Pasitos',
+        loadComponent: () => import('./eventos/equipo.page').then((m) => m.EquipoPage),
+      },
+      {
         path: 'bitacora',
         canActivate: [canDoActivate('bitacora.read')],
         title: 'Bitácora · Pasitos',

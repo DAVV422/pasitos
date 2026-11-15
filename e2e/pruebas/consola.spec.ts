@@ -32,7 +32,10 @@ async function createPasskey(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Crear la passkey' }).click();
 }
 
-test('un administrador crea una organización y la dueña acepta la invitación', async ({ page }) => {
+test('un administrador crea una organización y la dueña acepta la invitación', async ({
+  page,
+  browser,
+}) => {
   const adminEmail = createEmailPrueba('admin-consola');
   const password = 'una frase larga para la consola';
   await createPersona({ email: adminEmail, password, nombre: 'Admin e2e', rolPlataforma: 'admin' });
@@ -79,4 +82,39 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await expect(page.getByRole('button', { name: 'Publicar' })).toBeDisabled();
   await page.getByRole('link', { name: 'Bitácora' }).click();
   await expect(page.getByText('Creó el evento')).toBeVisible();
+
+  // HU-203: invita a un registrador, que acepta desde otro navegador y ve solo lo suyo.
+  await page.getByRole('link', { name: 'Equipo' }).click();
+  await page.getByRole('button', { name: 'Invitar' }).click();
+  const registradorEmail = createEmailPrueba('registrador');
+  await page.getByLabel('Correo').fill(registradorEmail);
+  await page.getByLabel('Nombre').fill('Rita e2e');
+  await page.getByRole('radio', { name: /Registrador/ }).check();
+  await page.getByRole('button', { name: 'Enviar la invitación' }).click();
+  await expect(page.getByText(`Enviamos la invitación a ${registradorEmail}`)).toBeVisible();
+  await expect(page.getByText('Invitación enviada')).toBeVisible();
+
+  const otro = await browser.newContext();
+  const registrador = await otro.newPage();
+  await registrador.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
+  const invitacion = await getEnlaceCorreo(registradorEmail, 'invitacion_equipo');
+  await registrador.goto(new URL(invitacion).pathname);
+  await expect(registrador.getByRole('heading', { level: 1 })).toContainText(
+    'te invitó como registrador',
+  );
+  await registrador.getByLabel('Tu nombre').fill('Rita e2e');
+  await registrador.getByLabel('Elige tu contraseña').fill('la frase de rita en e2e');
+  await registrador.getByRole('checkbox').check();
+  await registrador.getByRole('button', { name: 'Crear mi cuenta y aceptar' }).click();
+  await expect(registrador.getByRole('heading', { level: 1 })).toHaveText('Mis eventos');
+  await registrador.getByText('Encuentro e2e').click();
+  await expect(registrador.getByRole('heading', { level: 1 })).toHaveText('Encuentro e2e');
+  // El registrador no ve Equipo ni Bitácora, ni el botón para publicar.
+  await expect(registrador.getByRole('link', { name: 'Equipo' })).toHaveCount(0);
+  await expect(registrador.getByRole('link', { name: 'Bitácora' })).toHaveCount(0);
+  await expect(registrador.getByRole('button', { name: 'Publicar' })).toHaveCount(0);
+  await otro.close();
+
+  await page.reload();
+  await expect(page.getByText('Activo')).toBeVisible();
 });

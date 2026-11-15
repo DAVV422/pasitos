@@ -12,6 +12,7 @@ import {
   createTipoPlataforma,
   InvitacionesService,
 } from '../invitaciones/invitaciones.service';
+import { createTipoEquipo } from '../equipo/equipo.service';
 import { EventosPlataformaService } from './eventos-plataforma.service';
 import { OrganizacionesPlataformaService } from './organizaciones-plataforma.service';
 import { PersonasPlataformaService } from './personas-plataforma.service';
@@ -27,11 +28,17 @@ import { PlataformaController } from './plataforma.controller';
   providers: [
     {
       provide: InvitacionesService,
-      inject: [DbSistemaService, PASSWORDS_FILTRADAS, RELOJ],
-      useFactory: (sistema: DbSistemaService, filtradas: PasswordsFiltradasPort, reloj: Reloj) => {
+      inject: [DbSistemaService, PASSWORDS_FILTRADAS, RELOJ, RolesCache],
+      useFactory: (
+        sistema: DbSistemaService,
+        filtradas: PasswordsFiltradasPort,
+        reloj: Reloj,
+        roles: RolesCache,
+      ) => {
         const servicio = new InvitacionesService(sistema.db, filtradas, reloj);
         servicio.register(createTipoOrganizacion());
         servicio.register(createTipoPlataforma());
+        servicio.register(createTipoEquipo(roles));
         return servicio;
       },
     },

@@ -117,13 +117,16 @@ describe('Sesión del equipo (HU-201)', () => {
       await login(email, 'otra contraseña cualquiera');
       return performance.now() - inicio;
     };
-    const tiempos = { existe: 0, noExiste: 0 };
-    for (let i = 0; i < 4; i++) {
-      tiempos.existe += await medir('tiempo@example.com');
-      tiempos.noExiste += await medir(`nadie${i}@example.com`);
+    const tiempos: { existe: number[]; noExiste: number[] } = { existe: [], noExiste: [] };
+    for (let i = 0; i < 6; i++) {
+      tiempos.existe.push(await medir('tiempo@example.com'));
+      tiempos.noExiste.push(await medir(`nadie${i}@example.com`));
       api.reloj.advance(30 * SEGUNDO);
     }
-    expect(Math.abs(tiempos.existe - tiempos.noExiste) / 4).toBeLessThan(50);
+    // La mediana: un pico de la computadora no decide el resultado.
+    const mediana = (valores: number[]) =>
+      [...valores].sort((a, b) => a - b)[valores.length >> 1] ?? 0;
+    expect(Math.abs(mediana(tiempos.existe) - mediana(tiempos.noExiste))).toBeLessThan(50);
   });
 
   it('V14: espera creciente desde el 6.º fallo y bloqueo de 15 min al 10.º, con correo', async () => {

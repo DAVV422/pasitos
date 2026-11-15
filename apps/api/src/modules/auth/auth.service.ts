@@ -16,6 +16,7 @@ const FALLOS_PARA_BLOQUEO = 10;
 const BLOQUEO_MS = 15 * 60 * 1000;
 const RESTABLECER_MS = 30 * 60 * 1000;
 const MINUTO = 60_000;
+const USUARIO_INEXISTENTE = '00000000-0000-7000-8000-000000000000';
 const HORA = 60 * MINUTO;
 
 export interface OpcionesAuth {
@@ -75,6 +76,9 @@ export class AuthService {
     if (!usuario || !correcta) {
       if (usuario) {
         await this.recordFallo(usuario);
+      } else {
+        // La misma escritura que un fallo real (sobre ninguna fila): el tiempo no revela si existe.
+        await this.repositorio.updateIntentos(USUARIO_INEXISTENTE, 0, null);
       }
       throw new AppError('CREDENCIALES_INVALIDAS');
     }
