@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 import type { PgBoss } from 'pg-boss';
 import type { Db } from '@pasitos/db';
 import type { ContratoService } from '../contrato/contrato.service';
+import type { PurgaArchivosService } from '../archivos/purga.service';
 import type { EnviosCorreoService } from '../correos/envios.service';
 import { OutboxService, type AperturaEventosService } from '../eventos/outbox.service';
 import type { CostoRedService } from '../costo/costo-red.service';
@@ -14,6 +15,7 @@ export const COLA_STELLAR = 'stellar';
 export const COLA_SALDO = 'check-saldo-operador';
 export const COLA_CORREOS = 'send-correos';
 export const COLA_APERTURA = 'open-eventos';
+export const COLA_PURGA_ARCHIVOS = 'purge-archivos';
 /** El procesador de outbox corre cada 5 s (pg-boss programa por minuto: va con un intervalo). */
 export const OUTBOX_CADA_MS = 5_000;
 
@@ -91,6 +93,7 @@ export interface DependenciasColas {
   readonly costo: CostoRedService;
   readonly envios: EnviosCorreoService;
   readonly apertura: AperturaEventosService;
+  readonly purga: PurgaArchivosService;
 }
 
 export async function startColas({
@@ -102,6 +105,7 @@ export async function startColas({
   costo,
   envios,
   apertura,
+  purga,
 }: DependenciasColas): Promise<() => void> {
   const logger = new Logger('Colas');
   await boss.createQueue(COLA_TICK);
@@ -109,6 +113,13 @@ export async function startColas({
   await boss.createQueue(COLA_SALDO);
   await boss.createQueue(COLA_CORREOS);
   await boss.createQueue(COLA_APERTURA);
+  await boss.createQueue(COLA_PURGA_ARCHIVOS);
+
+  // HU-214 §7: cada día a las 04:00 de Bolivia (08:00 UTC; Bolivia no tiene horario de verano).
+  await boss.schedule(COLA_PURGA_ARCHIVOS, '0 8 * * *');
+  await boss.work(COLA_PURGA_ARCHIVOS, { localConcurrency: 1 }, async () => {
+    logger.log(await purga.purgeCuarentena(), 'Cuarentena de archivos limpiada');
+  });
 
   // HU-205 §3: abrir solos los eventos publicados a su hora.
   await boss.schedule(COLA_APERTURA, '* * * * *');

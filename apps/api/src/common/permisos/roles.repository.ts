@@ -1,5 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import {
+  archivos,
   eventos,
   miembroTerminales,
   miembrosEvento,
@@ -43,6 +44,26 @@ export class RolesRepository {
       .select({ id: eventos.id, organizacionId: eventos.organizacionId, estado: eventos.estado })
       .from(eventos)
       .where(eq(eventos.id, id));
+    return fila ?? null;
+  }
+
+  /**
+   * Un archivo aprobado y la visibilidad de su evento, para servirlo (HU-214 §4). Va aquí porque
+   * se busca antes de saber de qué organización es.
+   */
+  async findArchivoServible(id: string) {
+    const [fila] = await this.sistema
+      .select({
+        variantes: archivos.variantes,
+        estado: archivos.estado,
+        eventoId: eventos.id,
+        organizacionId: eventos.organizacionId,
+        estadoEvento: eventos.estado,
+        visibilidad: eventos.visibilidad,
+      })
+      .from(archivos)
+      .innerJoin(eventos, eq(eventos.id, archivos.eventoId))
+      .where(eq(archivos.id, id));
     return fila ?? null;
   }
 

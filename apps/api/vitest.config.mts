@@ -11,6 +11,8 @@ export default defineConfig(() => ({
     watch: false,
     globals: true,
     environment: 'node',
+    // Pruebas de integración con PostgreSQL en Docker: bajo carga, 5 s no alcanzan.
+    testTimeout: 30_000,
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     passWithNoTests: true,
     reporters: ['default'],

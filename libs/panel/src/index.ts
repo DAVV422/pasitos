@@ -7,3 +7,4 @@ export * from './lib/acceso/rutas';
 export * from './lib/permisos/permisos';
 export * from './lib/layout/layout.component';
 export * from './lib/acceso/comun';
+export * from './lib/archivos/subida-imagen.component';

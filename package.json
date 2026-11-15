@@ -48,6 +48,7 @@
     "@angular/router": "~22.2.0",
     "@angular/ssr": "~22.2.0",
     "@fastify/cookie": "^11.1.5",
+    "@fastify/multipart": "^10.1.8",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-fastify": "^11.2.10",
@@ -60,6 +61,7 @@
     "drizzle-orm": "^0.45.4",
     "express": "^4.21.2",
     "fastify": "^5.12.8",
+    "file-type": "^22.3.0",
     "mjml": "^5.4.1",
     "nestjs-pino": "^5.3.1",
     "nodemailer": "^10.5.0",
@@ -70,6 +72,7 @@
     "qrcode-generator": "^2.0.4",
     "reflect-metadata": "^0.2.0",
     "rxjs": "~7.8.0",
+    "sharp": "^0.35.5",
     "uuidv7": "^1.2.1",
     "zod": "^4.6.7"
   },

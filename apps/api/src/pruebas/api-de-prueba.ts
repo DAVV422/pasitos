@@ -1,4 +1,5 @@
 import fastifyCookie from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 import type { Type } from '@nestjs/common';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
@@ -8,6 +9,7 @@ import type { BaseDePrueba } from '@pasitos/db/pruebas';
 import { uuidv7 } from 'uuidv7';
 import { AppModule } from '../app.module';
 import { checkMarcasDeRutas } from '../common/permisos/rutas';
+import { TRAER_MAPA } from '../modules/archivos/archivos.module';
 import { loadAppConfig } from '../config/app.config';
 import { hashPassword } from '../modules/auth/password';
 import {
@@ -45,7 +47,12 @@ export interface ApiDePrueba {
 /** El API completo (AppModule) contra la base de prueba, con reloj y HIBP falsos. */
 export async function startApiDePrueba(
   base: BaseDePrueba,
-  opciones: { controladores?: Type[]; destinoLogs?: NodeJS.WritableStream } = {},
+  opciones: {
+    controladores?: Type[];
+    destinoLogs?: NodeJS.WritableStream;
+    archivosDir?: string;
+    traerMapa?: (lat: number, lng: number) => Promise<Buffer | null>;
+  } = {},
 ): Promise<ApiDePrueba> {
   const reloj = new RelojDePrueba();
   const filtradas = new FiltradasDePrueba();
@@ -57,6 +64,7 @@ export async function startApiDePrueba(
     LLAVE_CIFRADO_DATOS: Buffer.alloc(32, 7).toString('base64'),
     PUBLIC_URL: 'http://localhost:8080',
     HIBP_ACTIVO: 'false',
+    ...(opciones.archivosDir ? { ARCHIVOS_DIR: opciones.archivosDir } : {}),
   });
   const modulo = await Test.createTestingModule({
     imports: [
@@ -71,6 +79,8 @@ export async function startApiDePrueba(
     .useValue(reloj)
     .overrideProvider(PASSWORDS_FILTRADAS)
     .useValue(filtradas)
+    .overrideProvider(TRAER_MAPA)
+    .useValue(opciones.traerMapa ?? (() => Promise.resolve(null)))
     .compile();
   const app = modulo.createNestApplication<NestFastifyApplication>(new FastifyAdapter(), {
     logger: false,
@@ -80,6 +90,9 @@ export async function startApiDePrueba(
     app.useLogger(app.get(Logger));
   }
   await app.register(fastifyCookie);
+  await app.register(fastifyMultipart, {
+    limits: { fileSize: 6 * 1024 * 1024, files: 1, fields: 5 },
+  });
   app.setGlobalPrefix('api/v1');
   await app.init();
   checkMarcasDeRutas(app);

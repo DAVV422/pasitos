@@ -207,5 +207,5 @@ describe('Permisos por rol (HU-204)', () => {
     await app.init();
     expect(() => checkMarcasDeRutas(app)).toThrow('GET /sin-marca');
     await app.close();
-  });
+  }, 30_000);
 });

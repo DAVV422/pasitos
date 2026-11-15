@@ -1,6 +1,7 @@
 import './instrument';
 import type { IncomingMessage } from 'node:http';
 import fastifyCookie from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Logger } from 'nestjs-pino';
@@ -32,6 +33,10 @@ async function bootstrap(): Promise<void> {
   );
   app.useLogger(app.get(Logger));
   await app.register(fastifyCookie);
+  // HU-214: un archivo por request; el peso de cada propósito se aplica en la ruta.
+  await app.register(fastifyMultipart, {
+    limits: { fileSize: 6 * 1024 * 1024, files: 1, fields: 5 },
+  });
   app.setGlobalPrefix('api/v1');
   // HU-204: ninguna ruta sin marca de acceso (@Publica, @SoloSesion, @Permiso o @Plataforma).
   checkMarcasDeRutas(app);

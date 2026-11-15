@@ -8,6 +8,7 @@ import { ArchivoAdapter, SmtpAdapter } from './correos/adaptadores';
 import type { CorreoPort } from './correos/correo.port';
 import { EnviosCorreoService } from './correos/envios.service';
 import { CostoRedService } from './costo/costo-red.service';
+import { PurgaArchivosService } from './archivos/purga.service';
 import { AperturaEventosService } from './eventos/outbox.service';
 import { EvidenciaService } from './evidencia/evidencia.service';
 import { SelladorRepository } from './sellador/sellador.repository';
@@ -23,6 +24,7 @@ export interface Composicion {
   readonly repositorio: SelladorRepository;
   readonly envios: EnviosCorreoService;
   readonly apertura: AperturaEventosService;
+  readonly purga: PurgaArchivosService;
 }
 
 /** Arma las piezas del trabajador. Los tests arman las mismas con FakeStellar y otro reloj. */
@@ -106,6 +108,7 @@ export function buildComposicion(
     repositorio,
     envios,
     apertura,
+    purga: new PurgaArchivosService(conexion.db, config.ARCHIVOS_DIR, reloj),
   };
 }
 

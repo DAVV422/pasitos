@@ -79,6 +79,27 @@ export const CATALOGO_ERRORES = {
     title: 'Rol no permitido',
     mensaje: 'No puedes invitar, cambiar ni quitar a alguien con ese rol.',
   },
+  // Archivos (Subida de archivos §6)
+  ARCHIVO_MUY_GRANDE: {
+    status: 413,
+    title: 'Archivo muy grande',
+    mensaje: 'El archivo supera el tamaño máximo.',
+  },
+  ARCHIVO_TIPO_NO_PERMITIDO: {
+    status: 422,
+    title: 'Tipo de archivo no permitido',
+    mensaje: 'Este tipo de archivo no está permitido. Usa PNG, JPEG o WebP.',
+  },
+  ARCHIVO_CORRUPTO: {
+    status: 422,
+    title: 'Archivo dañado',
+    mensaje: 'No pudimos abrir el archivo. Puede estar dañado.',
+  },
+  ARCHIVO_INVALIDO: {
+    status: 400,
+    title: 'Archivo inválido',
+    mensaje: 'El archivo no cumple los requisitos.',
+  },
   // Evento
   EVENTO_NO_PUBLICABLE: {
     status: 422,

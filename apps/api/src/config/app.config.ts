@@ -29,6 +29,13 @@ const esquemaConfig = z.object({
   // que nadie elija su IP y se salte el límite por IP. Local: 1 (tools/servidor-local.mjs).
   // Producción: Cloudflare + Caddy (T-002).
   TRUST_PROXY_SALTOS: z.coerce.number().int().min(0).max(5).default(1),
+  // Volumen de archivos (HU-214): cuarentena/ y eventos/<org>/<evento>/<id>/. En el VPS, /srv/pasitos/archivos.
+  ARCHIVOS_DIR: z.string().min(1).default('.archivos'),
+  // Static Maps (restringida por IP). Sin llave, la ubicación se guarda sin mapa.
+  GOOGLE_MAPS_LLAVE_SERVIDOR: z
+    .string()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   // Solo para el enlace al explorador (stellar.expert); el API no habla con Stellar.
   STELLAR_RED: z.enum(['local', 'testnet']).default('local'),
   CORREO_TOPE_DIARIO: z.coerce.number().int().min(1).default(80),

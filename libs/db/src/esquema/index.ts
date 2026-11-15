@@ -3,3 +3,4 @@ export * from './eventos';
 export * from './libro';
 export * from './soporte';
 export * from './equipo';
+export * from './archivos';

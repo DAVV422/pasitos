@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  doublePrecision,
   index,
   integer,
   pgTable,
@@ -50,6 +51,15 @@ export const eventos = pgTable(
     topeAjuste: integer('tope_ajuste').notNull().default(100),
     // D30: si los retos piden haber pasado por la puerta (ajuste 10).
     retosRequierenCheckIn: boolean('retos_requieren_check_in').notNull().default(true),
+    // HU-214 y HU-206: imágenes (archivos aprobados) y ubicación marcada en el mapa (ajuste 8).
+    logoArchivoId: uuid('logo_archivo_id'),
+    portadaArchivoId: uuid('portada_archivo_id'),
+    planoArchivoId: uuid('plano_archivo_id'),
+    mapaEstaticoArchivoId: uuid('mapa_estatico_archivo_id'),
+    lugarNombre: text('lugar_nombre'),
+    lugarDireccion: text('lugar_direccion'),
+    ubicacionLat: doublePrecision('ubicacion_lat'),
+    ubicacionLng: doublePrecision('ubicacion_lng'),
     contratoId: text('contrato_id'),
     intervaloAnclajeMin: integer('intervalo_anclaje_min'),
     topePuntosPersona: integer('tope_puntos_persona'),
@@ -64,6 +74,10 @@ export const eventos = pgTable(
   },
   (t) => [
     check('eventos_tipo', sql`${t.tipo} in ('real', 'demo', 'prueba')`),
+    check(
+      'eventos_ubicacion',
+      sql`(${t.ubicacionLat} is null) = (${t.ubicacionLng} is null) and (${t.ubicacionLat} is null or (${t.ubicacionLat} between -90 and 90 and ${t.ubicacionLng} between -180 and 180))`,
+    ),
     check('eventos_modo_registro', sql`${t.modoRegistro} in ('lista')`),
     check('eventos_puntos_check_in', sql`${t.puntosCheckIn} between 0 and 1000`),
     check('eventos_tope_ajuste', sql`${t.topeAjuste} between 1 and 10000`),
