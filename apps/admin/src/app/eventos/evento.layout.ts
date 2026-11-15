@@ -45,6 +45,7 @@ export const eventoGuard: CanActivateFn = async (ruta) => {
 const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: '', texto: 'Resumen', accion: 'evento.read' },
   { ruta: 'configuracion', texto: 'Configuración', accion: 'evento.update' },
+  { ruta: 'retos', texto: 'Retos', accion: 'contenido.read' },
   { ruta: 'lugares', texto: 'Lugares', accion: 'contenido.read' },
   { ruta: 'agenda', texto: 'Agenda', accion: 'contenido.read' },
   { ruta: 'sponsors', texto: 'Sponsors', accion: 'contenido.read' },

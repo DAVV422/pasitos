@@ -143,6 +143,16 @@ export const CATALOGO_ERRORES = {
     title: 'Reto no disponible',
     mensaje: 'Este reto no está activo ahora.',
   },
+  RETO_CON_PARTICIPACIONES: {
+    status: 409,
+    title: 'Reto con participaciones',
+    mensaje: 'Este reto ya tiene participaciones. Puedes desactivarlo.',
+  },
+  TOPE_NO_BAJA: {
+    status: 422,
+    title: 'El tope solo sube',
+    mensaje: 'Una vez publicado, el tope de un reto solo puede subir.',
+  },
   TOPE_ALCANZADO: {
     status: 422,
     title: 'Tope alcanzado',

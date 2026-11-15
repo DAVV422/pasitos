@@ -90,6 +90,28 @@ export interface MiembroEquipo {
 /** Una fila de lugares, agenda, sponsors o preguntas: campos según el recurso. */
 export type FilaContenido = { readonly id: string } & Readonly<Record<string, unknown>>;
 
+export interface RetoPanel {
+  readonly id: string;
+  readonly numero: number;
+  readonly nombre: string;
+  readonly descripcion: string | null;
+  readonly tipo: 'qr' | 'otorgado';
+  readonly modoQr: 'por_tiempo' | 'un_uso';
+  readonly rotacionSegundos: 15 | 30 | 60;
+  readonly puntos: number;
+  readonly topeTotal: number;
+  readonly vecesPorPersona: number;
+  readonly lugarId: string | null;
+  readonly disponibleDesde: string | null;
+  readonly disponibleHasta: string | null;
+  readonly sponsorId: string | null;
+  readonly estado: 'activo' | 'desactivado';
+  readonly entregados: number;
+  readonly registradoEnStellar: boolean;
+  readonly lugar?: { readonly id: string; readonly nombre: string } | null;
+  readonly tienePantalla?: boolean;
+}
+
 export type TransicionPanel = 'publicar' | 'abrir' | 'pausar' | 'reanudar';
 
 interface Pagina<T> {
@@ -187,6 +209,30 @@ export class EventosApi {
         }),
       )
     ).items;
+  }
+
+  async listRetos(eventoId: string): Promise<readonly RetoPanel[]> {
+    return (
+      await firstValueFrom(this.http.get<Pagina<RetoPanel>>(`${BASE}/eventos/${eventoId}/retos`))
+    ).items;
+  }
+
+  createReto(eventoId: string, datos: Record<string, unknown>): Promise<RetoPanel> {
+    return firstValueFrom(this.http.post<RetoPanel>(`${BASE}/eventos/${eventoId}/retos`, datos));
+  }
+
+  updateReto(id: string, datos: Record<string, unknown>): Promise<RetoPanel> {
+    return firstValueFrom(this.http.patch<RetoPanel>(`${BASE}/retos/${id}`, datos));
+  }
+
+  deleteReto(id: string): Promise<{ desactivado: boolean }> {
+    return firstValueFrom(this.http.delete<{ desactivado: boolean }>(`${BASE}/retos/${id}`));
+  }
+
+  setRetoActivo(id: string, activo: boolean): Promise<RetoPanel> {
+    return firstValueFrom(
+      this.http.post<RetoPanel>(`${BASE}/retos/${id}/${activo ? 'activar' : 'desactivar'}`, {}),
+    );
   }
 
   getListaChequeo(id: string): Promise<ListaChequeo> {

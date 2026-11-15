@@ -79,6 +79,16 @@ export const retos = pgTable(
     entregados: integer('entregados').notNull().default(0),
     estado: text('estado').notNull().default('activo'),
     registradoEnStellarAt: timestamp('registrado_en_stellar_at', { withTimezone: true }),
+    // HU-207: cómo se completa y dónde. Los modos de P2 quedan en el CHECK para después.
+    descripcion: text('descripcion'),
+    modoQr: text('modo_qr').notNull().default('por_tiempo'),
+    rotacionSegundos: integer('rotacion_segundos').notNull().default(30),
+    // Las pantallas de este lugar lo muestran (HU-209). Sin FK aquí: `lugares` está en contenido.ts.
+    lugarId: uuid('lugar_id'),
+    disponibleDesde: timestamp('disponible_desde', { withTimezone: true }),
+    disponibleHasta: timestamp('disponible_hasta', { withTimezone: true }),
+    sponsorId: uuid('sponsor_id'),
+    createdBy: uuid('created_by'),
     createdAt: creadoEn(),
     updatedAt: actualizadoEn(),
   },
@@ -91,6 +101,15 @@ export const retos = pgTable(
     check('retos_veces_por_persona', sql`${t.vecesPorPersona} >= 1`),
     check('retos_entregados', sql`${t.entregados} >= 0 and ${t.entregados} <= ${t.topeTotal}`),
     check('retos_numero_positivo', sql`${t.numero} >= 1`),
+    check(
+      'retos_modo_qr',
+      sql`${t.modoQr} in ('por_tiempo', 'un_uso', 'bajo_demanda', 'usos_limitados')`,
+    ),
+    check('retos_rotacion', sql`${t.rotacionSegundos} in (15, 30, 60)`),
+    check(
+      'retos_horario',
+      sql`${t.disponibleDesde} is null or ${t.disponibleHasta} is null or ${t.disponibleDesde} < ${t.disponibleHasta}`,
+    ),
   ],
 );
 

@@ -60,10 +60,7 @@ export async function createEventoDePrueba(
     finAt: new Date(inicio.getTime() + 8 * 3_600_000),
     estado: opciones.estado ?? 'borrador',
   });
-  const retoId = uuidv7();
-  await base.sistema.db
-    .insert(retos)
-    .values({ id: retoId, organizacionId, eventoId, nombre: 'Reto', puntos: 10, topeTotal: 100 });
+
   const pantallaId = uuidv7();
   await base.sistema.db
     .insert(pantallas)
@@ -72,6 +69,16 @@ export async function createEventoDePrueba(
   await base.sistema.db
     .insert(lugares)
     .values({ id: lugarId, organizacionId, eventoId, tipo: 'sala', nombre: 'Sala A' });
+  const retoId = uuidv7();
+  await base.sistema.db.insert(retos).values({
+    id: retoId,
+    organizacionId,
+    eventoId,
+    nombre: 'Reto',
+    puntos: 10,
+    topeTotal: 100,
+    lugarId,
+  });
   const sponsorId = uuidv7();
   await base.sistema.db
     .insert(sponsors)

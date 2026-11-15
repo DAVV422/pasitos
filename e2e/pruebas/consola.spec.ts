@@ -108,6 +108,19 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Auditorio principal')).toBeVisible();
 
+  // HU-207: crea un reto de QR en ese lugar; la lista de chequeo pide ahora su pantalla.
+  await page.getByRole('link', { name: 'Retos' }).click();
+  await page.getByRole('button', { name: 'Nuevo reto' }).click();
+  await page.getByLabel('Nombre').fill('Charla de apertura');
+  await page.getByLabel('Lugar', { exact: true }).selectOption({ label: 'Auditorio principal' });
+  await page.getByLabel('Puntos').fill('20');
+  await page.getByLabel('Tope de participaciones').fill('150');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('0 de 150 participaciones')).toBeVisible();
+  await page.getByRole('link', { name: 'Resumen' }).click();
+  await expect(page.getByText('El reto «Charla de apertura» no tiene pantalla')).toBeVisible();
+  await expect(page.getByText('Crea al menos un reto')).toHaveCount(0);
+
   // HU-203: invita a un registrador, que acepta desde otro navegador y ve solo lo suyo.
   await page.getByRole('link', { name: 'Equipo' }).click();
   await page.getByRole('button', { name: 'Invitar' }).click();

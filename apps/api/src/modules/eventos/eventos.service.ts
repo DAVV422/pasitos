@@ -347,14 +347,23 @@ export class EventosService {
   private async buildChequeo(tx: Tx, evento: typeof eventos.$inferSelect) {
     const [lista, [conPantallas]] = await Promise.all([
       tx
-        .select({ nombre: retos.nombre, tipo: retos.tipo, estado: retos.estado })
+        .select({
+          nombre: retos.nombre,
+          tipo: retos.tipo,
+          estado: retos.estado,
+          lugarId: retos.lugarId,
+          disponibleDesde: retos.disponibleDesde,
+          disponibleHasta: retos.disponibleHasta,
+        })
         .from(retos)
         .where(eq(retos.eventoId, evento.id)),
       tx.select({ total: count() }).from(pantallas).where(eq(pantallas.eventoId, evento.id)),
     ]);
-    // Hasta HU-206 (lugares) y HU-209 (pantalla por lugar), un reto de QR necesita que el evento
-    // tenga al menos una pantalla; el catálogo y las mesas entran con HU-208 y HU-209.
+    // Hasta que las pantallas tengan lugar (HU-209), un reto de QR con lugar "tiene pantalla" si
+    // el evento tiene al menos una. El catálogo y las mesas entran con HU-208 y HU-209.
     const hayPantalla = (conPantallas?.total ?? 0) > 0;
+    const dentro = (fecha: Date | null) =>
+      fecha === null || (fecha >= evento.inicioAt && fecha <= evento.finAt);
     return buildListaChequeo({
       inicioAt: evento.inicioAt,
       finAt: evento.finAt,
@@ -363,8 +372,8 @@ export class EventosService {
         nombre: r.nombre,
         tipo: r.tipo,
         activo: r.estado === 'activo',
-        tienePantalla: hayPantalla,
-        enHorario: true,
+        tienePantalla: r.lugarId !== null && hayPantalla,
+        enHorario: dentro(r.disponibleDesde) && dentro(r.disponibleHasta),
       })),
       premiosActivos: 0,
       mesas: 0,
