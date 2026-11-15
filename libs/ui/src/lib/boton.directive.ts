@@ -12,13 +12,18 @@ export type VarianteBoton = 'primario' | 'secundario' | 'peligro';
   host: {
     '[class]': 'clases()',
     '[attr.aria-busy]': 'cargando() || null',
-    '[attr.disabled]': 'cargando() ? "" : null',
+    '[attr.disabled]': 'cargando() || deshabilitado() ? "" : null',
   },
 })
 export class BotonDirective {
   readonly pxBoton = input<VarianteBoton | ''>('primario');
   readonly chico = input(false);
   readonly cargando = input(false);
+  /**
+   * Deshabilitado (por ejemplo, un formulario incompleto). Va por aquí y no con `[disabled]`: la
+   * directiva maneja el atributo y un `[disabled]` aparte se pisaría con `cargando`.
+   */
+  readonly deshabilitado = input(false);
 
   protected readonly clases = computed(() => {
     const variante = this.pxBoton() || 'primario';

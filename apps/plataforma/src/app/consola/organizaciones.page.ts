@@ -94,7 +94,7 @@ import { PlataformaApi, type OrganizacionFila } from './plataforma-api.service';
             <px-aviso variante="peligro">{{ mensaje }}</px-aviso>
           }
           <div class="flex gap-3">
-            <button type="submit" pxBoton [cargando]="enviando()" [disabled]="!valida()">
+            <button type="submit" pxBoton [cargando]="enviando()" [deshabilitado]="!valida()">
               {{ enviando() ? 'Creando…' : 'Crear e invitar' }}
             </button>
             <button type="button" pxBoton="secundario" (click)="creando.set(false)">

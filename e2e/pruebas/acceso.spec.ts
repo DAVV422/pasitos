@@ -44,15 +44,14 @@ test('la dueña configura una passkey al entrar y después entra con ella', asyn
   await expect(page.getByRole('button', { name: 'Ahora no' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Usar una passkey (recomendado)' }).click();
   await page.getByRole('button', { name: 'Crear la passkey' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Panel del organizador');
-  await expect(page.getByText('Hola, Duena e2e.')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mis eventos');
 
   await page.getByRole('button', { name: 'Salir' }).click();
   await expect(page).toHaveURL(/\/admin\/entrar/);
   await entrar(page, 'admin', email, PASSWORD);
   await expect(page).toHaveURL(/\/admin\/segundo-factor$/);
   await page.getByRole('button', { name: 'Usar mi passkey' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Panel del organizador');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mis eventos');
 
   await page.getByRole('link', { name: 'Mi cuenta' }).click();
   await expect(page.getByText(/Passkey de Chrome/)).toBeVisible();
@@ -87,7 +86,7 @@ test('recupera la contraseña con el enlace del correo y entra con la nueva', as
   await expect(page.getByText('Este enlace ya no sirve')).toBeVisible();
 
   await entrar(page, 'admin', email, nueva);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Panel del organizador');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mis eventos');
 });
 
 test('con la contraseña mal, el mismo error para todos', async ({ page }) => {

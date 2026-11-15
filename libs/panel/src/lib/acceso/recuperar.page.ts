@@ -47,7 +47,7 @@ const ESPERA_REENVIO_S = 60;
         @if (error(); as mensaje) {
           <px-aviso variante="peligro">{{ mensaje }}</px-aviso>
         }
-        <button type="submit" pxBoton [cargando]="enviando()" [disabled]="!puedeEnviar()">
+        <button type="submit" pxBoton [cargando]="enviando()" [deshabilitado]="!puedeEnviar()">
           @if (espera() > 0) {
             Reenviar en {{ espera() }} s
           } @else {

@@ -9,7 +9,7 @@ import {
   TemplateRef,
   ViewContainerRef,
 } from '@angular/core';
-import type { CanMatchFn } from '@angular/router';
+import { Router, type CanActivateFn, type CanMatchFn } from '@angular/router';
 import { canDo, type AccionEvento, type RolEvento } from '@pasitos/dominio';
 
 /**
@@ -69,4 +69,19 @@ export class SiPuedeDirective {
  */
 export function canDoMatch(accion: AccionEvento): CanMatchFn {
   return () => inject(ContextoEventoService).canDo(accion);
+}
+
+/**
+ * Como `canDoMatch`, para las rutas hijas del evento: el contexto lo fija el guard de la ruta del
+ * evento, que corre antes. Sin permiso, vuelve al resumen del evento.
+ */
+export function canDoActivate(accion: AccionEvento): CanActivateFn {
+  return (ruta) => {
+    const contexto = inject(ContextoEventoService);
+    if (contexto.canDo(accion)) {
+      return true;
+    }
+    const eventoId = ruta.parent?.paramMap.get('id') ?? contexto.eventoId();
+    return inject(Router).createUrlTree(eventoId ? ['/eventos', eventoId] : ['/eventos']);
+  };
 }

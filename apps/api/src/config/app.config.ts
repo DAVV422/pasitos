@@ -29,6 +29,8 @@ const esquemaConfig = z.object({
   // que nadie elija su IP y se salte el límite por IP. Local: 1 (tools/servidor-local.mjs).
   // Producción: Cloudflare + Caddy (T-002).
   TRUST_PROXY_SALTOS: z.coerce.number().int().min(0).max(5).default(1),
+  // Solo para el enlace al explorador (stellar.expert); el API no habla con Stellar.
+  STELLAR_RED: z.enum(['local', 'testnet']).default('local'),
   CORREO_TOPE_DIARIO: z.coerce.number().int().min(1).default(80),
   CORREO_RESERVA_SEGURIDAD: z.coerce.number().int().min(0).default(10),
   SENTRY_DSN: z.string().url().optional().or(z.literal('')),

@@ -69,7 +69,7 @@ type Paso = 'elegir' | 'passkey' | 'totp';
               type="submit"
               pxBoton
               [cargando]="enviando()"
-              [disabled]="!nombrePasskey().trim()"
+              [deshabilitado]="!nombrePasskey().trim()"
             >
               {{ enviando() ? 'Esperando la passkey…' : 'Crear la passkey' }}
             </button>
@@ -115,7 +115,7 @@ type Paso = 'elegir' | 'passkey' | 'totp';
                 type="submit"
                 pxBoton
                 [cargando]="enviando()"
-                [disabled]="codigo().length !== 6"
+                [deshabilitado]="codigo().length !== 6"
               >
                 {{ enviando() ? 'Confirmando…' : 'Confirmar' }}
               </button>

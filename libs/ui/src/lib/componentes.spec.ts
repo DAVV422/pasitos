@@ -8,10 +8,13 @@ import { QrComponent } from './qr.component';
 
 @Component({
   imports: [BotonDirective],
-  template: `<button pxBoton="secundario" [cargando]="cargando()">Confirmando…</button>`,
+  template: `<button pxBoton="secundario" [cargando]="cargando()" [deshabilitado]="deshabilitado()">
+    Confirmando…
+  </button>`,
 })
 class BotonDePrueba {
   readonly cargando = signal(false);
+  readonly deshabilitado = signal(false);
 }
 
 describe('componentes base', () => {
@@ -26,6 +29,22 @@ describe('componentes base', () => {
     await fixture.whenStable();
     expect(boton.disabled).toBe(true);
     expect(boton.getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('deshabilitado no se pisa con cargando', async () => {
+    const fixture = TestBed.createComponent(BotonDePrueba);
+    fixture.componentInstance.deshabilitado.set(true);
+    await fixture.whenStable();
+    const boton: HTMLButtonElement = fixture.nativeElement.querySelector('button');
+    expect(boton.disabled).toBe(true);
+    fixture.componentInstance.cargando.set(true);
+    await fixture.whenStable();
+    fixture.componentInstance.cargando.set(false);
+    await fixture.whenStable();
+    expect(boton.disabled).toBe(true);
+    fixture.componentInstance.deshabilitado.set(false);
+    await fixture.whenStable();
+    expect(boton.disabled).toBe(false);
   });
 
   it('formatea la cuenta regresiva como m:ss y nunca en negativo', () => {

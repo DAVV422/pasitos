@@ -1,8 +1,10 @@
 import { Logger } from '@nestjs/common';
 import type { Pool } from 'pg';
 import type { PgBoss } from 'pg-boss';
+import type { Db } from '@pasitos/db';
 import type { ContratoService } from '../contrato/contrato.service';
 import type { EnviosCorreoService } from '../correos/envios.service';
+import { OutboxService, type AperturaEventosService } from '../eventos/outbox.service';
 import type { CostoRedService } from '../costo/costo-red.service';
 import type { SelladorService } from '../sellador/sellador.service';
 
@@ -11,6 +13,9 @@ export const COLA_TICK = 'tick-sellador';
 export const COLA_STELLAR = 'stellar';
 export const COLA_SALDO = 'check-saldo-operador';
 export const COLA_CORREOS = 'send-correos';
+export const COLA_APERTURA = 'open-eventos';
+/** El procesador de outbox corre cada 5 s (pg-boss programa por minuto: va con un intervalo). */
+export const OUTBOX_CADA_MS = 5_000;
 
 export const TRABAJOS_STELLAR = [
   'anchor-lote',
@@ -80,25 +85,57 @@ export async function withCandado<T>(
 export interface DependenciasColas {
   readonly boss: PgBoss;
   readonly pool: Pool;
+  readonly db: Db;
   readonly sellador: SelladorService;
   readonly contrato: ContratoService;
   readonly costo: CostoRedService;
   readonly envios: EnviosCorreoService;
+  readonly apertura: AperturaEventosService;
 }
 
 export async function startColas({
   boss,
   pool,
+  db,
   sellador,
   contrato,
   costo,
   envios,
-}: DependenciasColas): Promise<void> {
+  apertura,
+}: DependenciasColas): Promise<() => void> {
   const logger = new Logger('Colas');
   await boss.createQueue(COLA_TICK);
   await boss.createQueue(COLA_STELLAR);
   await boss.createQueue(COLA_SALDO);
   await boss.createQueue(COLA_CORREOS);
+  await boss.createQueue(COLA_APERTURA);
+
+  // HU-205 §3: abrir solos los eventos publicados a su hora.
+  await boss.schedule(COLA_APERTURA, '* * * * *');
+  await boss.work(COLA_APERTURA, { localConcurrency: 1 }, async () => {
+    const { abiertos } = await apertura.openEventos();
+    if (abiertos.length > 0) {
+      logger.log({ eventos: abiertos }, 'Eventos abiertos a su hora');
+    }
+  });
+
+  // HU-205 §4: del outbox a los trabajos de Stellar. Un solo proceso a la vez (candado).
+  const procesador = new OutboxService(db, (t) => sendTrabajoStellar(boss, t));
+  let ocupado = false;
+  const intervalo = setInterval(() => {
+    if (ocupado) return;
+    ocupado = true;
+    void withCandado(pool, 'process-outbox', () => procesador.processOutbox())
+      .catch((error: unknown) =>
+        logger.error(
+          { err: error instanceof Error ? error.message : String(error) },
+          'Error en process-outbox',
+        ),
+      )
+      .finally(() => {
+        ocupado = false;
+      });
+  }, OUTBOX_CADA_MS);
 
   // T-007 §3: cada minuto, hasta llenar el cupo del día.
   await boss.schedule(COLA_CORREOS, '* * * * *');
@@ -146,8 +183,9 @@ export async function startColas({
     },
   );
   logger.log(
-    'Colas listas: tick-sellador y send-correos (cada minuto), stellar (de a una) y check-saldo-operador (cada hora).',
+    'Colas listas: tick-sellador, send-correos y open-eventos (cada minuto), process-outbox (cada 5 s), stellar (de a una) y check-saldo-operador (cada hora).',
   );
+  return () => clearInterval(intervalo);
 }
 
 export async function runTrabajoStellar(

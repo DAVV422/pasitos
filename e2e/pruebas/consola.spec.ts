@@ -64,5 +64,19 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   // Es dueña de una organización: el segundo factor es obligatorio.
   await expect(page).toHaveURL(/\/admin\/segundo-factor\/configurar/);
   await createPasskey(page);
-  await expect(page.getByText('Hola, Duena Org e2e.')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mis eventos');
+  // Es dueña de una organización: puede crear su primer evento.
+  await expect(page.getByRole('button', { name: 'Crear evento' })).toBeVisible();
+
+  // HU-205: crea su evento en borrador y la lista de chequeo dice qué falta para publicar.
+  await page.getByRole('button', { name: 'Crear evento' }).click();
+  await page.getByLabel('Nombre del evento').fill('Encuentro e2e');
+  await page.getByLabel('Empieza').fill('2030-03-10T09:00');
+  await page.getByLabel('Termina').fill('2030-03-10T18:00');
+  await page.getByRole('button', { name: 'Crear el evento' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Encuentro e2e');
+  await expect(page.getByText('Crea al menos un reto')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Publicar' })).toBeDisabled();
+  await page.getByRole('link', { name: 'Bitácora' }).click();
+  await expect(page.getByText('Creó el evento')).toBeVisible();
 });

@@ -80,6 +80,21 @@ export const CATALOGO_ERRORES = {
     mensaje: 'No puedes invitar, cambiar ni quitar a alguien con ese rol.',
   },
   // Evento
+  EVENTO_NO_PUBLICABLE: {
+    status: 422,
+    title: 'Falta completar el evento',
+    mensaje: 'Todavía falta completar algo para publicar el evento.',
+  },
+  EVENTO_SIN_CONTRATO: {
+    status: 409,
+    title: 'Todavía no está en Stellar',
+    mensaje: 'Todavía estamos registrando el evento en Stellar. Prueba en un minuto.',
+  },
+  TRANSICION_NO_PERMITIDA: {
+    status: 409,
+    title: 'Cambio de estado no permitido',
+    mensaje: 'El evento no está en un estado que permita este cambio. Recarga la página.',
+  },
   EVENTO_CERRADO: {
     status: 422,
     title: 'Evento cerrado',

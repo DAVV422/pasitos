@@ -25,13 +25,15 @@ async function bootstrap(): Promise<void> {
   const boss = new PgBoss({ connectionString: config.DATABASE_URL_SISTEMA, schema: 'pgboss' });
   boss.on('error', (error) => logger.error({ err: error.message }, 'Error de pg-boss'));
   await boss.start();
-  await startColas({
+  const stopColas = await startColas({
     boss,
     pool: composicion.conexion.pool,
+    db: composicion.conexion.db,
     sellador: composicion.sellador,
     contrato: composicion.contrato,
     costo: composicion.costo,
     envios: composicion.envios,
+    apertura: composicion.apertura,
   });
   logger.log(
     `Trabajador iniciado. Red de Stellar: ${config.STELLAR_RED}; operador ${composicion.stellar.operador}.`,
@@ -39,6 +41,7 @@ async function bootstrap(): Promise<void> {
 
   const terminar = async (senal: string) => {
     logger.log(`Recibida ${senal}: cerrando.`);
+    stopColas();
     await boss.stop({ graceful: true, timeout: 30_000 });
     await composicion.conexion.pool.end();
     await app.close();

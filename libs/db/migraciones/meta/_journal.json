@@ -99,6 +99,13 @@
       "when": 1794732380267,
       "tag": "0013_aceptaciones_terminos",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794733306424,
+      "tag": "0014_ciclo_evento",
+      "breakpoints": true
     }
   ]
 }

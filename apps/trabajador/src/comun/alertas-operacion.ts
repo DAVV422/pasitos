@@ -9,7 +9,8 @@ export type CodigoAlertaOperacion =
   | 'COMISION_SOBRE_TOPE'
   | 'PRESUPUESTO_RED_80'
   | 'PRESUPUESTO_RED_100'
-  | 'SALDO_OPERADOR_BAJO';
+  | 'SALDO_OPERADOR_BAJO'
+  | 'EVENTO_SIN_CONTRATO_A_TIEMPO';
 
 export interface AlertaOperacion {
   readonly codigo: CodigoAlertaOperacion;

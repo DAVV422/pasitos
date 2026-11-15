@@ -34,7 +34,7 @@ import { PasswordNuevaComponent } from './password-nueva.component';
       } @else {
         <form class="flex flex-col gap-4" (submit)="submit($event)" novalidate>
           <pnl-password-nueva [(valor)]="password" [error]="error()" />
-          <button type="submit" pxBoton [cargando]="enviando()" [disabled]="!puedeEnviar()">
+          <button type="submit" pxBoton [cargando]="enviando()" [deshabilitado]="!puedeEnviar()">
             {{ enviando() ? 'Guardando…' : 'Guardar la contraseña' }}
           </button>
         </form>

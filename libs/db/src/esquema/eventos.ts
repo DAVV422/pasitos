@@ -1,5 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { check, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  check,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { organizaciones } from './plataforma';
 import { bytea } from './tipos';
 
@@ -27,6 +36,20 @@ export const eventos = pgTable(
     salAnonima: bytea('sal_anonima')
       .notNull()
       .default(sql`sha256((gen_random_uuid()::text || gen_random_uuid()::text)::bytea)`),
+    // HU-205: ciclo de vida.
+    publicadoAt: timestamp('publicado_at', { withTimezone: true }),
+    publicadoPor: uuid('publicado_por'),
+    iniciadoAt: timestamp('iniciado_at', { withTimezone: true }),
+    cerradoAt: timestamp('cerrado_at', { withTimezone: true }),
+    cerradoPor: uuid('cerrado_por'),
+    // Reglas con su valor al crear (HU-205 §1); se editan en HU-206 y HU-212.
+    nombrePuntos: text('nombre_puntos').notNull().default('puntos'),
+    modoRegistro: text('modo_registro').notNull().default('lista'),
+    registroPuertaActivo: boolean('registro_puerta_activo').notNull().default(true),
+    puntosCheckIn: integer('puntos_check_in').notNull().default(0),
+    topeAjuste: integer('tope_ajuste').notNull().default(100),
+    // D30: si los retos piden haber pasado por la puerta (ajuste 10).
+    retosRequierenCheckIn: boolean('retos_requieren_check_in').notNull().default(true),
     contratoId: text('contrato_id'),
     intervaloAnclajeMin: integer('intervalo_anclaje_min'),
     topePuntosPersona: integer('tope_puntos_persona'),
@@ -41,6 +64,10 @@ export const eventos = pgTable(
   },
   (t) => [
     check('eventos_tipo', sql`${t.tipo} in ('real', 'demo', 'prueba')`),
+    check('eventos_modo_registro', sql`${t.modoRegistro} in ('lista')`),
+    check('eventos_puntos_check_in', sql`${t.puntosCheckIn} between 0 and 1000`),
+    check('eventos_tope_ajuste', sql`${t.topeAjuste} between 1 and 10000`),
+    check('eventos_nombre_puntos', sql`char_length(${t.nombrePuntos}) between 2 and 20`),
     check(
       'eventos_estado',
       sql`${t.estado} in ('borrador', 'publicado', 'en_curso', 'pausado', 'cerrado', 'archivado')`,

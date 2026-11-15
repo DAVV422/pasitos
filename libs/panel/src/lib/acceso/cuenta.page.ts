@@ -67,7 +67,7 @@ type Carga<T> =
             type="submit"
             pxBoton
             [cargando]="guardandoPassword()"
-            [disabled]="!puedeCambiar()"
+            [deshabilitado]="!puedeCambiar()"
           >
             {{ guardandoPassword() ? 'Guardando…' : 'Cambiar la contraseña' }}
           </button>

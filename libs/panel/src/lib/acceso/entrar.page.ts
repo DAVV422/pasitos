@@ -72,7 +72,7 @@ import { getEspera, getMensajeError, MarcoAccesoComponent, toVolverSeguro, valor
           <px-aviso variante="peligro">{{ mensaje }}</px-aviso>
         }
 
-        <button type="submit" pxBoton [cargando]="enviando()" [disabled]="!puedeEnviar()">
+        <button type="submit" pxBoton [cargando]="enviando()" [deshabilitado]="!puedeEnviar()">
           {{ enviando() ? 'Entrando…' : 'Entrar' }}
         </button>
         <a class="text-center underline" routerLink="/recuperar">Olvidé mi contraseña</a>

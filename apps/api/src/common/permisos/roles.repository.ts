@@ -90,6 +90,48 @@ export class RolesRepository {
   }
 }
 
+/** Los eventos donde la persona tiene un rol (dueño de la organización o miembro activo). */
+export async function listEventosDeUsuario(sistema: Db, usuarioId: string) {
+  const { rows } = await sistema.execute<{
+    id: string;
+    nombre: string;
+    slug: string;
+    tipo: string;
+    estado: string;
+    inicio_at: Date;
+    fin_at: Date;
+    zona_horaria: string;
+    organizacion_id: string;
+    organizacion: string;
+    rol: string;
+  }>(sql`
+    select e.id, e.nombre, e.slug, e.tipo, e.estado, e.inicio_at, e.fin_at, e.zona_horaria,
+           e.organizacion_id, o.nombre as organizacion, r.rol
+      from eventos e
+      join organizaciones o on o.id = e.organizacion_id
+      join lateral (
+        select 'dueno' as rol from miembros_organizacion m
+         where m.organizacion_id = e.organizacion_id and m.usuario_id = ${usuarioId}
+           and m.estado = 'activo' and m.rol = 'dueno'
+        union all
+        select me.rol from miembros_evento me
+         where me.evento_id = e.id and me.usuario_id = ${usuarioId} and me.estado = 'activo'
+        limit 1
+      ) r on true
+     order by e.inicio_at desc`);
+  return rows;
+}
+
+/** Organizaciones donde la persona es dueña activa (para *Crear evento*). */
+export async function listOrganizacionesDeDueno(sistema: Db, usuarioId: string) {
+  const { rows } = await sistema.execute<{ id: string; nombre: string; estado: string }>(sql`
+    select o.id, o.nombre, o.estado from organizaciones o
+      join miembros_organizacion m on m.organizacion_id = o.id
+     where m.usuario_id = ${usuarioId} and m.estado = 'activo' and m.rol = 'dueno'
+     order by o.nombre`);
+  return rows;
+}
+
 /**
  * Caché del rol por `usuarioId:eventoId`, 30 s en memoria (HU-204 §4). Cambiar el rol o quitar a
  * alguien la invalida en el mismo proceso: vale desde la request siguiente.
@@ -128,5 +170,21 @@ export class RolesCache {
         this.entradas.delete(clave);
       }
     }
+  }
+}
+
+/**
+ * Mis eventos y mis organizaciones (HU-205): miran todas las organizaciones de la persona, así que
+ * van con la conexión de sistema, junto al resto de lo que resuelve roles.
+ */
+export class MisEventosService {
+  constructor(private readonly sistema: Db) {}
+
+  listEventos(usuarioId: string) {
+    return listEventosDeUsuario(this.sistema, usuarioId);
+  }
+
+  listOrganizaciones(usuarioId: string) {
+    return listOrganizacionesDeDueno(this.sistema, usuarioId);
   }
 }

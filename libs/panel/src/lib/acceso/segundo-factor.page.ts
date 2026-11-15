@@ -36,7 +36,12 @@ import { isPasskeyDisponible, PasskeyCanceladaError, usePasskey } from './passke
               (input)="setCodigo($event)"
             />
           </px-campo>
-          <button type="submit" pxBoton [cargando]="enviando()" [disabled]="codigo().length !== 6">
+          <button
+            type="submit"
+            pxBoton
+            [cargando]="enviando()"
+            [deshabilitado]="codigo().length !== 6"
+          >
             {{ enviando() ? 'Confirmando…' : 'Confirmar' }}
           </button>
         </form>

@@ -5,7 +5,7 @@ import { AuthModule } from '../../modules/auth/auth.module';
 import { SesionesService } from '../../modules/auth/sesiones.service';
 import { SessionGuard } from '../sesion/sesion';
 import { PermisosGuard } from './permisos.guard';
-import { RolesCache, RolesRepository } from './roles.repository';
+import { MisEventosService, RolesCache, RolesRepository } from './roles.repository';
 
 /**
  * Los guards globales, **en este orden**: primero la sesión (HU-201) y después los permisos del
@@ -17,6 +17,11 @@ import { RolesCache, RolesRepository } from './roles.repository';
   imports: [AuthModule, DiscoveryModule],
   providers: [
     { provide: RolesCache, useFactory: () => new RolesCache() },
+    {
+      provide: MisEventosService,
+      inject: [DbSistemaService],
+      useFactory: (sistema: DbSistemaService) => new MisEventosService(sistema.db),
+    },
     {
       provide: RolesRepository,
       inject: [DbSistemaService],
@@ -35,6 +40,6 @@ import { RolesCache, RolesRepository } from './roles.repository';
         new PermisosGuard(reflector, roles, cache),
     },
   ],
-  exports: [RolesCache, RolesRepository],
+  exports: [RolesCache, RolesRepository, MisEventosService],
 })
 export class SeguridadModule {}

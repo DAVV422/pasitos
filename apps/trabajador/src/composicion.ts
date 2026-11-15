@@ -8,6 +8,7 @@ import { ArchivoAdapter, SmtpAdapter } from './correos/adaptadores';
 import type { CorreoPort } from './correos/correo.port';
 import { EnviosCorreoService } from './correos/envios.service';
 import { CostoRedService } from './costo/costo-red.service';
+import { AperturaEventosService } from './eventos/outbox.service';
 import { EvidenciaService } from './evidencia/evidencia.service';
 import { SelladorRepository } from './sellador/sellador.repository';
 import { OPCIONES_SELLADOR_POR_DEFECTO, SelladorService } from './sellador/sellador.service';
@@ -21,6 +22,7 @@ export interface Composicion {
   readonly transacciones: TransaccionesStellarRepository;
   readonly repositorio: SelladorRepository;
   readonly envios: EnviosCorreoService;
+  readonly apertura: AperturaEventosService;
 }
 
 /** Arma las piezas del trabajador. Los tests arman las mismas con FakeStellar y otro reloj. */
@@ -93,7 +95,18 @@ export function buildComposicion(
       porVuelta: 50,
     },
   );
-  return { conexion, stellar, sellador, contrato, costo, transacciones, repositorio, envios };
+  const apertura = new AperturaEventosService(conexion.db, alertas, reloj);
+  return {
+    conexion,
+    stellar,
+    sellador,
+    contrato,
+    costo,
+    transacciones,
+    repositorio,
+    envios,
+    apertura,
+  };
 }
 
 /** SMTP (Mailpit) en desarrollo; archivos en los tests. Resend llega con el despliegue (T-002). */

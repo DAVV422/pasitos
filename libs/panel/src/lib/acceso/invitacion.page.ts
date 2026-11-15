@@ -113,7 +113,12 @@ type Estado =
                     el evento.</span
                   >
                 </label>
-                <button type="submit" pxBoton [cargando]="enviando()" [disabled]="!puedeCrear()">
+                <button
+                  type="submit"
+                  pxBoton
+                  [cargando]="enviando()"
+                  [deshabilitado]="!puedeCrear()"
+                >
                   {{ enviando() ? 'Creando tu cuenta…' : 'Crear mi cuenta y aceptar' }}
                 </button>
               </form>
