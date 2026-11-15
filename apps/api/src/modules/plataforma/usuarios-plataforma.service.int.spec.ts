@@ -27,10 +27,10 @@ describe('UsuariosPlataformaService.createUsuario', () => {
     await base?.stop();
   });
 
-  it('crea el administrador con el correo normalizado, la contraseña en Argon2id y la bitácora', async () => {
+  it('crea el primer administrador con el correo normalizado, la contraseña en Argon2id y la bitácora', async () => {
     const passwordHash = await hashPassword('una frase larga de prueba');
-    const id = await servicio.createUsuario(
-      { email: '  Admin.Uno@example.com ', nombre: 'Admin Uno', passwordHash, rol: 'admin' },
+    const id = await servicio.createSuperadmin(
+      { email: '  Admin.Uno@example.com ', nombre: 'Admin Uno', passwordHash },
       COMANDO,
     );
 
@@ -38,7 +38,7 @@ describe('UsuariosPlataformaService.createUsuario', () => {
     expect(usuario).toMatchObject({
       email: 'admin.uno@example.com',
       nombre: 'Admin Uno',
-      rolPlataforma: 'admin',
+      rolPlataforma: 'superadmin',
       estado: 'activo',
     });
     expect(usuario?.emailVerificadoAt).toBeInstanceOf(Date);
@@ -55,9 +55,28 @@ describe('UsuariosPlataformaService.createUsuario', () => {
       organizacionId: null,
       actorTipo: 'sistema',
       objetoNombre: 'Admin Uno',
-      despues: { rolPlataforma: 'admin' },
+      despues: { rolPlataforma: 'superadmin' },
     });
     expect(JSON.stringify(filas[0])).not.toContain('example.com');
+  });
+
+  it('no deja crear un segundo primer administrador, ni con otro correo', async () => {
+    const passwordHash = await hashPassword('una frase larga de prueba');
+    await expect(
+      servicio.createSuperadmin(
+        { email: 'otro.super@example.com', nombre: 'Otro', passwordHash },
+        COMANDO,
+      ),
+    ).rejects.toMatchObject({ code: 'VALIDACION', errors: [{ field: 'rol', code: 'YA_EXISTE' }] });
+    // Aunque alguien se salte el servicio, la base no lo permite.
+    await expect(
+      base.sistema.db.insert(usuarios).values({
+        id: '01900000-0000-7000-8000-000000000001',
+        email: 'directo@example.com',
+        nombre: 'Directo',
+        rolPlataforma: 'superadmin',
+      }),
+    ).rejects.toThrow();
   });
 
   it('rechaza un correo que ya existe, aunque cambien las mayúsculas', async () => {

@@ -199,7 +199,7 @@ Borrador ──Publicar──▶ Publicado ──llega la hora / Abrir──▶ 
 
 **Reglas con el evento en curso:**
 - Un reto con participaciones **no se borra; se desactiva**.
-- El tope de un reto se puede subir, pero **no bajar por debajo de lo ya entregado**.
+- El tope de un reto **solo puede subir** una vez publicado el evento: queda registrado en el contrato del evento en Stellar, que no deja bajarlo. Antes de publicar se cambia libremente; si se puso de más, el reto se puede desactivar.
 - Si cambia la recompensa de un reto o el precio de un producto, el cambio vale solo para lo que venga después.
 - Todo cambio queda en la bitácora.
 

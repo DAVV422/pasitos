@@ -1,5 +1,15 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, index, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  check,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { bytea, citext } from './tipos';
 
 const creadoEn = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
@@ -35,10 +45,15 @@ export const usuarios = pgTable(
     updatedAt: actualizadoEn(),
   },
   (t) => [
+    // superadmin: el primer administrador (`pnpm plataforma crear-admin`), el único que nombra
+    // a los demás (HU-202 §4). Hay como mucho uno.
     check(
       'usuarios_rol_plataforma',
-      sql`${t.rolPlataforma} is null or ${t.rolPlataforma} in ('admin', 'soporte')`,
+      sql`${t.rolPlataforma} is null or ${t.rolPlataforma} in ('superadmin', 'admin', 'soporte')`,
     ),
+    uniqueIndex('usuarios_un_superadmin')
+      .on(t.rolPlataforma)
+      .where(sql`${t.rolPlataforma} = 'superadmin'`),
     check('usuarios_estado', sql`${t.estado} in ('activo', 'bloqueado')`),
   ],
 );

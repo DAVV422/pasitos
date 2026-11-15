@@ -4,7 +4,11 @@ import { bitacora, usuarios, type Db } from '@pasitos/db';
 import { uuidv7 } from 'uuidv7';
 import type { ActorPlataforma } from './eventos-plataforma.service';
 
-export const ROLES_PLATAFORMA = ['admin', 'soporte'] as const;
+/**
+ * `superadmin`: el primer administrador, el único que nombra a los demás (HU-202 §4); hay uno solo.
+ * `admin`: todo lo demás de la consola. `soporte`: solo lectura.
+ */
+export const ROLES_PLATAFORMA = ['superadmin', 'admin', 'soporte'] as const;
 export type RolPlataforma = (typeof ROLES_PLATAFORMA)[number];
 
 export interface NuevoUsuarioPlataforma {
@@ -21,11 +25,19 @@ export function normalizeEmail(email: string): string {
 }
 
 /**
- * Personas de Pasitos (`rol_plataforma`). El primer administrador lo crea `pnpm plataforma
- * crear-admin`; los siguientes, un administrador desde la consola (HU-202 §5).
+ * Personas de Pasitos (`rol_plataforma`). El primer administrador (`superadmin`) lo crea `pnpm
+ * plataforma crear-admin`; a los demás los nombra él desde la consola (HU-202 §4).
  */
 export class UsuariosPlataformaService {
   constructor(private readonly db: Db) {}
+
+  /** El primer administrador. Si ya hay uno, `VALIDACION` (el índice único lo asegura también). */
+  createSuperadmin(
+    nuevo: Omit<NuevoUsuarioPlataforma, 'rol'>,
+    actor: ActorPlataforma,
+  ): Promise<string> {
+    return this.createUsuario({ ...nuevo, rol: 'superadmin' }, actor);
+  }
 
   async createUsuario(nuevo: NuevoUsuarioPlataforma, actor: ActorPlataforma): Promise<string> {
     const email = normalizeEmail(nuevo.email);
@@ -47,6 +59,24 @@ export class UsuariosPlataformaService {
         .select({ id: usuarios.id })
         .from(usuarios)
         .where(eq(usuarios.email, email));
+      if (nuevo.rol === 'superadmin') {
+        const [superadmin] = await tx
+          .select({ id: usuarios.id })
+          .from(usuarios)
+          .where(eq(usuarios.rolPlataforma, 'superadmin'));
+        if (superadmin) {
+          throw new AppError('VALIDACION', {
+            errors: [
+              {
+                field: 'rol',
+                code: 'YA_EXISTE',
+                message:
+                  'Ya hay un primer administrador; los demás los nombra él desde la consola.',
+              },
+            ],
+          });
+        }
+      }
       if (existente) {
         throw new AppError('VALIDACION', {
           errors: [

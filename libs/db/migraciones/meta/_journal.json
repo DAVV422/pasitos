@@ -57,6 +57,13 @@
       "when": 1794674459404,
       "tag": "0007_en_red_hasta",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794726029581,
+      "tag": "0008_superadmin",
+      "breakpoints": true
     }
   ]
 }

@@ -2,7 +2,7 @@
  * Acciones de la consola de plataforma mientras no existe la consola (HU-202). Lo corre una persona de
  * Pasitos; cada acción queda en la bitácora con el mismo servicio que usará la consola.
  *
- *   pnpm plataforma crear-admin --email <correo> --nombre "…"
+ *   pnpm plataforma crear-admin --email <correo> --nombre "…"   (solo el primero: superadmin)
  *   pnpm plataforma intervalo --evento <slug> --minutos <2|5|10|15|30|plataforma> --motivo "…"
  *
  * `crear-admin` pide la contraseña sin mostrarla (dos veces). Sin terminal interactiva, la lee de
@@ -110,12 +110,12 @@ async function prepareCrearAdmin(values: Valores): Promise<(db: Db) => Promise<v
   }
   const passwordHash = await hashPassword(password);
   return async (db) => {
-    await new UsuariosPlataformaService(db).createUsuario(
-      { email, nombre, passwordHash, rol: 'admin' },
+    await new UsuariosPlataformaService(db).createSuperadmin(
+      { email, nombre, passwordHash },
       COMANDO,
     );
     process.stdout.write(
-      'Administrador creado. Al entrar por primera vez a /plataforma va a configurar su segundo factor.\n',
+      'Primer administrador creado. Al entrar por primera vez a /plataforma va a configurar su segundo factor; desde ahí nombra a los demás administradores.\n',
     );
   };
 }

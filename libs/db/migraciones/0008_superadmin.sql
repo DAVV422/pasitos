@@ -1,0 +1,3 @@
+ALTER TABLE "usuarios" DROP CONSTRAINT "usuarios_rol_plataforma";--> statement-breakpoint
+CREATE UNIQUE INDEX "usuarios_un_superadmin" ON "usuarios" USING btree ("rol_plataforma") WHERE "usuarios"."rol_plataforma" = 'superadmin';--> statement-breakpoint
+ALTER TABLE "usuarios" ADD CONSTRAINT "usuarios_rol_plataforma" CHECK ("usuarios"."rol_plataforma" is null or "usuarios"."rol_plataforma" in ('superadmin', 'admin', 'soporte'));
