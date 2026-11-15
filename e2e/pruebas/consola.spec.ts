@@ -164,6 +164,14 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await page.getByRole('link', { name: 'Resumen' }).click();
   await expect(page.getByText('El reto «Charla de apertura» no tiene pantalla')).toHaveCount(0);
 
+  // HU-212: las reglas de la puerta y de los puntos.
+  await page.getByRole('link', { name: 'Configuración' }).click();
+  await page.getByRole('tab', { name: 'Reglas y puerta' }).click();
+  await page.getByLabel('Tope de registros del evento').fill('300');
+  await page.getByLabel('Puntos de bienvenida').fill('10');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Guardado.')).toBeVisible();
+
   // HU-203: invita a un registrador, que acepta desde otro navegador y ve solo lo suyo.
   await page.getByRole('link', { name: 'Equipo' }).click();
   await page.getByRole('button', { name: 'Invitar' }).click();

@@ -47,6 +47,8 @@ export const eventos = pgTable(
     nombrePuntos: text('nombre_puntos').notNull().default('puntos'),
     modoRegistro: text('modo_registro').notNull().default('lista'),
     registroPuertaActivo: boolean('registro_puerta_activo').notNull().default(true),
+    // HU-212: tope del evento para registrar en la puerta; null = sin límite.
+    topeRegistrosPuerta: integer('tope_registros_puerta'),
     puntosCheckIn: integer('puntos_check_in').notNull().default(0),
     topeAjuste: integer('tope_ajuste').notNull().default(100),
     // D30: si los retos piden haber pasado por la puerta (ajuste 10).
@@ -104,7 +106,11 @@ export const eventos = pgTable(
     ),
     check(
       'eventos_tope_puntos_persona',
-      sql`${t.topePuntosPersona} is null or ${t.topePuntosPersona} > 0`,
+      sql`${t.topePuntosPersona} is null or ${t.topePuntosPersona} between 1 and 1000000`,
+    ),
+    check(
+      'eventos_tope_registros_puerta',
+      sql`${t.topeRegistrosPuerta} is null or ${t.topeRegistrosPuerta} between 1 and 10000`,
     ),
     index('eventos_organizacion').on(t.organizacionId),
   ],

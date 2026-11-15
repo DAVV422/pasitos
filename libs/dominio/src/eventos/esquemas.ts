@@ -74,10 +74,27 @@ export const esquemaEditarEvento = z
       .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, { error: 'Solo minúsculas, números y guiones.' })
       .min(3)
       .max(60),
+    // Reglas y puerta (HU-212).
+    registroPuertaActivo: z.boolean(),
+    topeRegistrosPuerta: z.number().int().min(1).max(10_000).nullable(),
+    puntosCheckIn: z.number().int().min(0).max(1_000),
+    retosRequierenCheckIn: z.boolean(),
+    topePuntosPersona: z.number().int().min(1).max(1_000_000).nullable(),
+    topeAjuste: z.number().int().min(1).max(10_000),
   })
   .partial()
   .strict()
   .refine((d) => Object.keys(d).length > 0, { error: 'Indica qué cambiar.' });
+
+/** Las reglas de la puerta y de los puntos: su cambio va a la bitácora como `puerta.config.update`. */
+export const CAMPOS_REGLAS = [
+  'registroPuertaActivo',
+  'topeRegistrosPuerta',
+  'puntosCheckIn',
+  'retosRequierenCheckIn',
+  'topePuntosPersona',
+  'topeAjuste',
+] as const;
 
 export const TIPOS_LUGAR = ['sala', 'stand', 'mesa', 'servicio'] as const;
 export const NOMBRES_TIPO_LUGAR: Readonly<Record<(typeof TIPOS_LUGAR)[number], string>> = {

@@ -17,6 +17,16 @@ export interface EventoResumen {
   readonly miRol: RolEvento;
 }
 
+/** Reglas de la puerta y de los puntos (HU-212). */
+export interface ReglasEvento {
+  readonly registroPuertaActivo: boolean;
+  readonly topeRegistrosPuerta: number | null;
+  readonly puntosCheckIn: number;
+  readonly retosRequierenCheckIn: boolean;
+  readonly topePuntosPersona: number | null;
+  readonly topeAjuste: number;
+}
+
 export interface EventoDetalle {
   readonly id: string;
   readonly organizacionId: string;
@@ -31,6 +41,7 @@ export interface EventoDetalle {
   readonly publicadoAt: string | null;
   readonly iniciadoAt: string | null;
   readonly nombrePuntos: string;
+  readonly reglas: ReglasEvento;
   readonly descripcion: string | null;
   readonly contacto: string | null;
   readonly wifi: string | null;
@@ -55,6 +66,8 @@ export interface EventoDetalle {
     readonly pantallasConectadas: number;
     readonly mesas: number;
     readonly invitados: number;
+    /** Registrados en la puerta (HU-210). */
+    readonly registrosPuerta?: number;
   };
 }
 

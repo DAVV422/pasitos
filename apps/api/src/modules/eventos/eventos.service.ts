@@ -16,6 +16,7 @@ import {
 import { AppError, type RolEvento } from '@pasitos/dominio';
 import {
   buildListaChequeo,
+  CAMPOS_REGLAS,
   canTransicion,
   DURACION_MAXIMA_EVENTO_MS,
   type esquemaEditarEvento,
@@ -210,6 +211,23 @@ export class EventosService {
         Object.keys(cambios).map((campo) => [campo, actual[campo as keyof typeof actual]]),
       );
       const recortado = diff(antes, cambios);
+      // Las reglas de la puerta y de los puntos tienen su propia acción en la bitácora (HU-212).
+      const reglas = new Set<string>(CAMPOS_REGLAS);
+      const separar = (de: Record<string, unknown>, deReglas: boolean) =>
+        Object.fromEntries(Object.entries(de).filter(([c]) => reglas.has(c) === deReglas));
+      if (Object.keys(separar(recortado.despues, true)).length > 0) {
+        await this.bitacora.record(tx, {
+          actor: toActor(contexto),
+          accion: 'puerta.config.update',
+          organizacionId: actual.organizacionId,
+          eventoId: actual.id,
+          objeto: { tipo: 'evento', id: actual.id, nombre: actual.nombre },
+          antes: separar(recortado.antes, true),
+          despues: separar(recortado.despues, true),
+        });
+        recortado.antes = separar(recortado.antes, false);
+        recortado.despues = separar(recortado.despues, false);
+      }
       if (Object.keys(recortado.despues).length > 0) {
         await this.bitacora.record(tx, {
           actor: toActor(contexto),
@@ -435,6 +453,14 @@ export class EventosService {
       publicadoAt: evento.publicadoAt,
       iniciadoAt: evento.iniciadoAt,
       nombrePuntos: evento.nombrePuntos,
+      reglas: {
+        registroPuertaActivo: evento.registroPuertaActivo,
+        topeRegistrosPuerta: evento.topeRegistrosPuerta,
+        puntosCheckIn: evento.puntosCheckIn,
+        retosRequierenCheckIn: evento.retosRequierenCheckIn,
+        topePuntosPersona: evento.topePuntosPersona,
+        topeAjuste: evento.topeAjuste,
+      },
       descripcion: evento.descripcion,
       contacto: evento.contacto,
       // El wifi lo ve el equipo; nunca es público (HU-206 §1).
