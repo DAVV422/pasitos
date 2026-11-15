@@ -18,23 +18,23 @@ export const CAMPOS_OCULTOS = [
   '*.llavePublica',
 ];
 
-export function buildLoggerParams(config: AppConfig): Params {
-  return {
-    pinoHttp: {
-      level: config.LOG_LEVEL,
-      // El id lo genera Fastify (main.ts); pino-http lo reutiliza como traceId.
-      genReqId: (request) => (request as unknown as { id: string }).id,
-      customProps: (request) => ({ traceId: (request as unknown as { id: string }).id }),
-      redact: { paths: CAMPOS_OCULTOS, censor: '[Redacted]' },
-      serializers: {
-        req: (request: { method: string; url: string }) => ({
-          method: request.method,
-          url: request.url.split('?')[0],
-        }),
-      },
-      ...(config.NODE_ENV === 'development'
-        ? { transport: { target: 'pino-pretty', options: { singleLine: true } } }
-        : {}),
+/** `destino`: en los tests, para leer lo que se escribe (HU-201: ni contraseñas ni tokens). */
+export function buildLoggerParams(config: AppConfig, destino?: NodeJS.WritableStream): Params {
+  const opciones = {
+    level: config.LOG_LEVEL,
+    // El id lo genera Fastify (main.ts); pino-http lo reutiliza como traceId.
+    genReqId: (request) => (request as unknown as { id: string }).id,
+    customProps: (request) => ({ traceId: (request as unknown as { id: string }).id }),
+    redact: { paths: CAMPOS_OCULTOS, censor: '[Redacted]' },
+    serializers: {
+      req: (request: { method: string; url: string }) => ({
+        method: request.method,
+        url: request.url.split('?')[0],
+      }),
     },
-  };
+    ...(config.NODE_ENV === 'development' && !destino
+      ? { transport: { target: 'pino-pretty', options: { singleLine: true } } }
+      : {}),
+  } satisfies Params['pinoHttp'];
+  return { pinoHttp: destino ? [opciones, destino] : opciones };
 }

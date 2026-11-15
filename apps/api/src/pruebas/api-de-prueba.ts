@@ -2,6 +2,7 @@ import fastifyCookie from '@fastify/cookie';
 import type { Type } from '@nestjs/common';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
+import { Logger } from 'nestjs-pino';
 import { miembrosOrganizacion, organizaciones, usuarios } from '@pasitos/db';
 import type { BaseDePrueba } from '@pasitos/db/pruebas';
 import { uuidv7 } from 'uuidv7';
@@ -44,13 +45,13 @@ export interface ApiDePrueba {
 /** El API completo (AppModule) contra la base de prueba, con reloj y HIBP falsos. */
 export async function startApiDePrueba(
   base: BaseDePrueba,
-  opciones: { controladores?: Type[] } = {},
+  opciones: { controladores?: Type[]; destinoLogs?: NodeJS.WritableStream } = {},
 ): Promise<ApiDePrueba> {
   const reloj = new RelojDePrueba();
   const filtradas = new FiltradasDePrueba();
   const config = loadAppConfig({
     NODE_ENV: 'test',
-    LOG_LEVEL: 'fatal',
+    LOG_LEVEL: opciones.destinoLogs ? 'debug' : 'fatal',
     DATABASE_URL_APP: base.urls.app,
     DATABASE_URL_SISTEMA: base.urls.sistema,
     LLAVE_CIFRADO_DATOS: Buffer.alloc(32, 7).toString('base64'),
@@ -58,7 +59,12 @@ export async function startApiDePrueba(
     HIBP_ACTIVO: 'false',
   });
   const modulo = await Test.createTestingModule({
-    imports: [AppModule.forConfig(config)],
+    imports: [
+      AppModule.forConfig(
+        config,
+        opciones.destinoLogs ? { destinoLogs: opciones.destinoLogs } : {},
+      ),
+    ],
     controllers: opciones.controladores ?? [],
   })
     .overrideProvider(RELOJ)
@@ -69,6 +75,10 @@ export async function startApiDePrueba(
   const app = modulo.createNestApplication<NestFastifyApplication>(new FastifyAdapter(), {
     logger: false,
   });
+  if (opciones.destinoLogs) {
+    // Los logs de los servicios (Logger de Nest) también van a pino, como en main.ts.
+    app.useLogger(app.get(Logger));
+  }
   await app.register(fastifyCookie);
   app.setGlobalPrefix('api/v1');
   await app.init();

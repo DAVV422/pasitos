@@ -5,8 +5,8 @@ import {
   isIntervaloAnclaje,
   type IntervaloAnclajeMin,
 } from '@pasitos/dominio';
-import { bitacora, eventos, type Db } from '@pasitos/db';
-import { uuidv7 } from 'uuidv7';
+import { eventos, type Db } from '@pasitos/db';
+import { BitacoraService, toActorBitacora } from '../bitacora/bitacora.service';
 
 /** Quién actúa desde la consola de plataforma. Con HU-201 es la persona con sesión; antes, un comando. */
 export interface ActorPlataforma {
@@ -66,18 +66,12 @@ export class EventosPlataformaService {
         .update(eventos)
         .set({ intervaloAnclajeMin: minutos, updatedAt: sql`now()` })
         .where(eq(eventos.id, eventoId));
-      await tx.insert(bitacora).values({
-        id: uuidv7(),
+      await new BitacoraService().record(tx, {
+        actor: toActorBitacora(actor),
+        accion: 'evento.intervalo_anclaje.update',
         organizacionId: evento.organizacionId,
         eventoId,
-        actorTipo: actor.tipo,
-        actorId: actor.id,
-        actorNombre: actor.nombre,
-        actorRol: actor.rol,
-        accion: 'evento.intervalo_anclaje.update',
-        objetoTipo: 'evento',
-        objetoId: eventoId,
-        objetoNombre: evento.nombre,
+        objeto: { tipo: 'evento', id: eventoId, nombre: evento.nombre },
         antes: { intervaloAnclajeMin: evento.intervaloAnclajeMin },
         despues: { intervaloAnclajeMin: minutos, ...(motivo ? { motivo } : {}) },
       });

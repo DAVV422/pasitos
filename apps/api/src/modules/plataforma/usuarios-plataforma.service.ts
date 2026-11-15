@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { AppError } from '@pasitos/dominio';
-import { bitacora, usuarios, type Db } from '@pasitos/db';
+import { usuarios, type Db } from '@pasitos/db';
 import { uuidv7 } from 'uuidv7';
+import { BitacoraService, toActorBitacora } from '../bitacora/bitacora.service';
 import type { ActorPlataforma } from './eventos-plataforma.service';
 
 /**
@@ -95,18 +96,12 @@ export class UsuariosPlataformaService {
         rolPlataforma: nuevo.rol,
       });
       // Sin el correo: la bitácora no guarda datos personales que no hagan falta.
-      await tx.insert(bitacora).values({
-        id: uuidv7(),
+      await new BitacoraService().record(tx, {
+        actor: toActorBitacora(actor),
+        accion: 'plataforma.usuario.create',
         organizacionId: null,
         eventoId: null,
-        actorTipo: actor.tipo,
-        actorId: actor.id,
-        actorNombre: actor.nombre,
-        actorRol: actor.rol,
-        accion: 'plataforma.usuario.create',
-        objetoTipo: 'usuario',
-        objetoId: id,
-        objetoNombre: nombre,
+        objeto: { tipo: 'usuario', id, nombre },
         despues: { rolPlataforma: nuevo.rol },
       });
       return id;

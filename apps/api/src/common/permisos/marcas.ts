@@ -43,6 +43,7 @@ export const SoloSesion = () => SetMetadata(META_SOLO_SESION, true);
 export interface ContextoEvento {
   readonly usuarioId: string;
   readonly usuarioNombre: string;
+  readonly dispositivo: string | null;
   readonly eventoId: string;
   readonly organizacionId: string;
   readonly eventoEstado: string;

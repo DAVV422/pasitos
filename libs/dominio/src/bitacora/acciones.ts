@@ -1,0 +1,91 @@
+/**
+ * Catálogo de acciones de la bitácora (HU-213 §2, D35): `<objeto>.<verbo>` en inglés y el texto en
+ * español que ve el dueño. Toda escritura del equipo y de la consola usa una de estas.
+ */
+export const ACCIONES_BITACORA = {
+  // Evento
+  'evento.create': 'Creó el evento',
+  'evento.update': 'Editó el evento',
+  'evento.publish': 'Publicó el evento',
+  'evento.open': 'Abrió el evento',
+  'evento.pause': 'Pausó el evento',
+  'evento.resume': 'Reanudó el evento',
+  'evento.ubicacion.update': 'Cambió la ubicación',
+  'evento.intervalo_anclaje.update': 'Cambió cada cuánto se ancla en Stellar',
+  // Contenido
+  'lugar.create': 'Creó un lugar',
+  'lugar.update': 'Editó un lugar',
+  'lugar.delete': 'Borró un lugar',
+  'actividad.create': 'Creó una actividad de la agenda',
+  'actividad.update': 'Editó una actividad de la agenda',
+  'actividad.delete': 'Borró una actividad de la agenda',
+  'sponsor.create': 'Agregó un sponsor',
+  'sponsor.update': 'Editó un sponsor',
+  'sponsor.delete': 'Quitó un sponsor',
+  'pregunta.create': 'Agregó una pregunta frecuente',
+  'pregunta.update': 'Editó una pregunta frecuente',
+  'pregunta.delete': 'Borró una pregunta frecuente',
+  'preguntas.reorder': 'Reordenó las preguntas frecuentes',
+  'archivo.upload': 'Subió un archivo',
+  'archivo.replace': 'Reemplazó un archivo',
+  // Retos y catálogo
+  'reto.create': 'Creó un reto',
+  'reto.update': 'Editó un reto',
+  'reto.delete': 'Borró un reto',
+  'reto.deactivate': 'Desactivó un reto',
+  'reto.activate': 'Activó un reto',
+  'premio.create': 'Agregó un premio',
+  'premio.update': 'Editó un premio',
+  'premio.delete': 'Borró un premio',
+  'premio.hide': 'Ocultó un premio',
+  'premio.show': 'Volvió a mostrar un premio',
+  // Equipo
+  'miembro.invite': 'Invitó a un miembro del equipo',
+  'miembro.resend': 'Reenvió una invitación al equipo',
+  'miembro.accept': 'Aceptó la invitación al equipo',
+  'miembro.update': 'Cambió el rol o las terminales de un miembro',
+  'miembro.remove': 'Quitó a un miembro del equipo',
+  // Terminales
+  'pantalla.create': 'Creó una pantalla',
+  'pantalla.update': 'Editó una pantalla',
+  'pantalla.connect': 'Conectó una pantalla',
+  'pantalla.disconnect': 'Desconectó una pantalla',
+  'pantalla.replace': 'Reemplazó la tablet de una pantalla',
+  'mesa.create': 'Creó una mesa',
+  'mesa.update': 'Editó una mesa',
+  'mesa.connect': 'Conectó una mesa',
+  'mesa.disconnect': 'Desconectó una mesa',
+  // Invitados
+  'asistente.create': 'Agregó un invitado',
+  'asistente.update': 'Editó un invitado',
+  'asistente.cancel': 'Anuló a un invitado',
+  'importacion.confirm': 'Importó invitados',
+  'invitaciones.send': 'Envió invitaciones',
+  'invitacion.resend': 'Reenvió una invitación',
+  'invitaciones.enlaces.view': 'Vio o descargó enlaces de invitación',
+  'invitados.export': 'Descargó la lista de invitados',
+  // Puerta
+  'puerta.config.update': 'Cambió la configuración de la puerta',
+  // Plataforma (evento_id nulo, salvo las que tocan un evento)
+  'organizacion.create': 'Creó una organización',
+  'organizacion.update': 'Editó una organización',
+  'organizacion.suspend': 'Suspendió una organización',
+  'organizacion.reactivate': 'Reactivó una organización',
+  'organizacion.dueno.invite': 'Invitó al dueño de una organización',
+  'organizacion.dueno.accept': 'Aceptó ser dueño de una organización',
+  'plataforma.usuario.create': 'Nombró a una persona de Pasitos',
+  'plataforma.usuario.update': 'Cambió el rol de una persona de Pasitos',
+  'plataforma.usuario.accept': 'Aceptó el acceso a la consola',
+  'plataforma.evento_prueba.create': 'Creó un evento de prueba',
+  'usuario.segundo_factor.reset': 'Restableció el segundo factor de una persona',
+} as const satisfies Record<string, string>;
+
+export type AccionBitacora = keyof typeof ACCIONES_BITACORA;
+
+export function isAccionBitacora(valor: string): valor is AccionBitacora {
+  return Object.hasOwn(ACCIONES_BITACORA, valor);
+}
+
+export function getTextoAccion(accion: string): string {
+  return isAccionBitacora(accion) ? ACCIONES_BITACORA[accion] : accion;
+}

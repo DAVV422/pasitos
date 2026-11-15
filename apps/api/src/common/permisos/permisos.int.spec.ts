@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { eventos, miembrosEvento } from '@pasitos/db';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import {
+  ACCIONES_ESCRITURA,
   ACCIONES_EVENTO,
   ACCIONES_POR_TERMINAL,
   ROLES_EVENTO,
@@ -18,6 +19,7 @@ import {
   type PersonaDePrueba,
 } from '../../pruebas/equipo-de-prueba';
 import { runV9, type ActorV9 } from '../../pruebas/v9';
+import { AccionBitacoraDe } from '../../modules/bitacora/bitacora.service';
 import { Contexto, Permiso, type ContextoEvento } from './marcas';
 import { RolesCache } from './roles.repository';
 import { checkMarcasDeRutas } from './rutas';
@@ -36,6 +38,7 @@ class PermisosPruebaController {
 
   @Post('pantallas/:id/control')
   @Permiso('pantallas.control', { recurso: 'pantallas' })
+  @AccionBitacoraDe('pantalla.update')
   controlPantalla(@Contexto() contexto: ContextoEvento) {
     return { rol: contexto.rol };
   }
@@ -52,6 +55,9 @@ for (const accion of ACCIONES_EVENTO.filter((a) => !(a in ACCIONES_POR_TERMINAL)
   const descriptor = Object.getOwnPropertyDescriptor(prototipo, nombre) as PropertyDescriptor;
   Get(`:eventoId/${accion}`)(prototipo, nombre, descriptor);
   Permiso(accion as AccionEvento)(prototipo, nombre, descriptor);
+  if (ACCIONES_ESCRITURA.has(accion)) {
+    AccionBitacoraDe('evento.update')(prototipo, nombre, descriptor);
+  }
   Contexto()(prototipo, nombre, 0);
 }
 

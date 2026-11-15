@@ -26,6 +26,8 @@ export interface ContextoSesion {
   readonly sessionId: string;
   readonly usuario: Pick<Usuario, 'id' | 'email' | 'nombre' | 'rolPlataforma'>;
   readonly segundoFactorAt: Date | null;
+  /** "Chrome en Windows", para la bitácora (sin IP). */
+  readonly dispositivo: string | null;
   readonly segundoFactor: {
     readonly requerido: boolean;
     readonly metodos: readonly MetodoSegundoFactor[];
@@ -80,13 +82,14 @@ export class SesionesService {
     if (ahora.getTime() - sesion.ultimoUsoAt.getTime() >= TOQUE_CADA_MS) {
       await this.repositorio.touchSession(sesion.id, ahora);
     }
-    return this.buildContexto(sesion.id, usuario, sesion.segundoFactorAt);
+    return this.buildContexto(sesion.id, usuario, sesion.segundoFactorAt, sesion.dispositivo);
   }
 
   async buildContexto(
     sessionId: string,
     usuario: Usuario,
     segundoFactorAt: Date | null,
+    dispositivo: string | null = null,
   ): Promise<ContextoSesion> {
     const [requerido, cantidadPasskeys] = await Promise.all([
       this.repositorio.isSegundoFactorRequerido(usuario),
@@ -113,6 +116,7 @@ export class SesionesService {
         rolPlataforma: usuario.rolPlataforma,
       },
       segundoFactorAt,
+      dispositivo,
       segundoFactor: { requerido, metodos, estado },
     };
   }

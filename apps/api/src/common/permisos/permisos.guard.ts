@@ -65,6 +65,7 @@ export class PermisosGuard implements CanActivate {
     request.contexto = {
       usuarioId: sesion.usuario.id,
       usuarioNombre: sesion.usuario.nombre,
+      dispositivo: sesion.dispositivo,
       eventoId: evento.id,
       organizacionId: evento.organizacionId,
       eventoEstado: evento.estado,

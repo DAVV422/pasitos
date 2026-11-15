@@ -1,6 +1,8 @@
 import { RequestMethod, type INestApplication } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { DiscoveryService, Reflector } from '@nestjs/core';
+import { ACCIONES_ESCRITURA } from '@pasitos/dominio';
+import { META_ACCION_BITACORA } from '../../modules/bitacora/bitacora.service';
 import { META_PUBLICA } from '../sesion/sesion';
 import { META_PERMISO, META_PLATAFORMA, META_SOLO_SESION, type DefinicionPermiso } from './marcas';
 
@@ -11,6 +13,8 @@ export interface RutaRegistrada {
   readonly controlador: string;
   readonly handler: string;
   readonly permiso: DefinicionPermiso | undefined;
+  /** La acción de la bitácora que deja (HU-213 §5). */
+  readonly accionBitacora: string | undefined;
   readonly marcas: readonly string[];
 }
 
@@ -63,6 +67,10 @@ export function listRutas(app: INestApplication): RutaRegistrada[] {
           objetivos,
         ),
         marcas,
+        accionBitacora: reflector.getAllAndOverride<string | undefined>(
+          META_ACCION_BITACORA,
+          objetivos,
+        ),
       });
     }
   }
@@ -74,14 +82,19 @@ export function listRutas(app: INestApplication): RutaRegistrada[] {
  * (HU-204 §2). Se corre al arrancar en desarrollo y en los tests: una ruta sin marca no arranca.
  */
 export function checkMarcasDeRutas(app: INestApplication): void {
-  const problemas = listRutas(app)
-    .filter((r) => r.marcas.length !== 1)
-    .map(
-      (r) =>
-        `${r.metodo} ${r.ruta} (${r.controlador}.${r.handler}): ${
-          r.marcas.length === 0 ? 'sin marca de acceso' : `varias marcas: ${r.marcas.join(', ')}`
-        }`,
-    );
+  const problemas = listRutas(app).flatMap((r) => {
+    const donde = `${r.metodo} ${r.ruta} (${r.controlador}.${r.handler})`;
+    if (r.marcas.length !== 1) {
+      const cuales =
+        r.marcas.length === 0 ? 'sin marca de acceso' : `varias marcas: ${r.marcas.join(', ')}`;
+      return [`${donde}: ${cuales}`];
+    }
+    // HU-213 §5: toda escritura del equipo declara la acción que deja en la bitácora.
+    if (r.permiso && ACCIONES_ESCRITURA.has(r.permiso.accion) && !r.accionBitacora) {
+      return [`${donde}: escritura sin @AccionBitacoraDe`];
+    }
+    return [];
+  });
   if (problemas.length > 0) {
     throw new Error(`Rutas sin una sola marca de acceso (HU-204):\n${problemas.join('\n')}`);
   }

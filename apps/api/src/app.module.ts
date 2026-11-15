@@ -8,20 +8,25 @@ import { ConfigModule } from './config/config.module';
 import { DbModule } from './infra/db/db.module';
 import { SeguridadModule } from './common/permisos/seguridad.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BitacoraModule } from './modules/bitacora/bitacora.module';
 import { MovimientosModule } from './modules/movimientos/movimientos.module';
 import { SaludModule } from './modules/salud/salud.module';
 
 @Module({})
 export class AppModule {
-  static forConfig(config: AppConfig): DynamicModule {
+  static forConfig(
+    config: AppConfig,
+    opciones: { destinoLogs?: NodeJS.WritableStream } = {},
+  ): DynamicModule {
     return {
       module: AppModule,
       imports: [
-        LoggerModule.forRoot(buildLoggerParams(config)),
+        LoggerModule.forRoot(buildLoggerParams(config, opciones.destinoLogs)),
         ConfigModule.forConfig(config),
         DbModule,
         AuthModule,
         SeguridadModule,
+        BitacoraModule,
         SaludModule,
         MovimientosModule,
       ],
