@@ -7,7 +7,7 @@ import { loadTrabajadorConfig } from './config/trabajador.config';
 
 /**
  * Trabajador (aplicación NestJS sin HTTP). Procesa las colas de pg-boss: el sellador y los
- * trabajos del contrato (HU-103). Después se suman correos (T-007), borrado a los 30 días y reportes.
+ * trabajos del contrato (HU-103) y los correos (T-007a). Después se suman el borrado a los 30 días y reportes.
  */
 @Module({})
 class TrabajadorModule {}
@@ -31,6 +31,7 @@ async function bootstrap(): Promise<void> {
     sellador: composicion.sellador,
     contrato: composicion.contrato,
     costo: composicion.costo,
+    envios: composicion.envios,
   });
   logger.log(
     `Trabajador iniciado. Red de Stellar: ${config.STELLAR_RED}; operador ${composicion.stellar.operador}.`,

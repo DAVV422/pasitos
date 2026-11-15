@@ -30,6 +30,23 @@ services:
       timeout: 3s
       retries: 20
 
+  # Buzón de correo de desarrollo (T-007a): el trabajador le manda todo por SMTP y nada sale de la
+  # computadora. Ver los correos: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 'true'
+      MP_SMTP_AUTH_ALLOW_INSECURE: 'true'
+      MP_MAX_MESSAGES: '2000'
+    ports:
+      - '127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '127.0.0.1:${MAILPIT_WEB_PORT:-8025}:8025'
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   # Red local de Stellar (HU-102): core, RPC y Friendbot. Solo con el perfil `stellar`:
   #   pnpm stellar:levantar · pnpm stellar:bajar
   # Imagen fija por digest (2026-11-14); se actualiza a mano junto con Stellar CLI.

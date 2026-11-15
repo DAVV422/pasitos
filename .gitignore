@@ -50,3 +50,6 @@ vitest.config.*.timestamp*
 
 # Volumen de archivos en desarrollo (ARCHIVOS_DIR): lotes públicos y evidencia de Stellar.
 .archivos/
+
+# Correos guardados por el adaptador a archivo (T-007a)
+.correos/

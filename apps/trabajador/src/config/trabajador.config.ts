@@ -43,6 +43,15 @@ const esquemaConfig = z.object({
     .or(z.literal('').transform(() => undefined)),
   // Volumen de archivos (Infraestructura §3). Aquí va publicos/<organización>/<evento>/evidencia-stellar.json.
   ARCHIVOS_DIR: z.string().min(1).default('.archivos'),
+  // Correo (T-007 §3, D57). En desarrollo, SMTP a Mailpit; en los tests, `archivo`.
+  CORREO_ADAPTADOR: z.enum(['smtp', 'archivo']).default('smtp'),
+  CORREO_SMTP_URL: z.string().url().default('smtp://localhost:1025'),
+  CORREOS_DIR: z.string().min(1).default('.correos'),
+  CORREO_REMITENTE: z.string().min(3).default('Pasitos <hola@example.com>'),
+  CORREO_SOPORTE: z.string().email().default('soporte@example.com'),
+  CORREO_TOPE_DIARIO: z.coerce.number().int().min(1).default(80),
+  CORREO_RESERVA_SEGURIDAD: z.coerce.number().int().min(0).default(10),
+  CORREO_ENVIOS_POR_SEGUNDO: z.coerce.number().min(0).default(2),
   SENTRY_DSN: z.string().url().optional().or(z.literal('')),
   SENTRY_ENVIRONMENT: z.string().default('desarrollo'),
 });

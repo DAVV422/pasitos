@@ -4,6 +4,9 @@ import { AlertasEnLogs } from './comun/alertas-operacion';
 import { RELOJ_SISTEMA, type Reloj } from './comun/reloj';
 import { readLlaveOperador, type TrabajadorConfig } from './config/trabajador.config';
 import { ContratoService } from './contrato/contrato.service';
+import { ArchivoAdapter, SmtpAdapter } from './correos/adaptadores';
+import type { CorreoPort } from './correos/correo.port';
+import { EnviosCorreoService } from './correos/envios.service';
 import { CostoRedService } from './costo/costo-red.service';
 import { EvidenciaService } from './evidencia/evidencia.service';
 import { SelladorRepository } from './sellador/sellador.repository';
@@ -17,12 +20,18 @@ export interface Composicion {
   readonly costo: CostoRedService;
   readonly transacciones: TransaccionesStellarRepository;
   readonly repositorio: SelladorRepository;
+  readonly envios: EnviosCorreoService;
 }
 
 /** Arma las piezas del trabajador. Los tests arman las mismas con FakeStellar y otro reloj. */
 export function buildComposicion(
   config: TrabajadorConfig,
-  opciones: { stellar?: StellarPort; reloj?: Reloj; alErrorInactivo?: (error: Error) => void } = {},
+  opciones: {
+    stellar?: StellarPort;
+    reloj?: Reloj;
+    correo?: CorreoPort;
+    alErrorInactivo?: (error: Error) => void;
+  } = {},
 ): Composicion {
   const reloj = opciones.reloj ?? RELOJ_SISTEMA;
   const conexion = createConexion(
@@ -71,5 +80,25 @@ export function buildComposicion(
     presupuestoMensualStroops: config.STELLAR_PRESUPUESTO_MENSUAL_STROOPS,
     comisionMaxStroops,
   });
-  return { conexion, stellar, sellador, contrato, costo, transacciones, repositorio };
+  const envios = new EnviosCorreoService(
+    conexion.db,
+    opciones.correo ?? buildCorreoPort(config),
+    { topeDiario: config.CORREO_TOPE_DIARIO, reservaSeguridad: config.CORREO_RESERVA_SEGURIDAD },
+    reloj,
+    {
+      remitente: config.CORREO_REMITENTE,
+      correoSoporte: config.CORREO_SOPORTE,
+      porSegundo: config.CORREO_ENVIOS_POR_SEGUNDO,
+      maxIntentos: 3,
+      porVuelta: 50,
+    },
+  );
+  return { conexion, stellar, sellador, contrato, costo, transacciones, repositorio, envios };
+}
+
+/** SMTP (Mailpit) en desarrollo; archivos en los tests. Resend llega con el despliegue (T-002). */
+export function buildCorreoPort(config: TrabajadorConfig): CorreoPort {
+  return config.CORREO_ADAPTADOR === 'archivo'
+    ? new ArchivoAdapter(config.CORREOS_DIR)
+    : new SmtpAdapter(config.CORREO_SMTP_URL);
 }

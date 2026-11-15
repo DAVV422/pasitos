@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import type { Pool } from 'pg';
 import type { PgBoss } from 'pg-boss';
 import type { ContratoService } from '../contrato/contrato.service';
+import type { EnviosCorreoService } from '../correos/envios.service';
 import type { CostoRedService } from '../costo/costo-red.service';
 import type { SelladorService } from '../sellador/sellador.service';
 
@@ -9,6 +10,7 @@ import type { SelladorService } from '../sellador/sellador.service';
 export const COLA_TICK = 'tick-sellador';
 export const COLA_STELLAR = 'stellar';
 export const COLA_SALDO = 'check-saldo-operador';
+export const COLA_CORREOS = 'send-correos';
 
 export const TRABAJOS_STELLAR = [
   'anchor-lote',
@@ -46,14 +48,21 @@ export function sendTrabajoStellar(boss: PgBoss, trabajo: TrabajoStellar): Promi
  * Una sola transacción del operador a la vez en todo el sistema (secuencia de la cuenta, Contrato §3.2).
  * Además de la concurrencia 1, un candado de sesión de PostgreSQL: si hubiera dos trabajadores, el segundo no hace nada.
  */
-export async function withCandadoOperador<T>(
+export function withCandadoOperador<T>(pool: Pool, trabajo: () => Promise<T>): Promise<T | null> {
+  return withCandado(pool, 'stellar-operador', trabajo);
+}
+
+/** Candado de sesión de PostgreSQL con nombre: si otro proceso lo tiene, no hace nada (`null`). */
+export async function withCandado<T>(
   pool: Pool,
+  nombre: string,
   trabajo: () => Promise<T>,
 ): Promise<T | null> {
   const cliente = await pool.connect();
   try {
     const { rows } = await cliente.query<{ ok: boolean }>(
-      "select pg_try_advisory_lock(hashtext('stellar-operador')) as ok",
+      'select pg_try_advisory_lock(hashtext($1)) as ok',
+      [nombre],
     );
     if (!rows[0]?.ok) {
       return null;
@@ -61,7 +70,7 @@ export async function withCandadoOperador<T>(
     try {
       return await trabajo();
     } finally {
-      await cliente.query("select pg_advisory_unlock(hashtext('stellar-operador'))");
+      await cliente.query('select pg_advisory_unlock(hashtext($1))', [nombre]);
     }
   } finally {
     cliente.release();
@@ -74,6 +83,7 @@ export interface DependenciasColas {
   readonly sellador: SelladorService;
   readonly contrato: ContratoService;
   readonly costo: CostoRedService;
+  readonly envios: EnviosCorreoService;
 }
 
 export async function startColas({
@@ -82,11 +92,22 @@ export async function startColas({
   sellador,
   contrato,
   costo,
+  envios,
 }: DependenciasColas): Promise<void> {
   const logger = new Logger('Colas');
   await boss.createQueue(COLA_TICK);
   await boss.createQueue(COLA_STELLAR);
   await boss.createQueue(COLA_SALDO);
+  await boss.createQueue(COLA_CORREOS);
+
+  // T-007 §3: cada minuto, hasta llenar el cupo del día.
+  await boss.schedule(COLA_CORREOS, '* * * * *');
+  await boss.work(COLA_CORREOS, { localConcurrency: 1 }, async () => {
+    const vuelta = await withCandado(pool, 'send-correos', () => envios.processCola());
+    if (vuelta && vuelta.enviados + vuelta.fallidos + vuelta.reintentos > 0) {
+      logger.log(vuelta, 'Correos procesados');
+    }
+  });
 
   await boss.schedule(COLA_TICK, '* * * * *');
   await boss.work(COLA_TICK, { localConcurrency: 1 }, async () => {
@@ -125,7 +146,7 @@ export async function startColas({
     },
   );
   logger.log(
-    'Colas listas: tick-sellador (cada minuto), stellar (de a una) y check-saldo-operador (cada hora).',
+    'Colas listas: tick-sellador y send-correos (cada minuto), stellar (de a una) y check-saldo-operador (cada hora).',
   );
 }
 

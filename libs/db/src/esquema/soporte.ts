@@ -11,6 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { eventos } from './eventos';
+import { citext } from './tipos';
 import { lotes } from './libro';
 
 /** Outbox (global): avisos en vivo y trabajos que no se pueden perder (Backend §3). */
@@ -67,5 +68,44 @@ export const transaccionesStellar = pgTable(
     index('transacciones_stellar_evento').on(t.eventoId, t.createdAt),
     index('transacciones_stellar_fecha').on(t.createdAt),
     index('transacciones_stellar_hash').on(t.txHash),
+  ],
+);
+
+/**
+ * Cola y estado de cada correo (T-007 §3, D57). Global, sin RLS: la escriben el API (encolar) y
+ * el trabajador (enviar). Nada se envía directo desde un request. `datos` lleva lo que pide el
+ * texto del catálogo (`libs/dominio/src/correos/catalogo.ts`); el destinatario y los datos son
+ * personales: nunca van a los logs.
+ */
+export const enviosCorreo = pgTable(
+  'envios_correo',
+  {
+    id: uuid('id').primaryKey(),
+    tipo: text('tipo').notNull(),
+    prioridad: integer('prioridad').notNull(),
+    destinatario: citext('destinatario').notNull(),
+    datos: jsonb('datos').notNull(),
+    estado: text('estado').notNull().default('en_cola'),
+    // Cuándo se estima que sale, para mostrar "sale el 18/11". Se recalcula en cada vuelta.
+    programadoPara: timestamp('programado_para', { withTimezone: true }).notNull(),
+    refId: uuid('ref_id'),
+    proveedorId: text('proveedor_id'),
+    intentos: integer('intentos').notNull().default(0),
+    error: text('error'),
+    enviadoAt: timestamp('enviado_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check('envios_correo_prioridad', sql`${t.prioridad} between 1 and 4`),
+    check(
+      'envios_correo_estado',
+      sql`${t.estado} in ('en_cola', 'enviado', 'entregado', 'rebotado', 'fallido')`,
+    ),
+    index('envios_correo_cola')
+      .on(t.prioridad, t.createdAt)
+      .where(sql`${t.estado} = 'en_cola'`),
+    index('envios_correo_enviados').on(t.enviadoAt),
+    index('envios_correo_ref').on(t.refId),
   ],
 );

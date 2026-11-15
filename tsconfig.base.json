@@ -22,8 +22,10 @@
     "forceConsistentCasingInFileNames": true,
     "paths": {
       "@pasitos/dominio": ["./libs/dominio/src/index.ts"],
+      "@pasitos/dominio/correos": ["./libs/dominio/src/correos/index.ts"],
       "@pasitos/dominio/esquemas": ["./libs/dominio/src/esquemas.ts"],
       "@pasitos/firmas": ["./libs/firmas/src/index.ts"],
+      "@pasitos/correos": ["./libs/correos/src/index.ts"],
       "@pasitos/db": ["./libs/db/src/index.ts"],
       "@pasitos/db/pruebas": ["./libs/db/src/pruebas/base-de-prueba.ts"],
       "@pasitos/libro": ["./libs/libro/src/index.ts"],
