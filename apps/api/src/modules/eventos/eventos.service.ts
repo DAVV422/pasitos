@@ -431,6 +431,11 @@ export class EventosService {
       pantallasConectadas: conectadas?.total ?? 0,
       mesas: await tx.$count(mesas, eq(mesas.eventoId, eventoId)),
       invitados: invitados?.total ?? 0,
+      // Registrados en la puerta (HU-212: el aviso al bajar el tope). Llegan con la fase 3.
+      registrosPuerta: await tx.$count(
+        asistentes,
+        and(eq(asistentes.eventoId, eventoId), eq(asistentes.origen, 'puerta')),
+      ),
     };
   }
 

@@ -206,6 +206,10 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | **Evento** | | |
 | `EVENTO_CERRADO` | 422 | El evento ya cerró. Los puntos vencieron. |
 | `TERMINAL_DESCONECTADA` | 401 | Esta pantalla se desconectó. Pide que la conecten de nuevo. |
+| `ASISTENTE_YA_REGISTRADO` | 409 | Esa persona ya está en la lista. |
+| `ASISTENTE_POSIBLE_DUPLICADO` | 409 | Hay alguien con un nombre muy parecido en la lista. |
+| `IMPORTACION_INVALIDA` | 422 | No encontramos la columna del nombre. |
+| `OPERACION_NO_LISTA` | 409 | La operación todavía no terminó o ya venció. |
 | `STOCK_MENOR_A_COMPROMETIDO` | 422 | El stock no puede ser menor que lo reservado y lo ya entregado. |
 | `PREMIO_CON_CANJES` | 409 | Este premio ya tuvo canjes. Puedes ocultarlo. |
 | `LUGAR_EN_USO` | 409 | Este lugar se usa en otra parte. Quita esa referencia primero. |

@@ -28,6 +28,7 @@ const FLUJOS_2_4: Readonly<Record<AccionEvento, string>> = {
   'terminales.update': 'DC', // Conectar y desconectar pantallas y mesas
   'pantallas.control': 'DCS', // Controlar pantallas ²
   'mesas.cobrar': 'DCM', // Cobrar canjes ²
+  'invitados.read': 'DCR',
   'invitados.update': 'DC', // Cargar invitados y enviar invitaciones
   'invitados.export': 'DC', // Descargar datos personales
   'puerta.use': 'DCR', // Buscar invitados, check-in, registrar, vincular

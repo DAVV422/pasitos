@@ -116,6 +116,27 @@ export const CATALOGO_ERRORES = {
     title: 'En uso',
     mensaje: 'Se usa en otra parte. Quita esa referencia primero.',
   },
+  // Invitados
+  ASISTENTE_YA_REGISTRADO: {
+    status: 409,
+    title: 'Ya está en la lista',
+    mensaje: 'Esa persona ya está en la lista.',
+  },
+  ASISTENTE_POSIBLE_DUPLICADO: {
+    status: 409,
+    title: 'Posible duplicado',
+    mensaje: 'Hay alguien con un nombre muy parecido en la lista.',
+  },
+  IMPORTACION_INVALIDA: {
+    status: 422,
+    title: 'Archivo no válido',
+    mensaje: 'No encontramos la columna del nombre.',
+  },
+  OPERACION_NO_LISTA: {
+    status: 409,
+    title: 'Operación no lista',
+    mensaje: 'La operación todavía no terminó o ya venció.',
+  },
   // Catálogo
   STOCK_MENOR_A_COMPROMETIDO: {
     status: 422,

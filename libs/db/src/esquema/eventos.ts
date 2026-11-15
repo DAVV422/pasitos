@@ -76,6 +76,7 @@ export const eventos = pgTable(
     topePuntosPersona: integer('tope_puntos_persona'),
     ultimoNumeroReto: integer('ultimo_numero_reto').notNull().default(0),
     ultimoNumeroPantalla: integer('ultimo_numero_pantalla').notNull().default(0),
+    ultimoCodigoAsistente: integer('ultimo_codigo_asistente').notNull().default(0),
     // SHA-256 (hex) de evidencia-stellar.json, guardado al cerrar el contrato (HU-105 §2).
     evidenciaSha256: text('evidencia_sha256'),
     // Hasta cuándo los datos del contrato quedan consultables en la red sin restaurarlos (D59).

@@ -7,6 +7,7 @@ import type { PurgaArchivosService } from '../archivos/purga.service';
 import type { EnviosCorreoService } from '../correos/envios.service';
 import { OutboxService, type AperturaEventosService } from '../eventos/outbox.service';
 import type { CostoRedService } from '../costo/costo-red.service';
+import type { OperacionesTrabajoService } from '../invitados/operaciones.service';
 import type { SelladorService } from '../sellador/sellador.service';
 
 /** Colas del trabajador (HU-103 §3). Nombres de trabajos en kebab-case (Backend §1.3). */
@@ -18,6 +19,8 @@ export const COLA_APERTURA = 'open-eventos';
 export const COLA_PURGA_ARCHIVOS = 'purge-archivos';
 /** El procesador de outbox corre cada 5 s (pg-boss programa por minuto: va con un intervalo). */
 export const OUTBOX_CADA_MS = 5_000;
+/** Importar y exportar invitados (HU-210): la vista previa tiene que llegar en segundos. */
+export const OPERACIONES_CADA_MS = 2_000;
 
 export const TRABAJOS_STELLAR = [
   'anchor-lote',
@@ -94,6 +97,7 @@ export interface DependenciasColas {
   readonly envios: EnviosCorreoService;
   readonly apertura: AperturaEventosService;
   readonly purga: PurgaArchivosService;
+  readonly operaciones: OperacionesTrabajoService;
 }
 
 export async function startColas({
@@ -106,6 +110,7 @@ export async function startColas({
   envios,
   apertura,
   purga,
+  operaciones,
 }: DependenciasColas): Promise<() => void> {
   const logger = new Logger('Colas');
   await boss.createQueue(COLA_TICK);
@@ -147,6 +152,23 @@ export async function startColas({
         ocupado = false;
       });
   }, OUTBOX_CADA_MS);
+
+  // HU-210: process-operaciones, cada 2 s y de a un proceso (candado).
+  let operando = false;
+  const intervaloOperaciones = setInterval(() => {
+    if (operando) return;
+    operando = true;
+    void withCandado(pool, 'process-operaciones', () => operaciones.processPendientes())
+      .catch((error: unknown) =>
+        logger.error(
+          { err: error instanceof Error ? error.message : String(error) },
+          'Error en process-operaciones',
+        ),
+      )
+      .finally(() => {
+        operando = false;
+      });
+  }, OPERACIONES_CADA_MS);
 
   // T-007 §3: cada minuto, hasta llenar el cupo del día.
   await boss.schedule(COLA_CORREOS, '* * * * *');
@@ -194,9 +216,12 @@ export async function startColas({
     },
   );
   logger.log(
-    'Colas listas: tick-sellador, send-correos y open-eventos (cada minuto), process-outbox (cada 5 s), stellar (de a una) y check-saldo-operador (cada hora).',
+    'Colas listas: tick-sellador, send-correos y open-eventos (cada minuto), process-outbox (cada 5 s), process-operaciones (cada 2 s), stellar (de a una) y check-saldo-operador (cada hora).',
   );
-  return () => clearInterval(intervalo);
+  return () => {
+    clearInterval(intervalo);
+    clearInterval(intervaloOperaciones);
+  };
 }
 
 export async function runTrabajoStellar(

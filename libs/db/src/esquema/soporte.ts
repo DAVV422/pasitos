@@ -11,7 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { eventos } from './eventos';
-import { citext } from './tipos';
+import { bytea, citext } from './tipos';
 import { lotes } from './libro';
 
 /** Outbox (global): avisos en vivo y trabajos que no se pueden perder (Backend §3). */
@@ -107,5 +107,51 @@ export const enviosCorreo = pgTable(
       .where(sql`${t.estado} = 'en_cola'`),
     index('envios_correo_enviados').on(t.enviadoAt),
     index('envios_correo_ref').on(t.refId),
+  ],
+);
+
+/**
+ * Operaciones en segundo plano (HU-210, Modelo §9): importar y exportar la lista de invitados,
+ * enviar invitaciones. Global (sin RLS): `GET /operaciones/:id` la busca por id.
+ */
+export const operaciones = pgTable(
+  'operaciones',
+  {
+    id: uuid('id').primaryKey(),
+    tipo: text('tipo').notNull(),
+    organizacionId: uuid('organizacion_id').notNull(),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+    estado: text('estado').notNull().default('en_cola'),
+    progreso: integer('progreso').notNull().default(0),
+    /** Lo que pidió quien la creó (el archivo, los filtros). */
+    parametros: jsonb('parametros').notNull().default({}),
+    /** Lo que ve el panel (la vista previa, los totales). */
+    resultado: jsonb('resultado'),
+    /** Lo que necesita el paso siguiente y nadie más ve (las filas válidas). Se borra al confirmar. */
+    datos: jsonb('datos'),
+    error: text('error'),
+    createdBy: uuid('created_by'),
+    expiraAt: timestamp('expira_at', { withTimezone: true }).notNull(),
+    // Exportar: el enlace de descarga de un solo uso.
+    descargaTokenHash: bytea('descarga_token_hash'),
+    descargaExpiraAt: timestamp('descarga_expira_at', { withTimezone: true }),
+    descargadaAt: timestamp('descargada_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      'operaciones_tipo',
+      sql`${t.tipo} in ('import-asistentes', 'export-asistentes', 'send-invitaciones')`,
+    ),
+    check(
+      'operaciones_estado',
+      sql`${t.estado} in ('en_cola', 'procesando', 'lista', 'fallida', 'confirmada')`,
+    ),
+    check('operaciones_progreso', sql`${t.progreso} between 0 and 100`),
+    index('operaciones_pendientes').on(t.estado, t.createdAt),
+    index('operaciones_evento').on(t.eventoId),
   ],
 );

@@ -52,6 +52,8 @@ export const PERMISOS = {
   'pantallas.control': [...DC, 'operador_stand'],
   /** ² Solo las mesas asignadas al operador de mesa. */
   'mesas.cobrar': [...DC, 'operador_mesa'],
+  /** Ver y buscar en la lista de invitados (el registrador, con el correo enmascarado). */
+  'invitados.read': [...DC, 'registrador'],
   /** Cargar, importar y enviar invitaciones. */
   'invitados.update': DC,
   /** Descargar datos personales. */

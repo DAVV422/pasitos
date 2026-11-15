@@ -172,6 +172,21 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Guardado.')).toBeVisible();
 
+  // HU-210: agrega un invitado a mano; uno con el nombre casi igual avisa antes de repetirlo.
+  await page.getByRole('link', { name: 'Invitados' }).click();
+  await page.getByRole('button', { name: 'Agregar invitado' }).click();
+  await page.getByLabel('Nombre').fill('Valeria Quispe');
+  await page.getByRole('textbox', { name: /^Correo/ }).fill(createEmailPrueba('valeria'));
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('A-0001 · Valeria Quispe: guardado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Agregar invitado' }).click();
+  await page.getByLabel('Nombre').fill('Valeria Quispe');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Hay alguien con un nombre muy parecido en la lista')).toBeVisible();
+  await page.getByRole('button', { name: 'Cancelar' }).click();
+  await page.getByRole('searchbox').fill('quis');
+  await expect(page.getByText('1 en la lista')).toBeVisible();
+
   // HU-203: invita a un registrador, que acepta desde otro navegador y ve solo lo suyo.
   await page.getByRole('link', { name: 'Equipo' }).click();
   await page.getByRole('button', { name: 'Invitar' }).click();

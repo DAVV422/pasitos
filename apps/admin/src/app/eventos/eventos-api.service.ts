@@ -103,6 +103,63 @@ export interface MiembroEquipo {
 /** Una fila de lugares, agenda, sponsors o preguntas: campos según el recurso. */
 export type FilaContenido = { readonly id: string } & Readonly<Record<string, unknown>>;
 
+/** Una fila de la lista de invitados (HU-210 §3). */
+export interface AsistentePanel {
+  readonly id: string;
+  readonly codigo: string;
+  readonly nombre: string;
+  readonly email: string | null;
+  readonly codigoExterno: string | null;
+  readonly estado: 'invitado' | 'registrado' | 'presente' | 'cancelado';
+  readonly emailEstado: 'sin_correo' | 'pendiente' | 'en_cola' | 'enviado' | 'rebotado';
+  readonly origen: 'lista' | 'csv' | 'puerta';
+}
+
+export interface ContadoresInvitados {
+  readonly invitados: number;
+  readonly registrados: number;
+  readonly presentes: number;
+  readonly cancelados: number;
+  readonly total: number;
+}
+
+export interface FilaImportada {
+  readonly fila: number;
+  readonly nombre: string;
+  readonly email?: string | null;
+  readonly codigoExterno?: string | null;
+  readonly motivo?: string;
+  readonly parecidoA?: { readonly codigo: string; readonly nombre: string };
+}
+
+export interface VistaPreviaImportacion {
+  readonly columnas: {
+    readonly reconocidas: readonly string[];
+    readonly ignoradas: readonly string[];
+  };
+  readonly totales: {
+    readonly filas: number;
+    readonly validas: number;
+    readonly invalidas: number;
+    readonly duplicadas: number;
+    readonly posiblesDuplicadas: number;
+  };
+  readonly validas: readonly FilaImportada[];
+  readonly invalidas: readonly FilaImportada[];
+  readonly duplicadas: readonly FilaImportada[];
+  readonly posiblesDuplicadas: readonly FilaImportada[];
+}
+
+export interface Operacion {
+  readonly id: string;
+  readonly tipo: 'import-asistentes' | 'export-asistentes' | 'send-invitaciones';
+  readonly estado: 'en_cola' | 'procesando' | 'lista' | 'fallida' | 'confirmada';
+  readonly progreso: number;
+  readonly resultado: unknown;
+  readonly error: string | null;
+  readonly descarga: { readonly url: string; readonly expiraAt: string } | null;
+}
+
 /** Una pantalla o una mesa en el panel (HU-209). Las de mesa no tienen número ni Stellar. */
 export interface TerminalPanel {
   readonly id: string;
@@ -167,7 +224,7 @@ export interface RetoPanel {
 
 export type TransicionPanel = 'publicar' | 'abrir' | 'pausar' | 'reanudar';
 
-interface Pagina<T> {
+export interface Pagina<T> {
   readonly items: readonly T[];
   readonly pagination: { readonly nextCursor: string | null };
 }
@@ -360,6 +417,72 @@ export class EventosApi {
 
   disconnectTerminal(id: string, tipo: 'pantalla' | 'mesa'): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${BASE}/${RUTA_TERMINAL[tipo]}/${id}/conexion`));
+  }
+
+  async searchAsistentes(
+    eventoId: string,
+    filtros: { q?: string; estado?: string; emailEstado?: string; cursor?: string | null },
+  ): Promise<Pagina<AsistentePanel>> {
+    let params = new HttpParams().set('limit', 100);
+    for (const [clave, valor] of Object.entries(filtros)) {
+      if (valor) params = params.set(clave, valor);
+    }
+    return firstValueFrom(
+      this.http.get<Pagina<AsistentePanel>>(`${BASE}/eventos/${eventoId}/asistentes`, { params }),
+    );
+  }
+
+  countAsistentes(eventoId: string): Promise<ContadoresInvitados> {
+    return firstValueFrom(
+      this.http.get<ContadoresInvitados>(`${BASE}/eventos/${eventoId}/asistentes/contadores`),
+    );
+  }
+
+  createAsistente(eventoId: string, datos: Record<string, unknown>): Promise<AsistentePanel> {
+    return firstValueFrom(
+      this.http.post<AsistentePanel>(`${BASE}/eventos/${eventoId}/asistentes`, datos),
+    );
+  }
+
+  updateAsistente(id: string, datos: Record<string, unknown>): Promise<AsistentePanel> {
+    return firstValueFrom(this.http.patch<AsistentePanel>(`${BASE}/asistentes/${id}`, datos));
+  }
+
+  cancelAsistente(id: string): Promise<AsistentePanel> {
+    return firstValueFrom(this.http.post<AsistentePanel>(`${BASE}/asistentes/${id}/cancelar`, {}));
+  }
+
+  createImportacion(eventoId: string, archivo: File): Promise<{ operacionId: string }> {
+    const datos = new FormData();
+    datos.append('archivo', archivo, archivo.name);
+    return firstValueFrom(
+      this.http.post<{ operacionId: string }>(`${BASE}/eventos/${eventoId}/importaciones`, datos),
+    );
+  }
+
+  confirmImportacion(
+    id: string,
+    incluirPosiblesDuplicadas: readonly number[],
+  ): Promise<{ importadas: number; omitidas: number }> {
+    return firstValueFrom(
+      this.http.post<{ importadas: number; omitidas: number }>(
+        `${BASE}/importaciones/${id}/confirmar`,
+        { incluirPosiblesDuplicadas },
+      ),
+    );
+  }
+
+  createExportacion(eventoId: string, estado?: string): Promise<{ operacionId: string }> {
+    return firstValueFrom(
+      this.http.post<{ operacionId: string }>(
+        `${BASE}/eventos/${eventoId}/exportaciones`,
+        estado ? { estado } : {},
+      ),
+    );
+  }
+
+  getOperacion(id: string): Promise<Operacion> {
+    return firstValueFrom(this.http.get<Operacion>(`${BASE}/operaciones/${id}`));
   }
 
   getListaChequeo(id: string): Promise<ListaChequeo> {

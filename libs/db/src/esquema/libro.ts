@@ -10,12 +10,13 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { eventos } from './eventos';
 import { organizaciones, usuarios } from './plataforma';
-import { bytea } from './tipos';
+import { bytea, citext } from './tipos';
 
 /**
  * Libro de movimientos y lo mínimo que necesita para existir (HU-101).
@@ -42,9 +43,18 @@ export const asistentes = pgTable(
     id: uuid('id').primaryKey(),
     organizacionId: organizacion(),
     eventoId: evento(),
-    codigoAsistente: text('codigo_asistente').notNull(),
+    // Lo asigna siempre el trigger `asignar_codigo_asistente` (0021_invitados.sql): A-0001, A-0002…
+    codigoAsistente: text('codigo_asistente').notNull().default(''),
     nombre: text('nombre').notNull(),
     estado: text('estado').notNull().default('invitado'),
+    // HU-210: la lista de invitados.
+    codigoExterno: text('codigo_externo'),
+    email: citext('email'),
+    emailEstado: text('email_estado').notNull().default('sin_correo'),
+    origen: text('origen').notNull().default('lista'),
+    registradoPor: uuid('registrado_por').references(() => usuarios.id),
+    usuarioId: uuid('usuario_id').references(() => usuarios.id),
+    createdBy: uuid('created_by').references(() => usuarios.id),
     // Lo reemplaza siempre el trigger `asignar_id_anonimo` (0002_libro.sql).
     idAnonimo: bytea('id_anonimo')
       .notNull()
@@ -59,6 +69,18 @@ export const asistentes = pgTable(
       'asistentes_estado',
       sql`${t.estado} in ('invitado', 'registrado', 'presente', 'cancelado')`,
     ),
+    check(
+      'asistentes_email_estado',
+      sql`${t.emailEstado} in ('sin_correo', 'pendiente', 'en_cola', 'enviado', 'rebotado')`,
+    ),
+    check('asistentes_origen', sql`${t.origen} in ('lista', 'csv', 'puerta')`),
+    check('asistentes_nombre', sql`char_length(${t.nombre}) between 2 and 120`),
+    uniqueIndex('asistentes_email')
+      .on(t.eventoId, t.email)
+      .where(sql`${t.email} is not null`),
+    uniqueIndex('asistentes_codigo_externo')
+      .on(t.eventoId, t.codigoExterno)
+      .where(sql`${t.codigoExterno} is not null`),
   ],
 );
 

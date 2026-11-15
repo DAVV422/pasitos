@@ -226,5 +226,5 @@ describe('Eventos (HU-205)', () => {
     });
     expect(rutas).toBeGreaterThanOrEqual(7);
     expect(resultados.filter((r) => r.esperado !== r.obtenido)).toEqual([]);
-  }, 60_000);
+  }, 120_000);
 });

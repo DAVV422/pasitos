@@ -15,6 +15,7 @@ import {
   AppError,
   isPropositoSubible,
   PROPOSITOS_ARCHIVO,
+  type PropositoArchivo,
   VARIANTES_IMAGEN,
   type VarianteImagen,
 } from '@pasitos/dominio';
@@ -39,6 +40,38 @@ const esquemaUbicacion = z
     path: ['lat'],
   });
 
+/**
+ * Lee el único archivo de un `multipart/form-data` con el límite de su propósito, mientras llega
+ * (HU-214 §5). Lo usan la subida de archivos y la importación de invitados (HU-210).
+ */
+export async function readArchivo(
+  request: FastifyRequest,
+  proposito: PropositoArchivo,
+  archivos: ArchivosService,
+): Promise<{ datos: Buffer; nombre: string; mime: string }> {
+  if (!request.isMultipart()) {
+    throw new AppError('ARCHIVO_INVALIDO', {
+      detail: 'Envía el archivo como multipart/form-data.',
+    });
+  }
+  const maximo = PROPOSITOS_ARCHIVO[proposito].maxBytes;
+  const parte = await request.file({ limits: { fileSize: maximo, files: 1 } });
+  if (!parte) {
+    throw new AppError('ARCHIVO_INVALIDO', { detail: 'Falta el archivo.' });
+  }
+  archivos.checkDeclarado(proposito, parte.filename, parte.mimetype);
+  try {
+    return { datos: await parte.toBuffer(), nombre: parte.filename, mime: parte.mimetype };
+  } catch (error) {
+    if ((error as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') {
+      throw new AppError('ARCHIVO_MUY_GRANDE', {
+        detail: `El archivo supera el máximo de ${maximo / (1024 * 1024)} MB.`,
+      });
+    }
+    throw error;
+  }
+}
+
 /** Archivos del evento (HU-214, API §4.3) y la ubicación (HU-214 §6). */
 @Controller()
 export class ArchivosController {
@@ -60,11 +93,6 @@ export class ArchivosController {
     @Query('proposito') propositoQuery: string | undefined,
     @Req() request: FastifyRequest,
   ) {
-    if (!request.isMultipart()) {
-      throw new AppError('ARCHIVO_INVALIDO', {
-        detail: 'Envía el archivo como multipart/form-data.',
-      });
-    }
     this.archivos.checkLimite(contexto.usuarioId);
     const proposito = propositoQuery ?? '';
     if (!isPropositoSubible(proposito)) {
@@ -72,28 +100,11 @@ export class ArchivosController {
         errors: [{ field: 'proposito', code: 'NO_VALIDO', message: 'Propósito desconocido.' }],
       });
     }
-    const maximo = PROPOSITOS_ARCHIVO[proposito].maxBytes;
-    const parte = await request.file({ limits: { fileSize: maximo, files: 1 } });
-    if (!parte) {
-      throw new AppError('ARCHIVO_INVALIDO', { detail: 'Falta el archivo.' });
-    }
-    this.archivos.checkDeclarado(proposito, parte.filename, parte.mimetype);
-    let datos: Buffer;
-    try {
-      datos = await parte.toBuffer();
-    } catch (error) {
-      if ((error as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') {
-        throw new AppError('ARCHIVO_MUY_GRANDE', {
-          detail: `El archivo supera el máximo de ${maximo / (1024 * 1024)} MB.`,
-        });
-      }
-      throw error;
-    }
-    return this.archivos.upload(contexto, proposito, {
-      datos,
-      nombre: parte.filename,
-      mime: parte.mimetype,
-    });
+    return this.archivos.upload(
+      contexto,
+      proposito,
+      await readArchivo(request, proposito, this.archivos),
+    );
   }
 
   @Get('archivos/:id/:variante')

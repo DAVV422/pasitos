@@ -35,6 +35,15 @@ export class PurgaArchivosService {
         borrados += 1;
       }
     }
+    // Exportaciones de invitados que nadie descargó (HU-210 §5): datos personales, no se guardan.
+    const exportaciones = join(this.archivosDir, 'exportaciones');
+    for (const nombre of await readdir(exportaciones).catch(() => [] as string[])) {
+      const ruta = join(exportaciones, nombre);
+      if ((await stat(ruta)).mtime < limite) {
+        await rm(ruta, { force: true });
+        borrados += 1;
+      }
+    }
     return { filas: vencidas.length, archivos: borrados };
   }
 }

@@ -116,7 +116,7 @@ describe('Permisos por rol (HU-204)', () => {
     expect(rutas).toBeGreaterThanOrEqual(ACCIONES_EVENTO.length);
     const distintos = resultados.filter((r) => r.esperado !== r.obtenido);
     expect(distintos).toEqual([]);
-  }, 60_000);
+  }, 120_000);
 
   it('el dueño de la organización tiene rol dueño en todos sus eventos sin estar en miembros_evento', async () => {
     const otroDeLaOrg = await createEventoDePrueba(base, {

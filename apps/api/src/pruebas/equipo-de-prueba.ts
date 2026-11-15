@@ -1,5 +1,7 @@
 import {
   actividades,
+  asistentes,
+  operaciones,
   eventos,
   lugares,
   miembroTerminales,
@@ -40,6 +42,9 @@ export interface EventoDePrueba {
     readonly preguntas: string;
     readonly premios: string;
     readonly mesas: string;
+    readonly asistentes: string;
+    readonly operaciones: string;
+    readonly importaciones: string;
   };
 }
 
@@ -119,6 +124,28 @@ export async function createEventoDePrueba(
     stockTotal: 20,
     estado: 'oculto',
   });
+  const asistenteId = uuidv7();
+  await base.sistema.db
+    .insert(asistentes)
+    .values({ id: asistenteId, organizacionId, eventoId, nombre: 'Invitada de prueba' });
+  const importacionId = uuidv7();
+  const exportacionId = uuidv7();
+  await base.sistema.db.insert(operaciones).values([
+    {
+      id: importacionId,
+      tipo: 'import-asistentes',
+      organizacionId,
+      eventoId,
+      expiraAt: new Date('2030-01-01T00:00:00Z'),
+    },
+    {
+      id: exportacionId,
+      tipo: 'export-asistentes',
+      organizacionId,
+      eventoId,
+      expiraAt: new Date('2030-01-01T00:00:00Z'),
+    },
+  ]);
   return {
     organizacionId,
     eventoId,
@@ -133,6 +160,9 @@ export async function createEventoDePrueba(
       preguntas: preguntaId,
       premios: premioId,
       mesas: mesaId,
+      asistentes: asistenteId,
+      operaciones: exportacionId,
+      importaciones: importacionId,
     },
   };
 }
