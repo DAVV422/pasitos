@@ -13,6 +13,7 @@ export interface RutaRegistrada {
   readonly controlador: string;
   readonly handler: string;
   readonly permiso: DefinicionPermiso | undefined;
+  readonly plataforma: string | undefined;
   /** La acción de la bitácora que deja (HU-213 §5). */
   readonly accionBitacora: string | undefined;
   readonly marcas: readonly string[];
@@ -67,6 +68,7 @@ export function listRutas(app: INestApplication): RutaRegistrada[] {
           objetivos,
         ),
         marcas,
+        plataforma: reflector.getAllAndOverride<string | undefined>(META_PLATAFORMA, objetivos),
         accionBitacora: reflector.getAllAndOverride<string | undefined>(
           META_ACCION_BITACORA,
           objetivos,
@@ -90,7 +92,10 @@ export function checkMarcasDeRutas(app: INestApplication): void {
       return [`${donde}: ${cuales}`];
     }
     // HU-213 §5: toda escritura del equipo declara la acción que deja en la bitácora.
-    if (r.permiso && ACCIONES_ESCRITURA.has(r.permiso.accion) && !r.accionBitacora) {
+    const escribe =
+      (r.permiso && ACCIONES_ESCRITURA.has(r.permiso.accion)) ||
+      (r.plataforma !== undefined && r.plataforma !== 'lectura');
+    if (escribe && !r.accionBitacora) {
       return [`${donde}: escritura sin @AccionBitacoraDe`];
     }
     return [];

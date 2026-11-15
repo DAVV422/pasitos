@@ -9,6 +9,7 @@ import { DbModule } from './infra/db/db.module';
 import { SeguridadModule } from './common/permisos/seguridad.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BitacoraModule } from './modules/bitacora/bitacora.module';
+import { PlataformaModule } from './modules/plataforma/plataforma.module';
 import { MovimientosModule } from './modules/movimientos/movimientos.module';
 import { SaludModule } from './modules/salud/salud.module';
 
@@ -27,6 +28,7 @@ export class AppModule {
         AuthModule,
         SeguridadModule,
         BitacoraModule,
+        PlataformaModule,
         SaludModule,
         MovimientosModule,
       ],

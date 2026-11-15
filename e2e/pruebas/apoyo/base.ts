@@ -38,6 +38,7 @@ export async function createPersona(opciones: {
   password: string;
   nombre: string;
   dueno?: boolean;
+  rolPlataforma?: 'admin' | 'soporte';
 }): Promise<void> {
   const passwordHash = await hash(opciones.password, {
     algorithm: Algorithm.Argon2id,
@@ -48,9 +49,9 @@ export async function createPersona(opciones: {
   await withCliente(async (cliente) => {
     const usuarioId = uuidv7();
     await cliente.query(
-      `insert into usuarios (id, email, nombre, password_hash, email_verificado_at)
-       values ($1, $2, $3, $4, now())`,
-      [usuarioId, opciones.email, opciones.nombre, passwordHash],
+      `insert into usuarios (id, email, nombre, password_hash, email_verificado_at, rol_plataforma)
+       values ($1, $2, $3, $4, now(), $5)`,
+      [usuarioId, opciones.email, opciones.nombre, passwordHash, opciones.rolPlataforma ?? null],
     );
     if (opciones.dueno) {
       const organizacionId = uuidv7();
@@ -87,4 +88,9 @@ export function getEnlaceCorreo(destinatario: string, tipo: string): Promise<str
 /** Un correo único por corrida. Los datos de prueba son inventados. */
 export function createEmailPrueba(prefijo: string): string {
   return `${prefijo}-${Date.now()}-${Math.floor(Math.random() * 1000)}@example.com`;
+}
+
+/** Una IP de prueba (rango de documentación, RFC 5737) para el límite por IP. */
+export function createIpPrueba(): string {
+  return `198.51.100.${1 + Math.floor(Math.random() * 250)}`;
 }

@@ -15,8 +15,8 @@ async function bootstrap(): Promise<void> {
   const adapter = new FastifyAdapter({
     // traceId de cada request (T-005 §2): el X-Request-Id que manda la app, o uno nuevo.
     genReqId: (request: IncomingMessage) => resolveTraceId(request.headers['x-request-id']),
-    // Detrás de Caddy y Cloudflare (Infraestructura §4.2).
-    trustProxy: true,
+    // Detrás de Caddy y Cloudflare (Infraestructura §4.2): se confía solo en esos saltos.
+    trustProxy: (_direccion: string, salto: number) => salto < config.TRUST_PROXY_SALTOS,
     bodyLimit: 1_048_576,
   });
   adapter.getInstance().addHook('onSend', async (request, reply) => {

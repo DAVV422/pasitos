@@ -7,3 +7,4 @@ export * from './movimientos/hora';
 export type { MovimientoPublico } from './movimientos/publico';
 export * from './permisos/matriz';
 export * from './bitacora/acciones';
+export * from './plataforma/terminos';

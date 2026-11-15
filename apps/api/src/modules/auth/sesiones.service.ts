@@ -99,12 +99,17 @@ export class SesionesService {
       ...(cantidadPasskeys > 0 ? (['passkey'] as const) : []),
       ...(usuario.totpSecretCifrado ? (['totp'] as const) : []),
     ];
+    // La consola de plataforma pide el segundo factor de nuevo cada 8 h (D43, HU-202 §1).
+    const vigente =
+      segundoFactorAt !== null &&
+      (usuario.rolPlataforma === null ||
+        this.reloj.now().getTime() - segundoFactorAt.getTime() < SEGUNDO_FACTOR_PLATAFORMA_MS);
     const estado: EstadoSegundoFactor =
       metodos.length === 0
         ? requerido
           ? 'por_configurar'
           : 'no_aplica'
-        : segundoFactorAt
+        : vigente
           ? 'ok'
           : 'por_verificar';
     return {

@@ -164,6 +164,9 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `CODIGO_INVALIDO` | 401 | El código no es correcto o ya venció. Prueba con el que muestra tu app ahora. |
 | `PASSWORD_INSEGURA` | 422 | Elige otra contraseña: esta es muy corta o muy conocida. |
 | `ENLACE_VENCIDO` | 422 | Este enlace ya no sirve. Pide uno nuevo. |
+| `ENLACE_YA_USADO` | 409 | Este enlace ya se usó. Si eras tú, entra con tu cuenta. |
+| `INVITACION_EQUIPO_OTRO_CORREO` | 403 | Esta invitación es para otro correo. Entra con esa cuenta. |
+| `ROL_NO_PERMITIDO` | 403 | No puedes invitar, cambiar ni quitar a alguien con ese rol. |
 | `AJUSTE_PROPIO` | 403 | No puedes ajustar tus propios puntos. |
 | `PIN_INVALIDO` | 403 | El PIN no es correcto. |
 | **Acceso del asistente** | | |

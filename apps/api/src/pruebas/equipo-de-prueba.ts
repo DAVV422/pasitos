@@ -68,12 +68,15 @@ export async function createPersonaConSesion(
   base: BaseDePrueba,
   nombre: string,
   ahora = new Date('2026-11-15T15:00:00Z'),
+  opciones: { rolPlataforma?: 'superadmin' | 'admin' | 'soporte'; email?: string } = {},
 ): Promise<PersonaDePrueba> {
   const usuarioId = uuidv7();
   await base.sistema.db.insert(usuarios).values({
     id: usuarioId,
-    email: `${usuarioId}@example.com`,
+    email: opciones.email ?? `${usuarioId}@example.com`,
     nombre,
+    passwordHash: 'sin-uso-en-pruebas',
+    rolPlataforma: opciones.rolPlataforma ?? null,
     emailVerificadoAt: ahora,
     totpSecretCifrado: Buffer.from('ficticio'),
   });

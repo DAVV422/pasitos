@@ -36,6 +36,11 @@ export const RUTAS_ACCESO: Route[] = [
     loadComponent: () => import('./configurar.page').then((m) => m.ConfigurarPage),
   },
   {
+    path: 'invitacion/:token',
+    title: 'Invitación · Pasitos',
+    loadComponent: () => import('./invitacion.page').then((m) => m.InvitacionPage),
+  },
+  {
     path: 'cuenta',
     canActivate: [sesionGuard],
     title: 'Mi cuenta · Pasitos',

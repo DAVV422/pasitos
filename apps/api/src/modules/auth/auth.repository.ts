@@ -15,7 +15,13 @@ type Ejecutor = Db | Tx;
 
 export type Usuario = typeof usuarios.$inferSelect;
 export type Passkey = typeof passkeys.$inferSelect;
-export type PropositoToken = 'restablecer_password' | 'desafio_webauthn' | 'configurar_totp';
+export type PropositoToken =
+  | 'restablecer_password'
+  | 'desafio_webauthn'
+  | 'configurar_totp'
+  | 'invitacion_organizacion'
+  | 'invitacion_plataforma'
+  | 'invitacion_equipo';
 
 /** Token de 32 bytes aleatorios para el navegador; en la base solo su SHA-256. */
 export function createTokenAleatorio(): { token: string; hash: Buffer } {
@@ -100,7 +106,12 @@ export class AuthRepository {
     const [fila] = await this.sistema
       .select({ id: miembrosOrganizacion.id })
       .from(miembrosOrganizacion)
-      .where(eq(miembrosOrganizacion.usuarioId, usuario.id))
+      .where(
+        and(
+          eq(miembrosOrganizacion.usuarioId, usuario.id),
+          eq(miembrosOrganizacion.estado, 'activo'),
+        ),
+      )
       .limit(1);
     return fila !== undefined;
   }

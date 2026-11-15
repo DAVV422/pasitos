@@ -100,6 +100,6 @@ export const CIFRADOR = Symbol('CIFRADOR');
         }),
     },
   ],
-  exports: [SesionesService, CorreosService, CIFRADOR, RELOJ],
+  exports: [SesionesService, CorreosService, CIFRADOR, RELOJ, PASSWORDS_FILTRADAS],
 })
 export class AuthModule {}

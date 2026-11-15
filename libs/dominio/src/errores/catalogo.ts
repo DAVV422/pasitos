@@ -64,6 +64,21 @@ export const CATALOGO_ERRORES = {
     title: 'Enlace vencido',
     mensaje: 'Este enlace ya no sirve. Pide uno nuevo.',
   },
+  ENLACE_YA_USADO: {
+    status: 409,
+    title: 'Enlace ya usado',
+    mensaje: 'Este enlace ya se usó. Si eras tú, entra con tu cuenta.',
+  },
+  INVITACION_EQUIPO_OTRO_CORREO: {
+    status: 403,
+    title: 'La invitación es para otra cuenta',
+    mensaje: 'Esta invitación es para otro correo. Entra con esa cuenta.',
+  },
+  ROL_NO_PERMITIDO: {
+    status: 403,
+    title: 'Rol no permitido',
+    mensaje: 'No puedes invitar, cambiar ni quitar a alguien con ese rol.',
+  },
   // Evento
   EVENTO_CERRADO: {
     status: 422,

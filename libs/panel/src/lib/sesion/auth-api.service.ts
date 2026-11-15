@@ -37,6 +37,21 @@ export interface PasskeyGuardada {
   readonly ultimoUsoAt: string | null;
 }
 
+export interface InvitacionVista {
+  readonly tipo: 'organizacion' | 'plataforma' | 'equipo';
+  readonly email: string;
+  readonly rol: string;
+  readonly quienInvita: string | null;
+  readonly organizacion: string | null;
+  readonly evento: {
+    readonly nombre: string;
+    readonly inicioAt: string;
+    readonly finAt: string;
+  } | null;
+  readonly app: 'admin' | 'plataforma';
+  readonly tieneCuenta: boolean;
+}
+
 interface Lista<T> {
   readonly items: readonly T[];
 }
@@ -47,6 +62,22 @@ const BASE = '/api/v1/auth';
 @Injectable({ providedIn: 'root' })
 export class AuthApi {
   private readonly http = inject(HttpClient);
+
+  getInvitacion(token: string): Promise<InvitacionVista> {
+    return firstValueFrom(this.http.get<InvitacionVista>(`${BASE}/invitaciones/${token}`));
+  }
+
+  acceptInvitacion(
+    token: string,
+    datos: { nombre?: string; password?: string; aceptaTerminos?: true },
+  ): Promise<{ app: 'admin' | 'plataforma' }> {
+    return firstValueFrom(
+      this.http.post<{ app: 'admin' | 'plataforma' }>(
+        `${BASE}/invitaciones/${token}/aceptar`,
+        datos,
+      ),
+    );
+  }
 
   login(email: string, password: string): Promise<Yo> {
     return firstValueFrom(this.http.post<Yo>(`${BASE}/login`, { email, password }));

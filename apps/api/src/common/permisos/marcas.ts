@@ -36,6 +36,14 @@ export interface DefinicionPermiso extends OpcionesPermiso {
 export const Permiso = (accion: AccionEvento, opciones: OpcionesPermiso = {}) =>
   SetMetadata(META_PERMISO, { accion, ...opciones } satisfies DefinicionPermiso);
 
+/**
+ * Ruta de la consola de plataforma (HU-202 §1): `lectura` para cualquier rol de plataforma
+ * (👁), `escritura` para `superadmin` y `admin` (✏️) y `superadmin` solo para él (👑). Sin rol de
+ * plataforma: 404 (la consola no se anuncia).
+ */
+export type NivelPlataforma = 'lectura' | 'escritura' | 'superadmin';
+export const Plataforma = (nivel: NivelPlataforma) => SetMetadata(META_PLATAFORMA, nivel);
+
 /** Ruta con sesión que no es de un evento (`/auth/*`, la lista de mis eventos…). */
 export const SoloSesion = () => SetMetadata(META_SOLO_SESION, true);
 

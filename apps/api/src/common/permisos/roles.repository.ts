@@ -56,6 +56,7 @@ export class RolesRepository {
           eq(miembrosOrganizacion.organizacionId, evento.organizacionId),
           eq(miembrosOrganizacion.usuarioId, usuarioId),
           eq(miembrosOrganizacion.rol, 'dueno'),
+          eq(miembrosOrganizacion.estado, 'activo'),
         ),
       );
     if (dueno) {

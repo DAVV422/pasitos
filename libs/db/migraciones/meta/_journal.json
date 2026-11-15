@@ -85,6 +85,20 @@
       "when": 1794730619954,
       "tag": "0011_equipo_evento",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794731780060,
+      "tag": "0012_organizacion_dueno",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794732380267,
+      "tag": "0013_aceptaciones_terminos",
+      "breakpoints": true
     }
   ]
 }

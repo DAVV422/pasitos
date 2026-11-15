@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createEmailPrueba, createPersona, getEnlaceCorreo } from './apoyo/base';
+import { createEmailPrueba, createIpPrueba, createPersona, getEnlaceCorreo } from './apoyo/base';
 
 /**
  * Acceso del equipo de punta a punta (HU-201): passkey con el autenticador virtual de Chrome y
@@ -8,8 +8,10 @@ import { createEmailPrueba, createPersona, getEnlaceCorreo } from './apoyo/base'
  */
 const PASSWORD = 'una frase larga para e2e';
 
-test.beforeEach(({ browserName }, testInfo) => {
+test.beforeEach(async ({ browserName, page }, testInfo) => {
   test.skip(testInfo.project.name !== 'escritorio' || browserName !== 'chromium');
+  // Cada test con su IP: el límite de 5 intentos por minuto es por IP y los tests corren juntos.
+  await page.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
 });
 
 async function entrar(page: Page, app: string, email: string, password: string): Promise<void> {

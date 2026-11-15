@@ -68,7 +68,11 @@ export const usuarios = pgTable(
   ],
 );
 
-/** Dueños de cada organización (con RLS). */
+/**
+ * Dueños de cada organización (con RLS). El dueño se invita desde la consola (HU-202): queda
+ * `invitado` con su correo hasta que acepta; al cambiar de dueño, el anterior pasa a `revocado`
+ * cuando el nuevo acepta.
+ */
 export const miembrosOrganizacion = pgTable(
   'miembros_organizacion',
   {
@@ -76,15 +80,27 @@ export const miembrosOrganizacion = pgTable(
     organizacionId: uuid('organizacion_id')
       .notNull()
       .references(() => organizaciones.id),
-    usuarioId: uuid('usuario_id')
-      .notNull()
-      .references(() => usuarios.id),
+    // Se completa al aceptar.
+    usuarioId: uuid('usuario_id').references(() => usuarios.id),
+    emailInvitado: citext('email_invitado'),
     rol: text('rol').notNull(),
+    estado: text('estado').notNull().default('activo'),
+    invitadoPor: uuid('invitado_por').references(() => usuarios.id),
+    aceptadoAt: timestamp('aceptado_at', { withTimezone: true }),
+    revocadoAt: timestamp('revocado_at', { withTimezone: true }),
     createdAt: creadoEn(),
   },
   (t) => [
     unique('miembros_organizacion_unico').on(t.organizacionId, t.usuarioId),
     check('miembros_organizacion_rol', sql`${t.rol} in ('dueno')`),
+    check('miembros_organizacion_estado', sql`${t.estado} in ('invitado', 'activo', 'revocado')`),
+    check(
+      'miembros_organizacion_quien',
+      sql`${t.usuarioId} is not null or ${t.emailInvitado} is not null`,
+    ),
+    uniqueIndex('miembros_organizacion_invitacion')
+      .on(t.organizacionId, t.emailInvitado)
+      .where(sql`${t.estado} = 'invitado'`),
     index('miembros_organizacion_usuario').on(t.usuarioId),
   ],
 );
@@ -164,4 +180,25 @@ export const passkeys = pgTable(
     ultimoUsoAt: timestamp('ultimo_uso_at', { withTimezone: true }),
   },
   (t) => [index('passkeys_usuario').on(t.usuarioId)],
+);
+
+/**
+ * Qué versión de los términos y de la privacidad aceptó cada persona y cuándo (Modelo §5). Global,
+ * sin RLS: guarda solo ids. El asistente llega con la fase 3.
+ */
+export const aceptacionesTerminos = pgTable(
+  'aceptaciones_terminos',
+  {
+    id: uuid('id').primaryKey(),
+    usuarioId: uuid('usuario_id').references(() => usuarios.id),
+    asistenteId: uuid('asistente_id'),
+    documento: text('documento').notNull(),
+    version: text('version').notNull(),
+    createdAt: creadoEn(),
+  },
+  (t) => [
+    check('aceptaciones_terminos_documento', sql`${t.documento} in ('terminos', 'privacidad')`),
+    check('aceptaciones_terminos_quien', sql`num_nonnulls(${t.usuarioId}, ${t.asistenteId}) = 1`),
+    index('aceptaciones_terminos_usuario').on(t.usuarioId),
+  ],
 );

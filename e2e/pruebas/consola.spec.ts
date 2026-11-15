@@ -1,0 +1,68 @@
+import { expect, test, type Page } from '@playwright/test';
+import { createEmailPrueba, createIpPrueba, createPersona, getEnlaceCorreo } from './apoyo/base';
+
+/**
+ * Consola de plataforma de punta a punta (HU-202): un administrador entra con passkey, crea una
+ * organización y la dueña acepta la invitación, crea su cuenta y configura su segundo factor.
+ * Solo en escritorio (Chromium, por el autenticador virtual).
+ */
+test.beforeEach(async ({ browserName, page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'escritorio' || browserName !== 'chromium');
+  // Cada test con su IP: el límite de 5 intentos por minuto es por IP y los tests corren juntos.
+  await page.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
+});
+
+async function addAutenticadorVirtual(page: Page): Promise<void> {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('WebAuthn.enable');
+  await cdp.send('WebAuthn.addVirtualAuthenticator', {
+    options: {
+      protocol: 'ctap2',
+      transport: 'internal',
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+      automaticPresenceSimulation: true,
+    },
+  });
+}
+
+async function createPasskey(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Usar una passkey (recomendado)' }).click();
+  await page.getByRole('button', { name: 'Crear la passkey' }).click();
+}
+
+test('un administrador crea una organización y la dueña acepta la invitación', async ({ page }) => {
+  const adminEmail = createEmailPrueba('admin-consola');
+  const password = 'una frase larga para la consola';
+  await createPersona({ email: adminEmail, password, nombre: 'Admin e2e', rolPlataforma: 'admin' });
+  await addAutenticadorVirtual(page);
+
+  await page.goto('/plataforma/entrar');
+  await page.getByLabel('Correo').fill(adminEmail);
+  await page.getByLabel('Contraseña', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await createPasskey(page);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Organizaciones');
+
+  const duenaEmail = createEmailPrueba('duena-org');
+  await page.getByRole('button', { name: 'Nueva organización' }).click();
+  await page.getByLabel('Nombre de la organización').fill('Comunidad e2e');
+  await page.getByLabel('Nombre de la dueña o el dueño').fill('Duena Org e2e');
+  await page.getByLabel('Su correo').fill(duenaEmail);
+  await page.getByRole('button', { name: 'Crear e invitar' }).click();
+  await expect(page.getByText(`enviamos la invitación a ${duenaEmail}`)).toBeVisible();
+
+  const enlace = await getEnlaceCorreo(duenaEmail, 'invitacion_organizacion');
+  await page.goto(new URL(enlace).pathname);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('te invitó como dueño');
+  await page.getByLabel('Tu nombre').fill('Duena Org e2e');
+  await page.getByLabel('Elige tu contraseña').fill('la frase de la duena e2e');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Crear mi cuenta y aceptar' }).click();
+
+  // Es dueña de una organización: el segundo factor es obligatorio.
+  await expect(page).toHaveURL(/\/admin\/segundo-factor\/configurar/);
+  await createPasskey(page);
+  await expect(page.getByText('Hola, Duena Org e2e.')).toBeVisible();
+});

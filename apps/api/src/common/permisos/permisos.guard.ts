@@ -2,7 +2,13 @@ import type { CanActivate, ExecutionContext } from '@nestjs/common';
 import type { Reflector } from '@nestjs/core';
 import { ACCIONES_ESCRITURA, ACCIONES_POR_TERMINAL, AppError, canDo } from '@pasitos/dominio';
 import type { RequestConSesion } from '../sesion/sesion';
-import { META_PERMISO, type DefinicionPermiso, type RequestConContexto } from './marcas';
+import {
+  META_PERMISO,
+  META_PLATAFORMA,
+  type DefinicionPermiso,
+  type NivelPlataforma,
+  type RequestConContexto,
+} from './marcas';
 import type { RolesCache, RolesRepository } from './roles.repository';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -19,6 +25,14 @@ export class PermisosGuard implements CanActivate {
   ) {}
 
   async canActivate(ejecucion: ExecutionContext): Promise<boolean> {
+    const nivel = this.reflector.getAllAndOverride<NivelPlataforma | undefined>(META_PLATAFORMA, [
+      ejecucion.getHandler(),
+      ejecucion.getClass(),
+    ]);
+    if (nivel) {
+      this.checkPlataforma(ejecucion, nivel);
+      return true;
+    }
     const definicion = this.reflector.getAllAndOverride<DefinicionPermiso | undefined>(
       META_PERMISO,
       [ejecucion.getHandler(), ejecucion.getClass()],
@@ -74,6 +88,22 @@ export class PermisosGuard implements CanActivate {
       terminales: rol.terminales,
     };
     return true;
+  }
+
+  /** HU-202 §1. El segundo factor de menos de 8 h ya lo exige la sesión (SesionesService). */
+  private checkPlataforma(ejecucion: ExecutionContext, nivel: NivelPlataforma): void {
+    const rol = ejecucion.switchToHttp().getRequest<RequestConSesion>().sesion
+      ?.usuario.rolPlataforma;
+    if (!rol) {
+      throw new AppError('NO_ENCONTRADO');
+    }
+    const puede =
+      nivel === 'lectura' ||
+      (nivel === 'escritura' && (rol === 'superadmin' || rol === 'admin')) ||
+      (nivel === 'superadmin' && rol === 'superadmin');
+    if (!puede) {
+      throw new AppError('SIN_PERMISO');
+    }
   }
 
   private async resolveEventoId(

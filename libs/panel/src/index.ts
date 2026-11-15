@@ -5,3 +5,5 @@ export * from './lib/sesion/interceptor';
 export * from './lib/sesion/fuerza';
 export * from './lib/acceso/rutas';
 export * from './lib/permisos/permisos';
+export * from './lib/layout/layout.component';
+export * from './lib/acceso/comun';
