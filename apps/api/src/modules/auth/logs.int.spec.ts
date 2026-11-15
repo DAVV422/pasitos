@@ -76,7 +76,7 @@ describe('Logs sin secretos (HU-201)', () => {
     // Hubo logs (los pedidos), pero sin ningún secreto.
     expect(logs).toContain('/api/v1/auth/login');
     for (const secretoBuscado of [
-      password,
+      frase,
       nueva,
       'equivocada 123',
       token,
