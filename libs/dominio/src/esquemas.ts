@@ -7,3 +7,4 @@ export * from './plataforma/esquemas';
 export * from './eventos/ciclo';
 export * from './eventos/esquemas';
 export * from './retos/esquemas';
+export * from './premios/esquemas';

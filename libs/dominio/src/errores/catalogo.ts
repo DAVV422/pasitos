@@ -111,6 +111,17 @@ export const CATALOGO_ERRORES = {
     title: 'En uso',
     mensaje: 'Se usa en otra parte. Quita esa referencia primero.',
   },
+  // Catálogo
+  STOCK_MENOR_A_COMPROMETIDO: {
+    status: 422,
+    title: 'Stock menor a lo comprometido',
+    mensaje: 'El stock no puede ser menor que lo reservado y lo ya entregado.',
+  },
+  PREMIO_CON_CANJES: {
+    status: 409,
+    title: 'Premio con canjes',
+    mensaje: 'Este premio ya tuvo canjes. Puedes ocultarlo.',
+  },
   // Evento
   EVENTO_NO_PUBLICABLE: {
     status: 422,

@@ -45,6 +45,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Resumen',
         'Configuración',
         'Retos',
+        'Catálogo',
         'Lugares',
         'Agenda',
         'Sponsors',
@@ -60,6 +61,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Resumen',
         'Configuración',
         'Retos',
+        'Catálogo',
         'Lugares',
         'Agenda',
         'Sponsors',
@@ -70,11 +72,29 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
     ],
     [
       'registrador',
-      ['← Mis eventos', 'Resumen', 'Retos', 'Lugares', 'Agenda', 'Sponsors', 'Preguntas'],
+      [
+        '← Mis eventos',
+        'Resumen',
+        'Retos',
+        'Catálogo',
+        'Lugares',
+        'Agenda',
+        'Sponsors',
+        'Preguntas',
+      ],
     ],
     [
       'financiador',
-      ['← Mis eventos', 'Resumen', 'Retos', 'Lugares', 'Agenda', 'Sponsors', 'Preguntas'],
+      [
+        '← Mis eventos',
+        'Resumen',
+        'Retos',
+        'Catálogo',
+        'Lugares',
+        'Agenda',
+        'Sponsors',
+        'Preguntas',
+      ],
     ],
   ] as const)('%s ve: %j', async (rol, esperado) => {
     TestBed.inject(EventoActualService).set(buildEvento(rol));

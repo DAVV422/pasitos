@@ -90,6 +90,20 @@ export interface MiembroEquipo {
 /** Una fila de lugares, agenda, sponsors o preguntas: campos según el recurso. */
 export type FilaContenido = { readonly id: string } & Readonly<Record<string, unknown>>;
 
+export interface PremioPanel {
+  readonly id: string;
+  readonly nombre: string;
+  readonly descripcion: string | null;
+  readonly imagenArchivoId: string | null;
+  readonly puntos: number;
+  readonly stockTotal: number;
+  readonly stockReservado: number;
+  readonly stockEntregado: number;
+  readonly disponible: number;
+  readonly maxPorPersona: number | null;
+  readonly estado: 'activo' | 'oculto';
+}
+
 export interface RetoPanel {
   readonly id: string;
   readonly numero: number;
@@ -232,6 +246,34 @@ export class EventosApi {
   setRetoActivo(id: string, activo: boolean): Promise<RetoPanel> {
     return firstValueFrom(
       this.http.post<RetoPanel>(`${BASE}/retos/${id}/${activo ? 'activar' : 'desactivar'}`, {}),
+    );
+  }
+
+  async listPremios(eventoId: string): Promise<readonly PremioPanel[]> {
+    return (
+      await firstValueFrom(
+        this.http.get<Pagina<PremioPanel>>(`${BASE}/eventos/${eventoId}/premios`),
+      )
+    ).items;
+  }
+
+  createPremio(eventoId: string, datos: Record<string, unknown>): Promise<PremioPanel> {
+    return firstValueFrom(
+      this.http.post<PremioPanel>(`${BASE}/eventos/${eventoId}/premios`, datos),
+    );
+  }
+
+  updatePremio(id: string, datos: Record<string, unknown>): Promise<PremioPanel> {
+    return firstValueFrom(this.http.patch<PremioPanel>(`${BASE}/premios/${id}`, datos));
+  }
+
+  deletePremio(id: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`${BASE}/premios/${id}`));
+  }
+
+  setPremioVisible(id: string, visible: boolean): Promise<PremioPanel> {
+    return firstValueFrom(
+      this.http.post<PremioPanel>(`${BASE}/premios/${id}/${visible ? 'mostrar' : 'ocultar'}`, {}),
     );
   }
 

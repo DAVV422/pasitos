@@ -95,3 +95,38 @@ export const preguntasFrecuentes = pgTable(
   },
   (t) => [index('preguntas_frecuentes_evento').on(t.eventoId, t.orden)],
 );
+
+/**
+ * Catálogo de canje (HU-208, Modelo §3). Disponible = total − reservado − entregado; reservar y
+ * entregar los mueve la fase 3, con la fila bloqueada (la misma que bloquea cambiar el stock).
+ */
+export const premios = pgTable(
+  'premios',
+  {
+    ...base(),
+    nombre: text('nombre').notNull(),
+    descripcion: text('descripcion'),
+    imagenArchivoId: uuid('imagen_archivo_id').references(() => archivos.id),
+    puntos: integer('puntos').notNull(),
+    stockTotal: integer('stock_total').notNull(),
+    stockReservado: integer('stock_reservado').notNull().default(0),
+    stockEntregado: integer('stock_entregado').notNull().default(0),
+    maxPorPersona: integer('max_por_persona'),
+    estado: text('estado').notNull().default('activo'),
+    orden: integer('orden').notNull().default(0),
+  },
+  (t) => [
+    check('premios_puntos', sql`${t.puntos} between 1 and 100000`),
+    check('premios_stock_total', sql`${t.stockTotal} between 0 and 100000`),
+    check(
+      'premios_stock',
+      sql`${t.stockReservado} >= 0 and ${t.stockEntregado} >= 0 and ${t.stockReservado} + ${t.stockEntregado} <= ${t.stockTotal}`,
+    ),
+    check(
+      'premios_max_por_persona',
+      sql`${t.maxPorPersona} is null or ${t.maxPorPersona} between 1 and 100`,
+    ),
+    check('premios_estado', sql`${t.estado} in ('activo', 'oculto')`),
+    index('premios_evento').on(t.eventoId, t.orden),
+  ],
+);

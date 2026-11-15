@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BitacoraModule } from './modules/bitacora/bitacora.module';
 import { ArchivosModule } from './modules/archivos/archivos.module';
 import { ContenidoModule } from './modules/contenido/contenido.module';
+import { PremiosModule } from './modules/premios/premios.module';
 import { RetosModule } from './modules/retos/retos.module';
 import { EquipoModule } from './modules/equipo/equipo.module';
 import { EventosModule } from './modules/eventos/eventos.module';
@@ -39,6 +40,7 @@ export class AppModule {
         ArchivosModule,
         ContenidoModule,
         RetosModule,
+        PremiosModule,
         SaludModule,
         MovimientosModule,
       ],

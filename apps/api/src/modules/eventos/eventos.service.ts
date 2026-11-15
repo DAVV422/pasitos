@@ -6,6 +6,7 @@ import {
   organizaciones,
   outbox,
   pantallas,
+  premios,
   retos,
   withOrganizacion,
   type Db,
@@ -359,6 +360,10 @@ export class EventosService {
         .where(eq(retos.eventoId, evento.id)),
       tx.select({ total: count() }).from(pantallas).where(eq(pantallas.eventoId, evento.id)),
     ]);
+    const [premiosActivos] = await tx
+      .select({ total: count() })
+      .from(premios)
+      .where(and(eq(premios.eventoId, evento.id), eq(premios.estado, 'activo')));
     // Hasta que las pantallas tengan lugar (HU-209), un reto de QR con lugar "tiene pantalla" si
     // el evento tiene al menos una. El catálogo y las mesas entran con HU-208 y HU-209.
     const hayPantalla = (conPantallas?.total ?? 0) > 0;
@@ -375,9 +380,16 @@ export class EventosService {
         tienePantalla: r.lugarId !== null && hayPantalla,
         enHorario: dentro(r.disponibleDesde) && dentro(r.disponibleHasta),
       })),
-      premiosActivos: 0,
-      mesas: 0,
+      premiosActivos: premiosActivos?.total ?? 0,
+      mesas: await this.countMesas(tx, evento.id),
     });
+  }
+
+  /** Las mesas llegan con HU-209: hasta entonces, ninguna. */
+  private async countMesas(tx: Tx, eventoId: string): Promise<number> {
+    void tx;
+    void eventoId;
+    return 0;
   }
 
   private async getContadores(tx: Tx, eventoId: string) {

@@ -42,6 +42,12 @@ export const appRoutes: Route[] = [
         title: 'Retos · Pasitos',
         loadComponent: () => import('./eventos/retos.page').then((m) => m.RetosPage),
       },
+      {
+        path: 'catalogo',
+        canActivate: [canDoActivate('contenido.read')],
+        title: 'Catálogo · Pasitos',
+        loadComponent: () => import('./eventos/catalogo.page').then((m) => m.CatalogoPage),
+      },
       ...(['lugares', 'agenda', 'sponsors', 'preguntas'] as const).map((ruta) => ({
         path: ruta,
         canActivate: [canDoActivate('contenido.read')],

@@ -8,6 +8,7 @@ import {
   organizaciones,
   pantallas,
   preguntasFrecuentes,
+  premios,
   retos,
   sessions,
   sponsors,
@@ -36,6 +37,7 @@ export interface EventoDePrueba {
     readonly actividades: string;
     readonly sponsors: string;
     readonly preguntas: string;
+    readonly premios: string;
   };
 }
 
@@ -100,6 +102,17 @@ export async function createEventoDePrueba(
     pregunta: '¿Hay estacionamiento?',
     respuesta: 'Sí, en el subsuelo.',
   });
+  // Oculto: un premio activo sin mesa deja la lista de chequeo incompleta (HU-208).
+  const premioId = uuidv7();
+  await base.sistema.db.insert(premios).values({
+    id: premioId,
+    organizacionId,
+    eventoId,
+    nombre: 'Taza',
+    puntos: 50,
+    stockTotal: 20,
+    estado: 'oculto',
+  });
   return {
     organizacionId,
     eventoId,
@@ -112,6 +125,7 @@ export async function createEventoDePrueba(
       actividades: actividadId,
       sponsors: sponsorId,
       preguntas: preguntaId,
+      premios: premioId,
     },
   };
 }
@@ -249,6 +263,11 @@ export async function createRecursoDePrueba(
       await base.sistema.db
         .insert(retos)
         .values({ id, organizacionId, eventoId, nombre: 'Reto V9', puntos: 5, topeTotal: 10 });
+      return id;
+    case 'premios':
+      await base.sistema.db
+        .insert(premios)
+        .values({ id, organizacionId, eventoId, nombre: 'Premio V9', puntos: 5, stockTotal: 3 });
       return id;
     case 'miembros':
       return addInvitado(base, evento);
