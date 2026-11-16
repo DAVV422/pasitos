@@ -10,6 +10,7 @@
   "scripts": {
     "lint": "nx run-many -t lint",
     "test": "nx run-many -t test",
+    "rendimiento": "node tools/rendimiento.mjs",
     "build": "nx run-many -t build --exclude=contrato-evento",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -187,6 +187,12 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await page.getByRole('searchbox').fill('quis');
   await expect(page.getByText('1 en la lista')).toBeVisible();
 
+  // HU-211: envía su invitación; queda en la cola con la fecha en que sale.
+  page.once('dialog', (dialogo) => void dialogo.accept());
+  await page.getByRole('button', { name: 'Enviar invitaciones (1 pendientes)' }).click();
+  await expect(page.getByText('Pusimos 1 invitaciones en la cola.')).toBeVisible();
+  await expect(page.getByText(/En cola \(sale el/)).toBeVisible();
+
   // HU-203: invita a un registrador, que acepta desde otro navegador y ve solo lo suyo.
   await page.getByRole('link', { name: 'Equipo' }).click();
   await page.getByRole('button', { name: 'Invitar' }).click();

@@ -113,6 +113,20 @@ export interface AsistentePanel {
   readonly estado: 'invitado' | 'registrado' | 'presente' | 'cancelado';
   readonly emailEstado: 'sin_correo' | 'pendiente' | 'en_cola' | 'enviado' | 'rebotado';
   readonly origen: 'lista' | 'csv' | 'puerta';
+  /** HU-211: la invitación vigente; `saleEl` si su correo está en cola. */
+  readonly invitacion: { readonly estado: string; readonly saleEl: string | null } | null;
+}
+
+export interface EnlaceInvitacion {
+  readonly codigo: string;
+  readonly nombre: string;
+  readonly enlace: string;
+}
+
+export interface EstimacionEnvio {
+  readonly pendientes: number;
+  readonly diasEstimados: number;
+  readonly saleUltimaEl: string;
 }
 
 export interface ContadoresInvitados {
@@ -479,6 +493,46 @@ export class EventosApi {
         estado ? { estado } : {},
       ),
     );
+  }
+
+  estimateEnvio(eventoId: string): Promise<EstimacionEnvio> {
+    return firstValueFrom(
+      this.http.get<EstimacionEnvio>(`${BASE}/eventos/${eventoId}/invitaciones/envios/estimacion`),
+    );
+  }
+
+  sendInvitaciones(eventoId: string): Promise<{ encoladas: number }> {
+    return firstValueFrom(
+      this.http.post<{ encoladas: number }>(`${BASE}/eventos/${eventoId}/invitaciones/envios`, {}),
+    );
+  }
+
+  resendInvitacion(asistenteId: string): Promise<{ saleEl: string }> {
+    return firstValueFrom(
+      this.http.post<{ saleEl: string }>(
+        `${BASE}/asistentes/${asistenteId}/invitacion/reenviar`,
+        {},
+      ),
+    );
+  }
+
+  async listEnlaces(eventoId: string, asistenteIds?: readonly string[]) {
+    const params = asistenteIds?.length
+      ? new HttpParams().set('asistenteIds', asistenteIds.join(','))
+      : new HttpParams();
+    return (
+      await firstValueFrom(
+        this.http.get<{ items: readonly EnlaceInvitacion[] }>(
+          `${BASE}/eventos/${eventoId}/invitaciones/enlaces`,
+          { params },
+        ),
+      )
+    ).items;
+  }
+
+  /** La descarga la hace el navegador (con la cookie de la sesión). */
+  getUrlEnlacesCsv(eventoId: string): string {
+    return `${BASE}/eventos/${eventoId}/invitaciones/enlaces?formato=csv`;
   }
 
   getOperacion(id: string): Promise<Operacion> {

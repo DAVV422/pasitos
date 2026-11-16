@@ -18,6 +18,8 @@ import {
   esquemaCancelarAsistente,
   esquemaConfirmarImportacion,
   esquemaEditarAsistente,
+  esquemaEnlaces,
+  esquemaEnviarInvitaciones,
   esquemaExportar,
 } from '@pasitos/dominio/esquemas';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
@@ -25,6 +27,7 @@ import { readArchivo } from '../archivos/archivos.controller';
 import { ArchivosService } from '../archivos/archivos.service';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
 import { AsistentesService } from './asistentes.service';
+import { InvitacionesAsistentesService } from './invitaciones.service';
 import { OperacionesService } from './operaciones.service';
 
 function pick<T extends object>(datos: T, cuerpo: unknown): Partial<T> {
@@ -41,6 +44,7 @@ export class InvitadosController {
     private readonly asistentes: AsistentesService,
     private readonly operaciones: OperacionesService,
     private readonly archivos: ArchivosService,
+    private readonly invitaciones: InvitacionesAsistentesService,
   ) {}
 
   /** También el registrador (puerta, fase 3): para él, el correo va enmascarado. */
@@ -133,6 +137,54 @@ export class InvitadosController {
   @HttpCode(202)
   createExportacion(@Contexto() contexto: ContextoEvento, @Body() cuerpo: unknown) {
     return this.operaciones.createExportacion(contexto, esquemaExportar.parse(cuerpo ?? {}).estado);
+  }
+
+  // ── Invitaciones por correo (HU-211) ───────────────────────────────────────
+
+  @Get('eventos/:eventoId/invitaciones/envios/estimacion')
+  @Permiso('invitados.read')
+  estimate(@Contexto() contexto: ContextoEvento) {
+    return this.invitaciones.estimate(contexto);
+  }
+
+  @Post('eventos/:eventoId/invitaciones/envios')
+  @Permiso('invitados.update')
+  @AccionBitacoraDe('invitaciones.send')
+  @HttpCode(202)
+  send(@Contexto() contexto: ContextoEvento, @Body() cuerpo: unknown) {
+    return this.invitaciones.send(
+      contexto,
+      esquemaEnviarInvitaciones.parse(cuerpo ?? {}).asistenteIds,
+    );
+  }
+
+  @Post('asistentes/:id/invitacion/reenviar')
+  @Permiso('invitados.update', { recurso: 'asistentes' })
+  @AccionBitacoraDe('invitacion.resend')
+  @HttpCode(202)
+  resend(@Contexto() contexto: ContextoEvento, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.invitaciones.resend(contexto, id);
+  }
+
+  /** Crea las que falten: por eso es `invitados.update` y deja su fila en la bitácora. */
+  @Get('eventos/:eventoId/invitaciones/enlaces')
+  @Permiso('invitados.update')
+  @AccionBitacoraDe('invitaciones.enlaces.view')
+  async listEnlaces(
+    @Contexto() contexto: ContextoEvento,
+    @Query() query: unknown,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const { asistenteIds, formato } = esquemaEnlaces.parse(query);
+    const items = await this.invitaciones.listEnlaces(contexto, asistenteIds);
+    void reply.header('Cache-Control', 'no-store');
+    if (formato === 'csv') {
+      void reply
+        .header('Content-Type', 'text/csv; charset=utf-8')
+        .header('Content-Disposition', 'attachment; filename="enlaces-invitacion.csv"');
+      return this.invitaciones.toCsv(items);
+    }
+    return { items };
   }
 
   @Get('operaciones/:id')

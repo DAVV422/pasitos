@@ -127,6 +127,11 @@ export const CATALOGO_ERRORES = {
     title: 'Posible duplicado',
     mensaje: 'Hay alguien con un nombre muy parecido en la lista.',
   },
+  INVITACION_YA_USADA: {
+    status: 409,
+    title: 'Invitación ya usada',
+    mensaje: 'Esta persona ya abrió su invitación. Si cambió de celular, se hace en la puerta.',
+  },
   IMPORTACION_INVALIDA: {
     status: 422,
     title: 'Archivo no válido',

@@ -155,6 +155,13 @@
       "when": 1794761821709,
       "tag": "0021_invitados",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794764177850,
+      "tag": "0022_invitaciones",
+      "breakpoints": true
     }
   ]
 }

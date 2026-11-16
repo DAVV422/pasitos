@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CorreosService } from '@pasitos/correos';
-import { buildCifrador } from '../../common/cifrado';
+import { buildCifrador } from '@pasitos/db';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { DbService, DbSistemaService } from '../../infra/db/db.module';
 import { AuthController } from './auth.controller';

@@ -66,6 +66,21 @@ export const esquemaConfirmarImportacion = z.object({
 
 export const esquemaExportar = z.object({ estado: z.enum(ESTADOS_ASISTENTE).optional() });
 
+/** HU-211: sin `asistenteIds`, todos los pendientes. */
+export const esquemaEnviarInvitaciones = z.object({
+  asistenteIds: z.array(z.uuid()).max(5_000).optional(),
+});
+
+/** `?asistenteIds=a,b,c&formato=json|csv`. */
+export const esquemaEnlaces = z.object({
+  asistenteIds: z
+    .string()
+    .optional()
+    .transform((t) => (t ? t.split(',').filter((id) => id !== '') : undefined))
+    .pipe(z.array(z.uuid()).max(5_000).optional()),
+  formato: z.enum(['json', 'csv']).default('json'),
+});
+
 /** Similitud trigram desde la que un nombre "se parece" a otro de la lista. */
 export const SIMILITUD_DUPLICADO = 0.6;
 /** Las operaciones de importar vencen en 24 h; el enlace de descarga, en 10 min. */

@@ -208,6 +208,7 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `TERMINAL_DESCONECTADA` | 401 | Esta pantalla se desconectó. Pide que la conecten de nuevo. |
 | `ASISTENTE_YA_REGISTRADO` | 409 | Esa persona ya está en la lista. |
 | `ASISTENTE_POSIBLE_DUPLICADO` | 409 | Hay alguien con un nombre muy parecido en la lista. |
+| `INVITACION_YA_USADA` | 409 | Esta persona ya abrió su invitación. Si cambió de celular, se hace en la puerta. |
 | `IMPORTACION_INVALIDA` | 422 | No encontramos la columna del nombre. |
 | `OPERACION_NO_LISTA` | 409 | La operación todavía no terminó o ya venció. |
 | `STOCK_MENOR_A_COMPROMETIDO` | 422 | El stock no puede ser menor que lo reservado y lo ya entregado. |

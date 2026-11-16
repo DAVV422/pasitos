@@ -69,6 +69,13 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/invitados.page').then((m) => m.InvitadosPage),
       },
       {
+        path: 'invitados/imprimir',
+        canActivate: [canDoActivate('invitados.update')],
+        title: 'Tarjetas de invitación · Pasitos',
+        loadComponent: () =>
+          import('./eventos/imprimir-invitaciones.page').then((m) => m.ImprimirInvitacionesPage),
+      },
+      {
         path: 'equipo',
         canActivate: [canDoActivate('equipo.read')],
         title: 'Equipo · Pasitos',

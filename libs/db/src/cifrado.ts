@@ -6,7 +6,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
  *
  * Formato: [versión de la llave: 1 byte][IV: 12][etiqueta: 16][texto cifrado]. La versión permite
  * rotar la llave: se cifra con la actual y se descifra con la que diga el primer byte.
- * `libs/db` no conoce la llave; solo guarda bytes.
+ * La llave la pasa quien lo usa (el API y el trabajador, de `LLAVE_CIFRADO_DATOS`): esta librería no la conoce.
  */
 const LARGO_IV = 12;
 const LARGO_ETIQUETA = 16;

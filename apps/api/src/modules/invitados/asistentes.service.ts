@@ -13,6 +13,7 @@ import type { ContextoEvento } from '../../common/permisos/marcas';
 import type { Reloj } from '../auth/sesiones.service';
 import { toActor } from '../bitacora/actores';
 import { BitacoraService, diff } from '../bitacora/bitacora.service';
+import { listEstadosInvitacion, revokeInvitacion } from './invitaciones.service';
 
 type Asistente = typeof asistentes.$inferSelect;
 
@@ -75,7 +76,7 @@ export class AsistentesService {
               errors: [{ field: 'q', code: 'MUY_CORTO', message: 'Escribe al menos 3 letras.' }],
             });
           }
-          return { items: filas.map((a) => this.toFila(a, contexto)), nextCursor: null };
+          return { items: await this.toFilas(tx, filas, contexto), nextCursor: null };
         } else {
           const buscado = normalizado(q);
           const nombre = normalizado(sql`${asistentes.nombre}`);
@@ -89,7 +90,7 @@ export class AsistentesService {
           orden = [sql`similarity(${nombre}, ${buscado}) desc`, asc(asistentes.codigoAsistente)];
         }
         const filas = await this.selectFilas(tx, and(...condiciones), orden, filtros.limit);
-        return { items: filas.map((a) => this.toFila(a, contexto)), nextCursor: null };
+        return { items: await this.toFilas(tx, filas, contexto), nextCursor: null };
       }
 
       if (filtros.cursor) {
@@ -101,7 +102,7 @@ export class AsistentesService {
       const hayMas = filas.length > filtros.limit;
       const pagina = hayMas ? filas.slice(0, filtros.limit) : filas;
       return {
-        items: pagina.map((a) => this.toFila(a, contexto)),
+        items: await this.toFilas(tx, pagina, contexto),
         nextCursor: hayMas ? (pagina.at(-1)?.codigoAsistente ?? null) : null,
       };
     });
@@ -190,7 +191,10 @@ export class AsistentesService {
           updatedAt: this.reloj.now(),
         })
         .where(eq(asistentes.id, id));
-      // Con la invitación sin usar, cambiar el correo la revoca: HU-211 la vuelve a crear al enviar.
+      // Con la invitación sin usar, cambiar el correo la revoca: se vuelve a crear al enviar (HU-211).
+      if (cambioCorreo) {
+        await revokeInvitacion(tx, id, this.reloj.now());
+      }
       const nuevo = await this.getAsistente(tx, contexto, id);
       const recortado = diff(this.toBitacora(actual), this.toBitacora(nuevo));
       if (Object.keys(recortado.despues).length > 0) {
@@ -216,6 +220,7 @@ export class AsistentesService {
           .update(asistentes)
           .set({ estado: 'cancelado', updatedAt: this.reloj.now() })
           .where(eq(asistentes.id, id));
+        await revokeInvitacion(tx, id, this.reloj.now());
         await this.record(
           tx,
           contexto,
@@ -327,8 +332,20 @@ export class AsistentesService {
     return asistente;
   }
 
+  private async toFilas(tx: Tx, filas: readonly Asistente[], contexto: ContextoEvento) {
+    const invitaciones = await listEstadosInvitacion(
+      tx,
+      filas.map((a) => a.id),
+    );
+    return filas.map((a) => this.toFila(a, contexto, invitaciones.get(a.id) ?? null));
+  }
+
   /** El registrador ve el correo enmascarado (HU-210 §3). */
-  toFila(a: Asistente, contexto: Pick<ContextoEvento, 'rol'>) {
+  toFila(
+    a: Asistente,
+    contexto: Pick<ContextoEvento, 'rol'>,
+    invitacion: { estado: string; saleEl: string | null } | null = null,
+  ) {
     return {
       id: a.id,
       codigo: a.codigoAsistente,
@@ -338,8 +355,8 @@ export class AsistentesService {
       estado: a.estado,
       emailEstado: a.emailEstado,
       origen: a.origen,
-      // HU-211: la invitación por correo.
-      invitacion: null,
+      // HU-211: la invitación vigente y, si su correo está en cola, cuándo sale.
+      invitacion,
     };
   }
 

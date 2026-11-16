@@ -52,6 +52,13 @@ const esquemaConfig = z.object({
   CORREO_TOPE_DIARIO: z.coerce.number().int().min(1).default(80),
   CORREO_RESERVA_SEGURIDAD: z.coerce.number().int().min(0).default(10),
   CORREO_ENVIOS_POR_SEGUNDO: z.coerce.number().min(0).default(2),
+  // HU-211: el enlace de cada invitación va cifrado en la base; el trabajador lo descifra al enviar.
+  LLAVE_CIFRADO_DATOS: z
+    .string()
+    .min(40)
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  LLAVES_CIFRADO_ANTERIORES: z.string().default(''),
   SENTRY_DSN: z.string().url().optional().or(z.literal('')),
   SENTRY_ENVIRONMENT: z.string().default('desarrollo'),
 });

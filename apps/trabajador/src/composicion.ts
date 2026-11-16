@@ -1,4 +1,4 @@
-import { createConexion, type ConexionDb } from '@pasitos/db';
+import { buildCifrador, createConexion, type ConexionDb } from '@pasitos/db';
 import { RpcStellar, TransaccionesStellarRepository, type StellarPort } from '@pasitos/stellar';
 import { AlertasEnLogs } from './comun/alertas-operacion';
 import { RELOJ_SISTEMA, type Reloj } from './comun/reloj';
@@ -10,6 +10,7 @@ import { EnviosCorreoService } from './correos/envios.service';
 import { CostoRedService } from './costo/costo-red.service';
 import { PurgaArchivosService } from './archivos/purga.service';
 import { AperturaEventosService } from './eventos/outbox.service';
+import { InvitacionesCorreoGancho } from './invitados/invitaciones-correo';
 import { OperacionesTrabajoService } from './invitados/operaciones.service';
 import { EvidenciaService } from './evidencia/evidencia.service';
 import { SelladorRepository } from './sellador/sellador.repository';
@@ -97,6 +98,14 @@ export function buildComposicion(
       porSegundo: config.CORREO_ENVIOS_POR_SEGUNDO,
       maxIntentos: 3,
       porVuelta: 50,
+    },
+    {
+      invitacion_evento: new InvitacionesCorreoGancho(
+        conexion.db,
+        config.LLAVE_CIFRADO_DATOS
+          ? buildCifrador(config.LLAVE_CIFRADO_DATOS, config.LLAVES_CIFRADO_ANTERIORES)
+          : null,
+      ),
     },
   );
   const apertura = new AperturaEventosService(conexion.db, alertas, reloj);

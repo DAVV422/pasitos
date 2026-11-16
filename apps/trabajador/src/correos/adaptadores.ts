@@ -16,6 +16,7 @@ export class SmtpAdapter implements CorreoPort {
   }
 
   async send(mensaje: MensajeCorreo): Promise<{ proveedorId: string }> {
+    checkRebote(mensaje);
     try {
       const info = await this.transporte.sendMail({
         from: mensaje.de,
@@ -44,6 +45,7 @@ export class ArchivoAdapter implements CorreoPort {
   constructor(private readonly carpeta: string) {}
 
   async send(mensaje: MensajeCorreo): Promise<{ proveedorId: string }> {
+    checkRebote(mensaje);
     await mkdir(this.carpeta, { recursive: true });
     const proveedorId = `archivo-${uuidv7()}`;
     await writeFile(
@@ -67,5 +69,14 @@ export class ArchivoAdapter implements CorreoPort {
         async (a) => JSON.parse(await readFile(join(this.carpeta, a), 'utf-8')) as MensajeCorreo,
       ),
     );
+  }
+}
+
+/** En local no hay rebotes de verdad (HU-211): este destinatario los simula. */
+export const DESTINATARIO_REBOTE = 'rebota@example.com';
+
+function checkRebote(mensaje: MensajeCorreo): void {
+  if (mensaje.para.toLowerCase() === DESTINATARIO_REBOTE) {
+    throw new CorreoError('El correo rebotó (simulado en local)', false);
   }
 }

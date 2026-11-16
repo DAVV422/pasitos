@@ -100,7 +100,7 @@ export const enviosCorreo = pgTable(
     check('envios_correo_prioridad', sql`${t.prioridad} between 1 and 4`),
     check(
       'envios_correo_estado',
-      sql`${t.estado} in ('en_cola', 'enviado', 'entregado', 'rebotado', 'fallido')`,
+      sql`${t.estado} in ('en_cola', 'enviado', 'entregado', 'rebotado', 'fallido', 'cancelado')`,
     ),
     index('envios_correo_cola')
       .on(t.prioridad, t.createdAt)

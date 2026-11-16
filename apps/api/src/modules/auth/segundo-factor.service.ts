@@ -7,7 +7,7 @@ import {
   type RegistrationResponseJSON,
 } from '@simplewebauthn/server';
 import { AppError } from '@pasitos/dominio';
-import type { Cifrador } from '../../common/cifrado';
+import type { Cifrador } from '@pasitos/db';
 import { AuthRepository, createTokenAleatorio } from './auth.repository';
 import type { ContextoSesion, Reloj } from './sesiones.service';
 import { buildOtpauthUrl, createSecretoTotp, verifyCodigoTotp } from './totp';

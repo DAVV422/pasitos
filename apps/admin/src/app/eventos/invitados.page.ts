@@ -1,4 +1,5 @@
 import { ScrollingModule } from '@angular/cdk/scrolling';
+import { RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,11 +22,18 @@ import {
   CampoComponent,
   ChipComponent,
   EstadoComponent,
+  QrComponent,
   TarjetaComponent,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
-import { EventosApi, type AsistentePanel, type ContadoresInvitados } from './eventos-api.service';
+import {
+  EventosApi,
+  type AsistentePanel,
+  type ContadoresInvitados,
+  type EnlaceInvitacion,
+  type EstimacionEnvio,
+} from './eventos-api.service';
 import { ImportacionComponent } from './importacion.component';
 
 interface Candidato {
@@ -40,6 +48,8 @@ interface Candidato {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ScrollingModule,
+    RouterLink,
+    QrComponent,
     AvisoComponent,
     BotonDirective,
     CampoComponent,
@@ -61,6 +71,36 @@ interface Candidato {
         </button>
       </span>
     </header>
+    <div class="flex flex-wrap gap-2">
+      <button
+        type="button"
+        pxBoton
+        [cargando]="enviando()"
+        [deshabilitado]="(estimacion()?.pendientes ?? 0) === 0"
+        (click)="send()"
+      >
+        Enviar invitaciones ({{ estimacion()?.pendientes ?? 0 }} pendientes)
+      </button>
+      <button type="button" pxBoton="secundario" (click)="downloadEnlaces()">
+        Descargar enlaces
+      </button>
+      <a pxBoton="secundario" [routerLink]="['/eventos', eventoId(), 'invitados', 'imprimir']">
+        Imprimir tarjetas
+      </a>
+    </div>
+    @if (enlaceVisto(); as visto) {
+      <px-tarjeta>
+        <div class="flex flex-col items-center gap-3">
+          <p>
+            <b>{{ visto.codigo }} · {{ visto.nombre }}</b>
+          </p>
+          <px-qr [texto]="visto.enlace" [tamano]="220" descripcion="QR del enlace de invitación" />
+          <code class="bg-track rounded px-2 py-1 text-sm break-all">{{ visto.enlace }}</code>
+          <p class="text-muted text-sm">El enlace es personal. Verlo queda en la bitácora.</p>
+          <button type="button" pxBoton="secundario" (click)="enlaceVisto.set(null)">Cerrar</button>
+        </div>
+      </px-tarjeta>
+    }
     @if (contadores(); as c) {
       <p class="text-muted" aria-live="polite">
         {{ c.total }} en la lista · {{ c.invitados }} invitados · {{ c.registrados }} registrados ·
@@ -215,6 +255,21 @@ interface Candidato {
                   {{ nombreEstado(a.estado) }}
                 </px-chip>
                 @if (a.estado !== 'cancelado') {
+                  <px-chip [variante]="varianteInvitacion(a)">{{ textoInvitacion(a) }}</px-chip>
+                  @if (a.emailEstado === 'rebotado') {
+                    <button type="button" pxBoton="secundario" [chico]="true" (click)="start(a)">
+                      Corregir correo
+                    </button>
+                  } @else if (a.email && a.invitacion?.estado !== 'usada') {
+                    <button type="button" pxBoton="secundario" [chico]="true" (click)="resend(a)">
+                      Reenviar
+                    </button>
+                  }
+                  @if (a.invitacion?.estado !== 'usada') {
+                    <button type="button" pxBoton="secundario" [chico]="true" (click)="view(a)">
+                      Ver enlace
+                    </button>
+                  }
                   <button type="button" pxBoton="secundario" [chico]="true" (click)="start(a)">
                     Editar
                   </button>
@@ -249,6 +304,9 @@ export class InvitadosPage implements OnInit {
 
   protected readonly importando = signal(false);
   protected readonly exportando = signal(false);
+  protected readonly enviando = signal(false);
+  protected readonly estimacion = signal<EstimacionEnvio | null>(null);
+  protected readonly enlaceVisto = signal<EnlaceInvitacion | null>(null);
   protected readonly editando = signal<'nuevo' | AsistentePanel | null>(null);
   protected readonly nombre = signal('');
   protected readonly email = signal('');
@@ -395,17 +453,100 @@ export class InvitadosPage implements OnInit {
     }
   }
 
+  // ── Invitaciones por correo (HU-211 §5) ─────────────────────────────────────
+
+  /** *Sin correo* · *Pendiente* · *En cola (sale el 18/11)* · *Enviada* · *Rebotó* · *Abierta ✓*. */
+  protected textoInvitacion(a: AsistentePanel): string {
+    if (!a.email) return 'Sin correo';
+    if (a.invitacion?.estado === 'usada') return 'Abierta ✓';
+    if (a.emailEstado === 'rebotado') return 'Rebotó';
+    if (a.emailEstado === 'enviado') return 'Enviada';
+    if (a.emailEstado === 'en_cola') {
+      const sale = a.invitacion?.saleEl;
+      return sale
+        ? `En cola (sale el ${new Date(sale).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', timeZone: 'America/La_Paz' })})`
+        : 'En cola';
+    }
+    return 'Pendiente';
+  }
+
+  protected varianteInvitacion(a: AsistentePanel): 'ok' | 'peligro' | 'atenuado' | 'puntos' {
+    if (a.emailEstado === 'rebotado') return 'peligro';
+    if (a.invitacion?.estado === 'usada' || a.emailEstado === 'enviado') return 'ok';
+    if (a.emailEstado === 'en_cola') return 'puntos';
+    return 'atenuado';
+  }
+
+  protected async send(): Promise<void> {
+    const e = this.estimacion();
+    if (!e || e.pendientes === 0) return;
+    const ultima = new Date(e.saleUltimaEl).toLocaleDateString('es-BO', {
+      timeZone: 'America/La_Paz',
+    });
+    const aviso =
+      e.diasEstimados > 1
+        ? `Se van a enviar ${e.pendientes} invitaciones. Por el límite diario de correos, salen en ${e.diasEstimados} días: la última el ${ultima}. Para que lleguen antes, descarga los enlaces y mándalos por WhatsApp.`
+        : `Se van a enviar ${e.pendientes} invitaciones hoy.`;
+    if (!window.confirm(aviso)) return;
+    this.enviando.set(true);
+    this.mensaje.set(null);
+    try {
+      const { encoladas } = await this.api.sendInvitaciones(this.eventoId());
+      this.mensaje.set({ variante: 'ok', texto: `Pusimos ${encoladas} invitaciones en la cola.` });
+      await this.load();
+    } catch (error) {
+      this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
+    } finally {
+      this.enviando.set(false);
+    }
+  }
+
+  protected async resend(a: AsistentePanel): Promise<void> {
+    if (
+      !window.confirm(`¿Reenviar la invitación a ${a.nombre}? El enlace anterior deja de servir.`)
+    ) {
+      return;
+    }
+    try {
+      await this.api.resendInvitacion(a.id);
+      this.mensaje.set({ variante: 'ok', texto: `Reenviamos la invitación a ${a.nombre}.` });
+    } catch (error) {
+      this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
+    }
+    await this.load();
+  }
+
+  protected async view(a: AsistentePanel): Promise<void> {
+    try {
+      const [enlace] = await this.api.listEnlaces(this.eventoId(), [a.id]);
+      this.enlaceVisto.set(enlace ?? null);
+    } catch (error) {
+      this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
+    }
+  }
+
+  protected downloadEnlaces(): void {
+    if (
+      !window.confirm('Los enlaces dan acceso a cada invitado: la descarga queda en la bitácora.')
+    ) {
+      return;
+    }
+    window.location.href = this.api.getUrlEnlacesCsv(this.eventoId());
+  }
+
   private async load(): Promise<void> {
     if (!this.eventoId()) return;
     const q = this.q().trim();
     try {
-      const [pagina, contadores] = await Promise.all([
+      const [pagina, contadores, estimacion] = await Promise.all([
         this.api.searchAsistentes(this.eventoId(), { ...this.filtros(), ...(q ? { q } : {}) }),
         this.api.countAsistentes(this.eventoId()),
+        this.api.estimateEnvio(this.eventoId()),
       ]);
       this.filas.set(pagina.items);
       this.nextCursor = pagina.pagination.nextCursor;
       this.contadores.set(contadores);
+      this.estimacion.set(estimacion);
       this.estado.set('listo');
     } catch (error) {
       // 1 o 2 letras sin coincidencia exacta: no es un error de la pantalla.

@@ -25,7 +25,18 @@ export interface ResultadoVuelta {
   readonly reintentos: number;
 }
 
-type FilaEnvio = typeof enviosCorreo.$inferSelect;
+export type FilaEnvio = typeof enviosCorreo.$inferSelect;
+
+/**
+ * Lo que un tipo de correo necesita además de la cola (HU-211): completar los datos justo antes
+ * de enviar (el enlace de la invitación, que no se guarda en claro en la cola) y enterarse de cómo
+ * terminó.
+ */
+export interface GanchoCorreo {
+  prepare?(envio: FilaEnvio): Promise<Record<string, unknown>>;
+  onEnviado?(envio: FilaEnvio, ahora: Date): Promise<void>;
+  onFallido?(envio: FilaEnvio, ahora: Date): Promise<void>;
+}
 
 /**
  * Trabajo `send-correos` (T-007 §3): toma de la cola por prioridad y antigüedad hasta llenar el
@@ -43,6 +54,7 @@ export class EnviosCorreoService {
     private readonly cupo: OpcionesCupo,
     private readonly reloj: Reloj,
     private readonly opciones: OpcionesEnvio,
+    private readonly ganchos: Partial<Record<TipoCorreo, GanchoCorreo>> = {},
   ) {
     this.correos = new CorreosService(db, cupo, () => reloj.now());
   }
@@ -80,7 +92,9 @@ export class EnviosCorreoService {
       if (!Object.hasOwn(CORREOS, envio.tipo)) {
         throw new Error(`Tipo de correo desconocido: ${envio.tipo}`);
       }
-      const contenido = buildContenidoCorreo(envio.tipo as TipoCorreo, envio.datos as never, {
+      const gancho = this.ganchos[envio.tipo as TipoCorreo];
+      const datos = gancho?.prepare ? await gancho.prepare(envio) : envio.datos;
+      const contenido = buildContenidoCorreo(envio.tipo as TipoCorreo, datos as never, {
         correoSoporte: this.opciones.correoSoporte,
       });
       mensaje = await renderCorreo(contenido);
@@ -111,6 +125,7 @@ export class EnviosCorreoService {
           updatedAt: ahora,
         })
         .where(eq(enviosCorreo.id, envio.id));
+      await this.ganchos[envio.tipo as TipoCorreo]?.onEnviado?.(envio, ahora);
       return 'enviados';
     } catch (error) {
       const temporal = !(error instanceof CorreoError) || error.temporal;
@@ -139,6 +154,7 @@ export class EnviosCorreoService {
       })
       .where(eq(enviosCorreo.id, envio.id));
     this.logger.error({ envio: envio.id, tipo: envio.tipo }, 'Correo fallido');
+    await this.ganchos[envio.tipo as TipoCorreo]?.onFallido?.(envio, this.reloj.now());
   }
 
   /** En cola y sin espera de reintento pendiente (1, 2, 4… min desde el último intento). */
