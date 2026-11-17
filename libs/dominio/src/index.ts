@@ -9,3 +9,4 @@ export * from './permisos/matriz';
 export * from './bitacora/acciones';
 export * from './plataforma/terminos';
 export * from './archivos/propositos';
+export * from './terminales/conexion';

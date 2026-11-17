@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { esquemaEmail, esquemaPasswordNueva } from '../auth/esquemas';
 
 /** Entradas de la consola de plataforma (HU-202) y de aceptar una invitación (HU-203 §3). */

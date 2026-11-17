@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { esquemaEmail } from '../auth/esquemas';
 
 /** La lista de invitados (HU-210). La usan el API, el trabajador y el panel. */

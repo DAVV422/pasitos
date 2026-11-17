@@ -24,7 +24,7 @@ import {
   esquemaInvitarPlataforma,
   esquemaRestablecerSegundoFactor,
 } from '@pasitos/dominio/esquemas';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Plataforma } from '../../common/permisos/marcas';
 import { Sesion } from '../../common/sesion/sesion';
 import { DbSistemaService } from '../../infra/db/db.module';

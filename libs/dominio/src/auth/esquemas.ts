@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Entradas de `/auth` (HU-201). Las usan el API (valida) y el panel (arma los formularios).

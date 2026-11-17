@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Variables de entorno del API, validadas al arrancar (Backend §6).

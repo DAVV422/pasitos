@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ROLES_INVITABLES } from '@pasitos/dominio';
 import { esquemaEmail } from '@pasitos/dominio/esquemas';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
 import { EquipoService } from './equipo.service';

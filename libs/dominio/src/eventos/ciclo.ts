@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Ciclo de vida del evento (HU-205 §3, Modelo §11.1). Volver a borrador no existe; cerrar llega con

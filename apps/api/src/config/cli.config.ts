@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Variables de los comandos de soporte del API (`pnpm plataforma`). Usan pasitos_sistema

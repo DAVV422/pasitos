@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * `evidencia-stellar.json` (HU-105 §2, D50): el estado del contrato y todas las transacciones que entraron,

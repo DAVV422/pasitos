@@ -23,7 +23,7 @@ import {
 } from '@pasitos/dominio/esquemas';
 import type { AuthenticationResponseJSON, RegistrationResponseJSON } from '@simplewebauthn/server';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
+import * as z from 'zod';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { SoloSesion } from '../../common/permisos/marcas';
 import { Publica, Sesion, SinSegundoFactor } from '../../common/sesion/sesion';

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { TIPOS_MOVIMIENTO } from './tipos';
 
 // Los esquemas Zod se arman al cargar el módulo: van por `@pasitos/dominio/esquemas`, no por el índice,

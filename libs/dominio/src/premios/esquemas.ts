@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /** Catálogo de canje (HU-208 §1). Lo usan el API y el panel. */
 export const esquemaPremio = z.object({

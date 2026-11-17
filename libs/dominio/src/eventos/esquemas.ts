@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Datos del evento y su contenido (HU-206). Los usan el API (valida) y el panel (arma los

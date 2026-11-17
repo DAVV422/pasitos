@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /** Retos (HU-207 §2). Los usan el API y el panel. */
 export const TIPOS_RETO = ['qr', 'otorgado'] as const;

@@ -2,7 +2,7 @@ import { Controller, Get, Inject, Query } from '@nestjs/common';
 import { and, desc, eq, gte, ilike, isNotNull, lt, or, type SQL } from 'drizzle-orm';
 import { bitacora, withOrganizacion } from '@pasitos/db';
 import { getTextoAccion } from '@pasitos/dominio';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
 import { DbService } from '../../infra/db/db.module';
 

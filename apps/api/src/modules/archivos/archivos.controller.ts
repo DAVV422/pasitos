@@ -20,7 +20,7 @@ import {
   type VarianteImagen,
 } from '@pasitos/dominio';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
 import { Publica } from '../../common/sesion/sesion';
 import { COOKIE_EQUIPO, SesionesService } from '../auth/sesiones.service';

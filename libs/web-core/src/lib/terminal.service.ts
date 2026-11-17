@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { LATIDO_MS, MENSAJES_CONEXION } from '@pasitos/dominio/esquemas';
+// De la entrada sin Zod: /sala y /mesa no cargan los esquemas (unos 60 KB).
+import { LATIDO_MS, MENSAJES_CONEXION } from '@pasitos/dominio';
 import { firstValueFrom } from 'rxjs';
 import { ErrorApi } from './error-api';
 

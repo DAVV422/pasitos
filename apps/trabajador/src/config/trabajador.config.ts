@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { INTERVALOS_ANCLAJE_MIN, isIntervaloAnclaje } from '@pasitos/dominio';
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Variables de entorno del trabajador, validadas al arrancar (Backend §6, HU-103 §1).

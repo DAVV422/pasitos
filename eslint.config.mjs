@@ -4,6 +4,30 @@ import nx from '@nx/eslint-plugin';
 const VERBOS_EN_ESPANOL =
   '^(crear|obtener|buscar|actualizar|borrar|eliminar|listar|guardar|enviar|validar|calcular|es|tiene|puede)[A-Z]';
 
+/**
+ * Para /app, /sala, /mesa, /sitio y sus librerías (libs/ui, libs/web-core): las apps del evento
+ * (internet a veces lento) no cargan los esquemas Zod: lo que necesitan de libs/dominio está en
+ * su entrada sin Zod (`@pasitos/dominio`). Se suma en el eslint.config.mjs de cada una.
+ */
+export const sinZodEnElEvento = {
+  files: ['**/*.ts'],
+  ignores: ['**/*.spec.ts'],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [
+          {
+            name: '@pasitos/dominio/esquemas',
+            message:
+              'Las apps del evento no cargan Zod: importa de @pasitos/dominio (sin esquemas).',
+          },
+        ],
+      },
+    ],
+  },
+};
+
 export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
@@ -71,6 +95,16 @@ export default [
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       'no-console': 'error',
+      // `import { z }` arrastra todo Zod (unos 75 KB comprimidos en el navegador, con todos los
+      // idiomas); `import * as z` deja solo lo que se usa (unos 23 KB).
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "ImportDeclaration[source.value='zod'][importKind!='type'] > ImportSpecifier[imported.name='z']",
+          message: "Usa `import * as z from 'zod'`: así el paquete solo lleva lo que se usa.",
+        },
+      ],
       // Nomenclatura (Reglas generales §2.2, D39). El prefijo is/has/can de los booleanos
       // necesita análisis de tipos (lento): se revisa en el PR.
       '@typescript-eslint/naming-convention': [

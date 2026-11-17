@@ -1,6 +1,6 @@
 import { DestroyRef, inject, signal, type Signal } from '@angular/core';
 
-/** El corte entre celular y escritorio del panel (el mismo de `base.css`). */
+/** El corte entre celular y escritorio del panel (el mismo de `panel.css`). */
 export const CONSULTA_CELULAR = '(width < 768px)';
 
 /**
