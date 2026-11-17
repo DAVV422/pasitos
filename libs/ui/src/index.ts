@@ -11,3 +11,4 @@ export * from './lib/cuenta-regresiva.component';
 export * from './lib/estado.component';
 export * from './lib/encabezado.component';
 export * from './lib/hoja.component';
+export * from './lib/fecha-hora.directive';

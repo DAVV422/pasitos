@@ -72,6 +72,13 @@ export const ICONOS = {
     { t: 'path', d: 'M4 12h16' },
     { t: 'path', d: 'M4 18h16' },
   ],
+  abajo: [{ t: 'path', d: 'm6 9 6 6 6-6' }],
+  puntos: [
+    { t: 'circle', cx: '5', cy: '12', r: '1' },
+    { t: 'circle', cx: '12', cy: '12', r: '1' },
+    { t: 'circle', cx: '19', cy: '12', r: '1' },
+  ],
+  filtro: [{ t: 'path', d: 'M22 3H2l8 9.46V19l4 2v-8.54L22 3z' }],
   users: [
     { t: 'path', d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' },
     { t: 'circle', cx: '9', cy: '7', r: '4' },

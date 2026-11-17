@@ -10,6 +10,7 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { BotonDirective, EncabezadoComponent, HojaComponent, IconoComponent } from '@pasitos/ui';
+import { AvisosComponent } from '../patrones/avisos';
 import { SesionService } from '../sesion/sesion.service';
 
 export interface ItemMenu {
@@ -43,6 +44,7 @@ interface GrupoMenu {
     BotonDirective,
     HojaComponent,
     IconoComponent,
+    AvisosComponent,
   ],
   template: `
     <px-encabezado />
@@ -84,6 +86,8 @@ interface GrupoMenu {
         </nav>
       }
     </px-hoja>
+
+    <pnl-avisos />
 
     <ng-template #navegacion>
       <div class="pnl-menu">
