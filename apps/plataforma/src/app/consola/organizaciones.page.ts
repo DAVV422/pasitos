@@ -8,14 +8,21 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { esquemaCrearOrganizacion } from '@pasitos/dominio/esquemas';
-import { getErrorCampo, getMensajeError, valorDe } from '@pasitos/panel';
+import {
+  AvisosService,
+  EncabezadoPaginaComponent,
+  FiltrosComponent,
+  getErrorCampo,
+  getMensajeError,
+  PanelLateralComponent,
+  valorDe,
+} from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
   CampoComponent,
   ChipComponent,
   EstadoComponent,
-  TarjetaComponent,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { usePermisosConsola } from './consola.layout';
@@ -32,93 +39,90 @@ import { PlataformaApi, type OrganizacionFila } from './plataforma-api.service';
     CampoComponent,
     ChipComponent,
     EstadoComponent,
-    TarjetaComponent,
+    EncabezadoPaginaComponent,
+    FiltrosComponent,
+    PanelLateralComponent,
   ],
   template: `
-    <header class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-display text-3xl font-extrabold">Organizaciones</h1>
-      @if (permisos.puedeEscribir() && !creando()) {
+    <pnl-encabezado-pagina
+      titulo="Organizaciones"
+      descripcion="Las que organizan eventos con Pasitos y quién es su dueño."
+    >
+      @if (permisos.puedeEscribir()) {
         <button type="button" pxBoton (click)="creando.set(true)">Nueva organización</button>
       }
-    </header>
+    </pnl-encabezado-pagina>
 
-    @if (creando()) {
-      <px-tarjeta>
-        <h2 class="mb-3 text-xl font-bold">Nueva organización</h2>
-        <form class="flex flex-col gap-4" (submit)="submit($event)" novalidate>
-          <px-campo
-            etiqueta="Nombre de la organización"
-            [error]="errores()['nombre'] ?? null"
-            #c1="pxCampo"
-          >
-            <input
-              [id]="c1.idControl"
-              [attr.aria-describedby]="c1.idDescripcion"
-              name="nombre"
-              maxlength="120"
-              [value]="nombre()"
-              (input)="nombre.set(valorDe($event))"
-            />
-          </px-campo>
-          <px-campo
-            etiqueta="Nombre de la dueña o el dueño"
-            [error]="errores()['duenoNombre'] ?? null"
-            #c2="pxCampo"
-          >
-            <input
-              [id]="c2.idControl"
-              [attr.aria-describedby]="c2.idDescripcion"
-              name="duenoNombre"
-              maxlength="80"
-              [value]="duenoNombre()"
-              (input)="duenoNombre.set(valorDe($event))"
-            />
-          </px-campo>
-          <px-campo
-            etiqueta="Su correo"
-            ayuda="Le llega la invitación; vale 7 días."
-            [error]="errores()['duenoEmail'] ?? null"
-            #c3="pxCampo"
-          >
-            <input
-              [id]="c3.idControl"
-              [attr.aria-describedby]="c3.idDescripcion"
-              name="duenoEmail"
-              type="email"
-              inputmode="email"
-              [value]="duenoEmail()"
-              (input)="duenoEmail.set(valorDe($event))"
-            />
-          </px-campo>
-          @if (errorCrear(); as mensaje) {
-            <px-aviso variante="peligro">{{ mensaje }}</px-aviso>
-          }
-          <div class="flex gap-3">
-            <button type="submit" pxBoton [cargando]="enviando()" [deshabilitado]="!valida()">
-              {{ enviando() ? 'Creando…' : 'Crear e invitar' }}
-            </button>
-            <button type="button" pxBoton="secundario" (click)="creando.set(false)">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </px-tarjeta>
-    }
-    @if (creada(); as texto) {
-      <px-aviso variante="ok">{{ texto }}</px-aviso>
-    }
+    <pnl-panel-lateral
+      titulo="Nueva organización"
+      [abierto]="creando()"
+      [guardando]="enviando()"
+      textoGuardar="Crear e invitar"
+      (guardar)="submit($event)"
+      (cerrado)="creando.set(false)"
+    >
+      @if (creando()) {
+        <px-campo
+          etiqueta="Nombre de la organización"
+          [error]="errores()['nombre'] ?? null"
+          #c1="pxCampo"
+        >
+          <input
+            [id]="c1.idControl"
+            [attr.aria-describedby]="c1.idDescripcion"
+            name="nombre"
+            maxlength="120"
+            [value]="nombre()"
+            (input)="nombre.set(valorDe($event))"
+          />
+        </px-campo>
+        <px-campo
+          etiqueta="Nombre de la dueña o el dueño"
+          [error]="errores()['duenoNombre'] ?? null"
+          #c2="pxCampo"
+        >
+          <input
+            [id]="c2.idControl"
+            [attr.aria-describedby]="c2.idDescripcion"
+            name="duenoNombre"
+            maxlength="80"
+            [value]="duenoNombre()"
+            (input)="duenoNombre.set(valorDe($event))"
+          />
+        </px-campo>
+        <px-campo
+          etiqueta="Su correo"
+          ayuda="Le llega la invitación; vale 7 días."
+          [error]="errores()['duenoEmail'] ?? null"
+          #c3="pxCampo"
+        >
+          <input
+            [id]="c3.idControl"
+            [attr.aria-describedby]="c3.idDescripcion"
+            name="duenoEmail"
+            type="email"
+            inputmode="email"
+            [value]="duenoEmail()"
+            (input)="duenoEmail.set(valorDe($event))"
+          />
+        </px-campo>
+        @if (errorCrear(); as mensaje) {
+          <px-aviso variante="peligro">{{ mensaje }}</px-aviso>
+        }
+      }
+    </pnl-panel-lateral>
 
-    <px-campo etiqueta="Buscar" #cq="pxCampo">
+    <pnl-filtros>
       <input
-        [id]="cq.idControl"
-        [attr.aria-describedby]="cq.idDescripcion"
+        pnlBuscador
         type="search"
         name="q"
-        placeholder="Nombre o slug"
+        aria-label="Buscar"
+        placeholder="Buscar por nombre o slug"
         [value]="q()"
         (input)="search(valorDe($event))"
       />
-    </px-campo>
+    </pnl-filtros>
 
     @switch (estado()) {
       @case ('cargando') {
@@ -138,15 +142,39 @@ import { PlataformaApi, type OrganizacionFila } from './plataforma-api.service';
               Crea la primera con «Nueva organización».
             }
           </px-estado>
-        }
-        <ul class="flex flex-col gap-2">
-          @for (org of items(); track org.id) {
-            <li>
-              <a class="block" [routerLink]="['/organizaciones', org.id]">
-                <px-tarjeta>
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <b>{{ org.nombre }}</b>
-                    <span class="flex gap-2">
+        } @else {
+          <table class="pnl-tabla">
+            <thead>
+              <tr>
+                <th scope="col">Organización</th>
+                <th scope="col">Slug</th>
+                <th scope="col">Dueño</th>
+                <th scope="col">Eventos</th>
+                <th scope="col"><span class="px-sr-only">Estado</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (org of items(); track org.id) {
+                <tr>
+                  <td>
+                    <a class="font-bold hover:underline" [routerLink]="['/organizaciones', org.id]">
+                      {{ org.nombre }}
+                    </a>
+                  </td>
+                  <td data-etiqueta="Slug" class="text-muted">{{ org.slug }}</td>
+                  <td data-etiqueta="Dueño">
+                    @if (org.dueno; as d) {
+                      {{ d.nombre ?? d.email }}
+                      @if (d.estado === 'invitado') {
+                        <span class="text-muted text-sm">(invitación pendiente)</span>
+                      }
+                    } @else {
+                      <span class="text-muted">Sin dueño</span>
+                    }
+                  </td>
+                  <td data-etiqueta="Eventos">{{ contarEventos(org) }}</td>
+                  <td>
+                    <span class="flex flex-wrap gap-2">
                       @if (org.esDemo) {
                         <px-chip variante="puntos">Demo</px-chip>
                       }
@@ -154,24 +182,16 @@ import { PlataformaApi, type OrganizacionFila } from './plataforma-api.service';
                         <px-chip variante="peligro">Suspendida</px-chip>
                       }
                     </span>
-                  </div>
-                  <p class="text-muted text-sm">
-                    {{ org.slug }} ·
-                    @if (org.dueno; as d) {
-                      {{ d.nombre ?? d.email
-                      }}{{ d.estado === 'invitado' ? ' (invitación pendiente)' : '' }}
-                    } @else {
-                      Sin dueño
-                    }
-                    · {{ contarEventos(org) }} eventos
-                  </p>
-                </px-tarjeta>
-              </a>
-            </li>
-          }
-        </ul>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
         @if (cursor()) {
-          <button type="button" pxBoton="secundario" (click)="load(true)">Cargar más</button>
+          <div>
+            <button type="button" pxBoton="secundario" (click)="load(true)">Cargar más</button>
+          </div>
         }
       }
     }
@@ -179,6 +199,7 @@ import { PlataformaApi, type OrganizacionFila } from './plataforma-api.service';
 })
 export class OrganizacionesPage implements OnInit {
   private readonly api = inject(PlataformaApi);
+  private readonly avisos = inject(AvisosService);
   protected readonly permisos = usePermisosConsola();
 
   protected readonly estado = signal<'cargando' | 'error' | 'listo'>('cargando');
@@ -194,7 +215,6 @@ export class OrganizacionesPage implements OnInit {
   protected readonly enviando = signal(false);
   protected readonly errores = signal<Record<string, string | null>>({});
   protected readonly errorCrear = signal<string | null>(null);
-  protected readonly creada = signal<string | null>(null);
   protected readonly valida = computed(
     () =>
       esquemaCrearOrganizacion.safeParse({
@@ -240,7 +260,17 @@ export class OrganizacionesPage implements OnInit {
 
   protected async submit(evento: Event): Promise<void> {
     evento.preventDefault();
-    if (!this.valida() || this.enviando()) {
+    if (this.enviando()) return;
+    if (!this.valida()) {
+      // Los textos salen del esquema de libs/dominio.
+      const issues = esquemaCrearOrganizacion.safeParse({
+        nombre: this.nombre(),
+        duenoNombre: this.duenoNombre(),
+        duenoEmail: this.duenoEmail(),
+      }).error?.issues;
+      this.errores.set(
+        Object.fromEntries((issues ?? []).map((i) => [String(i.path[0]), i.message])),
+      );
       return;
     }
     this.enviando.set(true);
@@ -252,8 +282,9 @@ export class OrganizacionesPage implements OnInit {
         duenoNombre: this.duenoNombre().trim(),
         duenoEmail: this.duenoEmail().trim(),
       });
-      this.creada.set(
+      this.avisos.ok(
         `Creamos ${this.nombre().trim()} y enviamos la invitación a ${this.duenoEmail().trim()}.`,
+        8_000,
       );
       this.creando.set(false);
       this.nombre.set('');

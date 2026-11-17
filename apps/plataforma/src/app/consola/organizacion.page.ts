@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { getMensajeError, valorDe } from '@pasitos/panel';
+import { AvisosService, getMensajeError, valorDe } from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
@@ -16,6 +16,7 @@ import {
   ChipComponent,
   EstadoComponent,
   TarjetaComponent,
+  FechaHoraDirective,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { usePermisosConsola } from './consola.layout';
@@ -32,6 +33,7 @@ type Accion = 'dueno' | 'prueba' | null;
     RouterLink,
     AvisoComponent,
     BotonDirective,
+    FechaHoraDirective,
     CampoComponent,
     ChipComponent,
     EstadoComponent,
@@ -159,18 +161,16 @@ type Accion = 'dueno' | 'prueba' | null;
               <input
                 [id]="p2.idControl"
                 [attr.aria-describedby]="p2.idDescripcion"
-                type="datetime-local"
-                [value]="pruebaInicio()"
-                (input)="pruebaInicio.set(valorDe($event))"
+                [pxFechaHora]="pruebaInicio()"
+                (fechaHora)="pruebaInicio.set($event)"
               />
             </px-campo>
             <px-campo etiqueta="Fin" #p3="pxCampo">
               <input
                 [id]="p3.idControl"
                 [attr.aria-describedby]="p3.idDescripcion"
-                type="datetime-local"
-                [value]="pruebaFin()"
-                (input)="pruebaFin.set(valorDe($event))"
+                [pxFechaHora]="pruebaFin()"
+                (fechaHora)="pruebaFin.set($event)"
               />
             </px-campo>
             <div class="flex gap-2">
@@ -203,6 +203,7 @@ type Accion = 'dueno' | 'prueba' | null;
 })
 export class OrganizacionPage implements OnInit {
   private readonly api = inject(PlataformaApi);
+  private readonly avisos = inject(AvisosService);
   protected readonly permisos = usePermisosConsola();
 
   readonly id = input.required<string>();
@@ -272,7 +273,7 @@ export class OrganizacionPage implements OnInit {
     this.mensaje.set(null);
     try {
       await paso();
-      this.mensaje.set({ variante: 'ok', texto: exito });
+      this.avisos.ok(exito);
       this.accion.set(null);
       await this.load();
     } catch (error) {

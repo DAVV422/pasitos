@@ -10,9 +10,13 @@ import { RouterLink } from '@angular/router';
 import { canDo } from '@pasitos/dominio';
 import { isPocosDisponibles } from '@pasitos/dominio/esquemas';
 import {
+  AvisosService,
+  EncabezadoPaginaComponent,
   getErrorCampo,
   getMensajeError,
   getUrlArchivo,
+  MenuAccionesComponent,
+  PanelLateralComponent,
   SubidaImagenComponent,
   valorDe,
 } from '@pasitos/panel';
@@ -22,7 +26,7 @@ import {
   CampoComponent,
   ChipComponent,
   EstadoComponent,
-  TarjetaComponent,
+  IconoComponent,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
@@ -60,15 +64,20 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
     ChipComponent,
     EstadoComponent,
     SubidaImagenComponent,
-    TarjetaComponent,
+    EncabezadoPaginaComponent,
+    IconoComponent,
+    MenuAccionesComponent,
+    PanelLateralComponent,
   ],
   template: `
-    <header class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-display text-3xl font-extrabold">Catálogo</h1>
-      @if (puedeEditar() && editando() === null) {
+    <pnl-encabezado-pagina
+      titulo="Catálogo"
+      descripcion="Los premios que la gente canjea con sus puntos en las mesas de canje."
+    >
+      @if (puedeEditar()) {
         <button type="button" pxBoton (click)="start(null)">Nuevo premio</button>
       }
-    </header>
+    </pnl-encabezado-pagina>
     @if (mensaje(); as aviso) {
       <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
     }
@@ -79,103 +88,98 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
       </px-aviso>
     }
 
-    @if (editando() !== null) {
-      <px-tarjeta>
-        <h2 class="mb-3 text-xl font-bold">
-          {{ editando() === 'nuevo' ? 'Nuevo premio' : 'Editar premio' }}
-        </h2>
-        <form class="flex flex-col gap-4" (submit)="save($event)" novalidate>
-          <px-campo etiqueta="Nombre" [error]="errores()['nombre'] ?? null" #f1="pxCampo">
+    <pnl-panel-lateral
+      [titulo]="editando() === 'nuevo' ? 'Nuevo premio' : 'Editar premio'"
+      [abierto]="editando() !== null"
+      [guardando]="guardando()"
+      (guardar)="save($event)"
+      (cerrado)="editando.set(null)"
+    >
+      @if (editando() !== null) {
+        <px-campo etiqueta="Nombre" [error]="errores()['nombre'] ?? null" #f1="pxCampo">
+          <input
+            [id]="f1.idControl"
+            [attr.aria-describedby]="f1.idDescripcion"
+            maxlength="80"
+            [value]="form().nombre"
+            (input)="set('nombre', valorDe($event))"
+          />
+        </px-campo>
+        <px-campo
+          etiqueta="Descripción"
+          [opcional]="true"
+          [error]="errores()['descripcion'] ?? null"
+          #f2="pxCampo"
+        >
+          <textarea
+            [id]="f2.idControl"
+            [attr.aria-describedby]="f2.idDescripcion"
+            rows="2"
+            maxlength="300"
+            [value]="form().descripcion"
+            (input)="set('descripcion', valorDe($event))"
+          ></textarea>
+        </px-campo>
+        <pnl-subida-imagen
+          [eventoId]="eventoId()"
+          proposito="imagen_premio"
+          etiqueta="Imagen"
+          [valor]="form().imagenArchivoId"
+          (valorChange)="setImagen($event)"
+        />
+        <div class="grid gap-4 @sm:grid-cols-2">
+          <px-campo
+            [etiqueta]="'Precio en ' + nombrePuntos()"
+            ayuda="Un cambio vale para los canjes siguientes."
+            [error]="errores()['puntos'] ?? null"
+            #f3="pxCampo"
+          >
             <input
-              [id]="f1.idControl"
-              [attr.aria-describedby]="f1.idDescripcion"
-              maxlength="80"
-              [value]="form().nombre"
-              (input)="set('nombre', valorDe($event))"
+              [id]="f3.idControl"
+              [attr.aria-describedby]="f3.idDescripcion"
+              type="number"
+              min="1"
+              max="100000"
+              [value]="form().puntos"
+              (input)="set('puntos', valorDe($event))"
             />
           </px-campo>
           <px-campo
-            etiqueta="Descripción"
-            [opcional]="true"
-            [error]="errores()['descripcion'] ?? null"
-            #f2="pxCampo"
+            etiqueta="Stock total"
+            [ayuda]="ayudaStock()"
+            [error]="errores()['stockTotal'] ?? null"
+            #f4="pxCampo"
           >
-            <textarea
-              [id]="f2.idControl"
-              [attr.aria-describedby]="f2.idDescripcion"
-              rows="2"
-              maxlength="300"
-              [value]="form().descripcion"
-              (input)="set('descripcion', valorDe($event))"
-            ></textarea>
+            <input
+              [id]="f4.idControl"
+              [attr.aria-describedby]="f4.idDescripcion"
+              type="number"
+              min="0"
+              max="100000"
+              [value]="form().stockTotal"
+              (input)="set('stockTotal', valorDe($event))"
+            />
           </px-campo>
-          <pnl-subida-imagen
-            [eventoId]="eventoId()"
-            proposito="imagen_premio"
-            etiqueta="Imagen"
-            [valor]="form().imagenArchivoId"
-            (valorChange)="setImagen($event)"
-          />
-          <div class="grid gap-4 md:grid-cols-3">
-            <px-campo
-              [etiqueta]="'Precio en ' + nombrePuntos()"
-              ayuda="Un cambio vale para los canjes siguientes."
-              [error]="errores()['puntos'] ?? null"
-              #f3="pxCampo"
-            >
-              <input
-                [id]="f3.idControl"
-                [attr.aria-describedby]="f3.idDescripcion"
-                type="number"
-                min="1"
-                max="100000"
-                [value]="form().puntos"
-                (input)="set('puntos', valorDe($event))"
-              />
-            </px-campo>
-            <px-campo
-              etiqueta="Stock total"
-              [ayuda]="ayudaStock()"
-              [error]="errores()['stockTotal'] ?? null"
-              #f4="pxCampo"
-            >
-              <input
-                [id]="f4.idControl"
-                [attr.aria-describedby]="f4.idDescripcion"
-                type="number"
-                min="0"
-                max="100000"
-                [value]="form().stockTotal"
-                (input)="set('stockTotal', valorDe($event))"
-              />
-            </px-campo>
-            <px-campo
-              etiqueta="Máximo por persona"
-              [opcional]="true"
-              ayuda="Vacío: sin máximo."
-              [error]="errores()['maxPorPersona'] ?? null"
-              #f5="pxCampo"
-            >
-              <input
-                [id]="f5.idControl"
-                [attr.aria-describedby]="f5.idDescripcion"
-                type="number"
-                min="1"
-                max="100"
-                [value]="form().maxPorPersona"
-                (input)="set('maxPorPersona', valorDe($event))"
-              />
-            </px-campo>
-          </div>
-          <div class="flex gap-3">
-            <button type="submit" pxBoton [cargando]="guardando()">Guardar</button>
-            <button type="button" pxBoton="secundario" (click)="editando.set(null)">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </px-tarjeta>
-    }
+          <px-campo
+            etiqueta="Máximo por persona"
+            [opcional]="true"
+            ayuda="Vacío: sin máximo."
+            [error]="errores()['maxPorPersona'] ?? null"
+            #f5="pxCampo"
+          >
+            <input
+              [id]="f5.idControl"
+              [attr.aria-describedby]="f5.idDescripcion"
+              type="number"
+              min="1"
+              max="100"
+              [value]="form().maxPorPersona"
+              (input)="set('maxPorPersona', valorDe($event))"
+            />
+          </px-campo>
+        </div>
+      }
+    </pnl-panel-lateral>
 
     @switch (estado()) {
       @case ('cargando') {
@@ -185,20 +189,26 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
         <px-estado tipo="error" titulo="No pudimos cargar el catálogo" [traceId]="traceId()" />
       }
       @default {
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
           @for (premio of premios(); track premio.id) {
-            <px-tarjeta>
-              @if (premio.imagenArchivoId) {
-                <img
-                  class="mb-3 aspect-square w-full rounded-lg object-cover"
-                  [src]="urlImagen(premio.imagenArchivoId)"
-                  alt=""
-                  loading="lazy"
-                />
-              }
-              <div class="flex flex-wrap items-start justify-between gap-2">
-                <b>{{ premio.nombre }}</b>
-                <span class="flex flex-wrap gap-2">
+            <article
+              class="border-line bg-surface flex flex-col overflow-hidden rounded-xl border"
+              [class.opacity-70]="premio.estado === 'oculto'"
+            >
+              <div class="bg-surface2 relative aspect-[4/3]">
+                @if (premio.imagenArchivoId) {
+                  <img
+                    class="h-full w-full object-cover"
+                    [src]="urlImagen(premio.imagenArchivoId)"
+                    alt=""
+                    loading="lazy"
+                  />
+                } @else {
+                  <span class="text-muted flex h-full items-center justify-center">
+                    <px-icono nombre="gift" [tamano]="40" />
+                  </span>
+                }
+                <span class="absolute top-2 left-2 flex flex-wrap gap-2">
                   @if (premio.estado === 'oculto') {
                     <px-chip variante="atenuado">Oculto</px-chip>
                   } @else if (premio.disponible === 0) {
@@ -208,44 +218,42 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
                   }
                 </span>
               </div>
-              <p class="mt-1">{{ premio.puntos }} {{ nombrePuntos() }}</p>
-              <p class="text-muted text-sm">
-                Disponible: {{ premio.disponible }} de {{ premio.stockTotal }}
-                @if (premio.maxPorPersona) {
-                  · máximo {{ premio.maxPorPersona }} por persona
-                }
-              </p>
-              @if (premio.stockReservado + premio.stockEntregado > 0) {
-                <p class="text-muted text-sm">
-                  Reservados: {{ premio.stockReservado }} · Entregados: {{ premio.stockEntregado }}
-                </p>
-              }
-              @if (puedeEditar()) {
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <button type="button" pxBoton="secundario" [chico]="true" (click)="start(premio)">
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    pxBoton="secundario"
-                    [chico]="true"
-                    (click)="toggleVisible(premio)"
-                  >
-                    {{ premio.estado === 'activo' ? 'Ocultar' : 'Mostrar' }}
-                  </button>
-                  <button
-                    type="button"
-                    pxBoton="peligro-contorno"
-                    [chico]="true"
-                    (click)="remove(premio)"
-                  >
-                    Borrar
-                  </button>
+              <div class="flex flex-1 flex-col gap-1 p-4">
+                <div class="flex items-start justify-between gap-2">
+                  <h2 class="min-w-0 font-bold break-words">{{ premio.nombre }}</h2>
+                  @if (puedeEditar()) {
+                    <pnl-menu-acciones
+                      class="-mt-1 -mr-2"
+                      [etiqueta]="'Acciones de ' + premio.nombre"
+                    >
+                      <button type="button" (click)="start(premio)">Editar</button>
+                      <button type="button" (click)="toggleVisible(premio)">
+                        {{ premio.estado === 'activo' ? 'Ocultar' : 'Mostrar' }}
+                      </button>
+                      <hr />
+                      <button type="button" class="pnl-acciones__peligro" (click)="remove(premio)">
+                        Borrar
+                      </button>
+                    </pnl-menu-acciones>
+                  }
                 </div>
-              }
-            </px-tarjeta>
+                <p class="text-points font-bold">{{ premio.puntos }} {{ nombrePuntos() }}</p>
+                <p class="text-muted text-sm">
+                  Disponible: {{ premio.disponible }} de {{ premio.stockTotal }}
+                  @if (premio.maxPorPersona) {
+                    · máximo {{ premio.maxPorPersona }} por persona
+                  }
+                </p>
+                @if (premio.stockReservado + premio.stockEntregado > 0) {
+                  <p class="text-muted text-sm">
+                    Reservados: {{ premio.stockReservado }} · Entregados:
+                    {{ premio.stockEntregado }}
+                  </p>
+                }
+              </div>
+            </article>
           } @empty {
-            <px-estado tipo="vacio" titulo="Todavía no hay premios"
+            <px-estado class="col-span-full" tipo="vacio" titulo="Todavía no hay premios"
               >Carga los productos que se canjean con {{ nombrePuntos() }} en la mesa.</px-estado
             >
           }
@@ -256,6 +264,7 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
 })
 export class CatalogoPage implements OnInit {
   private readonly api = inject(EventosApi);
+  private readonly avisos = inject(AvisosService);
   private readonly actual = inject(EventoActualService);
 
   protected readonly eventoId = computed(() => this.actual.evento()?.id ?? '');
@@ -349,8 +358,7 @@ export class CatalogoPage implements OnInit {
         await this.api.updatePremio(editando.id, datos);
       }
       this.editando.set(null);
-      this.mensaje.set({ variante: 'ok', texto: 'Guardado.' });
-      setTimeout(() => this.mensaje.set(null), 3_000);
+      this.avisos.ok('Guardado.');
       await this.load();
     } catch (error) {
       this.errores.set(Object.fromEntries(CAMPOS.map((c) => [c, getErrorCampo(error, c)])));

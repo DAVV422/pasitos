@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,13 +11,13 @@ import {
 } from '@angular/core';
 import { canDo } from '@pasitos/dominio';
 import { NOMBRES_ESTADO_EVENTO } from '@pasitos/dominio/esquemas';
-import { getMensajeError } from '@pasitos/panel';
+import { EncabezadoPaginaComponent, getMensajeError } from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
   ChipComponent,
   EstadoComponent,
-  FilaDatoComponent,
+  IconoComponent,
   TarjetaComponent,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
@@ -48,35 +49,27 @@ const BOTON_POR_ESTADO: Readonly<Record<string, { transicion: TransicionPanel; t
     BotonDirective,
     ChipComponent,
     EstadoComponent,
-    FilaDatoComponent,
+    IconoComponent,
     TarjetaComponent,
+    EncabezadoPaginaComponent,
+    RouterLink,
   ],
   template: `
     @if (actual.evento(); as evento) {
-      <header class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 class="font-display text-3xl font-extrabold">{{ evento.nombre }}</h1>
-          <p class="text-muted">
+      <pnl-encabezado-pagina [titulo]="evento.nombre">
+        <p pnlDetalle class="pnl-pagina__descripcion flex flex-wrap items-center gap-2">
+          <span>
             {{ evento.inicioAt | date: 'dd/MM/yyyy HH:mm' }} –
             {{ evento.finAt | date: 'dd/MM/yyyy HH:mm' }}
-          </p>
-        </div>
-        <span class="flex gap-2">
-          @if (evento.tipo !== 'real') {
-            <px-chip variante="puntos">{{ evento.tipo === 'demo' ? 'Demo' : 'Prueba' }}</px-chip>
-          }
+          </span>
           <px-chip [variante]="evento.estado === 'en_curso' ? 'ok' : 'atenuado'">{{
             nombreEstado(evento.estado)
           }}</px-chip>
-        </span>
-      </header>
-
-      @if (mensaje(); as aviso) {
-        <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
-      }
-
-      @if (boton(); as b) {
-        <div>
+          @if (evento.tipo !== 'real') {
+            <px-chip variante="puntos">{{ evento.tipo === 'demo' ? 'Demo' : 'Prueba' }}</px-chip>
+          }
+        </p>
+        @if (boton(); as b) {
           <button
             type="button"
             [pxBoton]="b.transicion === 'pausar' ? 'secundario' : 'primario'"
@@ -86,23 +79,63 @@ const BOTON_POR_ESTADO: Readonly<Record<string, { transicion: TransicionPanel; t
           >
             {{ b.texto }}
           </button>
-        </div>
+        }
+      </pnl-encabezado-pagina>
+
+      @if (mensaje(); as aviso) {
+        <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
       }
 
       @if (evento.estado === 'borrador') {
         <px-tarjeta>
-          <h2 class="mb-2 text-xl font-bold">Para publicar</h2>
           @if (lista(); as l) {
-            <ul class="flex flex-col gap-2">
-              @for (item of l.items; track $index) {
-                <li class="flex items-start gap-2">
-                  <span
-                    [class.text-success]="item.ok"
-                    [class.text-danger]="!item.ok"
-                    aria-hidden="true"
-                    >{{ item.ok ? '✓' : '•' }}</span
-                  >
-                  <span>{{ item.ok ? textoOk(item.clave) : item.texto }}</span>
+            <div class="mb-3 flex flex-col gap-2">
+              <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 class="text-xl font-bold">Para publicar</h2>
+                <span class="text-muted text-sm" aria-live="polite">
+                  {{ listos() }} de {{ l.items.length }} listos
+                </span>
+              </div>
+              <div
+                class="pnl-progreso"
+                role="progressbar"
+                aria-label="Para publicar"
+                [attr.aria-valuenow]="listos()"
+                aria-valuemin="0"
+                [attr.aria-valuemax]="l.items.length"
+              >
+                <div
+                  class="pnl-progreso__barra"
+                  [style.width.%]="l.items.length ? (listos() * 100) / l.items.length : 0"
+                ></div>
+              </div>
+            </div>
+            <ul class="pnl-chequeo">
+              @for (item of l.items; track item.clave) {
+                <li class="pnl-chequeo__paso" [class.pnl-chequeo__paso--listo]="item.ok">
+                  <span class="pnl-chequeo__marca">
+                    @if (item.ok) {
+                      <px-icono nombre="check" [tamano]="16" />
+                    }
+                  </span>
+                  <span class="pnl-chequeo__texto">
+                    <span class="pnl-chequeo__titulo">
+                      <span class="px-sr-only">{{ item.ok ? 'Listo: ' : 'Falta: ' }}</span>
+                      {{ textoOk(item.clave) }}
+                    </span>
+                    @if (!item.ok) {
+                      <span class="pnl-chequeo__detalle">{{ item.texto }}</span>
+                    }
+                  </span>
+                  @if (!item.ok) {
+                    <a
+                      pxBoton="secundario"
+                      [chico]="true"
+                      [routerLink]="['/eventos', evento.id, item.enlace]"
+                    >
+                      {{ textoEnlace(item.enlace) }}
+                    </a>
+                  }
                 </li>
               }
             </ul>
@@ -114,6 +147,38 @@ const BOTON_POR_ESTADO: Readonly<Record<string, { transicion: TransicionPanel; t
           }
         </px-tarjeta>
       }
+
+      <section class="flex flex-col gap-3" aria-labelledby="resumen-numeros">
+        <h2 id="resumen-numeros" class="text-xl font-bold">En números</h2>
+        <div class="pnl-numeros">
+          <div class="pnl-numero">
+            <span class="pnl-numero__valor">{{ evento.contadores.retos }}</span>
+            <span class="pnl-numero__texto">Retos activos</span>
+          </div>
+          <div class="pnl-numero">
+            <span class="pnl-numero__valor"
+              >{{ evento.contadores.pantallasConectadas }}/{{ evento.contadores.pantallas }}</span
+            >
+            <span class="pnl-numero__texto">Pantallas conectadas</span>
+          </div>
+          <div class="pnl-numero">
+            <span class="pnl-numero__valor">{{ evento.contadores.mesas }}</span>
+            <span class="pnl-numero__texto">Mesas de canje</span>
+          </div>
+          <div class="pnl-numero">
+            <span class="pnl-numero__valor">{{ evento.contadores.invitados }}</span>
+            <span class="pnl-numero__texto">Invitados</span>
+          </div>
+        </div>
+        @if (evento.contadores.pantallas > evento.contadores.pantallasConectadas) {
+          <px-aviso variante="advertencia">
+            Hay pantallas sin conectar: conéctalas antes del evento para que sus retos funcionen.
+            <a class="underline" [routerLink]="['/eventos', evento.id, 'pantallas']">
+              Ir a Pantallas
+            </a>
+          </px-aviso>
+        }
+      </section>
 
       <px-tarjeta>
         <h2 class="mb-2 text-xl font-bold">Stellar</h2>
@@ -130,24 +195,6 @@ const BOTON_POR_ESTADO: Readonly<Record<string, { transicion: TransicionPanel; t
           <p class="text-muted">Al publicar, el evento y sus retos se registran en Stellar.</p>
         } @else {
           <p>Registrando el evento en Stellar…</p>
-        }
-      </px-tarjeta>
-
-      <px-tarjeta>
-        <h2 class="mb-2 text-xl font-bold">En números</h2>
-        <px-fila-dato etiqueta="Retos activos">{{ evento.contadores.retos }}</px-fila-dato>
-        <px-fila-dato etiqueta="Pantallas (conectadas)"
-          >{{ evento.contadores.pantallas }} ({{
-            evento.contadores.pantallasConectadas
-          }})</px-fila-dato
-        >
-        <px-fila-dato etiqueta="Mesas">{{ evento.contadores.mesas }}</px-fila-dato>
-        <px-fila-dato etiqueta="Invitados">{{ evento.contadores.invitados }}</px-fila-dato>
-        @if (evento.contadores.pantallas > evento.contadores.pantallasConectadas) {
-          <px-aviso class="mt-2" variante="advertencia"
-            >Hay pantallas sin conectar: conéctalas antes del evento para que sus retos
-            funcionen.</px-aviso
-          >
         }
       </px-tarjeta>
     }
@@ -170,6 +217,9 @@ export class ResumenPage implements OnInit, OnDestroy {
     const accion = boton?.transicion === 'publicar' ? 'evento.publish' : 'evento.estado';
     return boton && canDo(evento.miRol, accion) ? boton : null;
   });
+  protected readonly listos = computed(
+    () => this.lista()?.items.filter((item) => item.ok).length ?? 0,
+  );
   private sondeo: ReturnType<typeof setInterval> | undefined;
 
   ngOnInit(): void {
@@ -200,6 +250,17 @@ export class ResumenPage implements OnInit, OnDestroy {
         catalogo_con_mesa: 'Catálogo con mesa',
         retos_en_horario: 'Retos en horario',
       }[clave] ?? clave
+    );
+  }
+
+  protected textoEnlace(enlace: string): string {
+    return (
+      {
+        configuracion: 'Ir a Configuración',
+        retos: 'Ir a Retos',
+        pantallas: 'Ir a Pantallas',
+        mesas: 'Ir a Mesas',
+      }[enlace] ?? 'Resolver'
     );
   }
 

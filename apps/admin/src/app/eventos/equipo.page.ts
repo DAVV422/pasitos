@@ -8,7 +8,15 @@ import {
 } from '@angular/core';
 import { canManageRol, NOMBRES_ROL, ROLES_INVITABLES, type RolEvento } from '@pasitos/dominio';
 import { esquemaEmail } from '@pasitos/dominio/esquemas';
-import { getErrorCampo, getMensajeError, valorDe } from '@pasitos/panel';
+import {
+  AvisosService,
+  EncabezadoPaginaComponent,
+  getErrorCampo,
+  getMensajeError,
+  MenuAccionesComponent,
+  PanelLateralComponent,
+  valorDe,
+} from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
@@ -50,110 +58,104 @@ const ESTADOS: Readonly<Record<MiembroEquipo['estado'], string>> = {
     ChipComponent,
     EstadoComponent,
     TarjetaComponent,
+    EncabezadoPaginaComponent,
+    MenuAccionesComponent,
+    PanelLateralComponent,
   ],
   template: `
-    <header class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-display text-3xl font-extrabold">Equipo</h1>
-      @if (!invitando()) {
-        <button type="button" pxBoton (click)="invitando.set(true)">Invitar</button>
-      }
-    </header>
+    <pnl-encabezado-pagina
+      titulo="Equipo"
+      descripcion="Quién te ayuda con el evento y qué puede hacer cada uno."
+    >
+      <button type="button" pxBoton (click)="invitando.set(true)">Invitar</button>
+    </pnl-encabezado-pagina>
     @if (mensaje(); as aviso) {
       <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
     }
 
-    @if (invitando()) {
-      <px-tarjeta>
-        <h2 class="mb-3 text-xl font-bold">Invitar al equipo</h2>
-        <form class="flex flex-col gap-4" (submit)="submit($event)" novalidate>
-          <px-campo etiqueta="Correo" [error]="errorEmail()" #ce="pxCampo">
-            <input
-              [id]="ce.idControl"
-              [attr.aria-describedby]="ce.idDescripcion"
-              type="email"
-              inputmode="email"
-              [value]="email()"
-              (input)="email.set(valorDe($event))"
-            />
-          </px-campo>
-          <px-campo etiqueta="Nombre" [opcional]="true" #cn="pxCampo">
-            <input
-              [id]="cn.idControl"
-              [attr.aria-describedby]="cn.idDescripcion"
-              maxlength="80"
-              [value]="nombre()"
-              (input)="nombre.set(valorDe($event))"
-            />
-          </px-campo>
-          <fieldset class="flex flex-col gap-2">
-            <legend class="mb-1 font-bold">Rol</legend>
+    <pnl-panel-lateral
+      titulo="Invitar al equipo"
+      [abierto]="invitando()"
+      [guardando]="enviando()"
+      textoGuardar="Enviar la invitación"
+      (guardar)="submit($event)"
+      (cerrado)="invitando.set(false)"
+    >
+      @if (invitando()) {
+        <px-campo etiqueta="Correo" [error]="errorEmail()" #ce="pxCampo">
+          <input
+            [id]="ce.idControl"
+            [attr.aria-describedby]="ce.idDescripcion"
+            type="email"
+            inputmode="email"
+            [value]="email()"
+            (input)="email.set(valorDe($event))"
+          />
+        </px-campo>
+        <px-campo etiqueta="Nombre" [opcional]="true" #cn="pxCampo">
+          <input
+            [id]="cn.idControl"
+            [attr.aria-describedby]="cn.idDescripcion"
+            maxlength="80"
+            [value]="nombre()"
+            (input)="nombre.set(valorDe($event))"
+          />
+        </px-campo>
+        <px-campo etiqueta="Rol" [ayuda]="queHace(rol())" #cr="pxCampo">
+          <select
+            [id]="cr.idControl"
+            [attr.aria-describedby]="cr.idDescripcion"
+            (change)="setRol(valorDe($event))"
+          >
             @for (opcion of rolesDisponibles(); track opcion) {
-              <label class="px-opcion">
+              <option [value]="opcion" [selected]="rol() === opcion">
+                {{ nombreRol(opcion) }}
+              </option>
+            }
+          </select>
+        </px-campo>
+        @if (rol() === 'registrador') {
+          <px-campo
+            etiqueta="Tope de registros en la puerta"
+            [opcional]="true"
+            ayuda="Sin tope propio, usa el del evento."
+            #ct="pxCampo"
+          >
+            <input
+              [id]="ct.idControl"
+              [attr.aria-describedby]="ct.idDescripcion"
+              type="number"
+              min="1"
+              max="100000"
+              [value]="tope()"
+              (input)="tope.set(valorDe($event))"
+            />
+          </px-campo>
+        }
+        @if (rol() === 'operador_stand' || rol() === 'operador_mesa') {
+          <fieldset class="flex flex-col gap-2">
+            <legend class="mb-1 font-bold">
+              {{ rol() === 'operador_stand' ? 'Sus pantallas' : 'Sus mesas' }}
+            </legend>
+            @for (t of opcionesTerminal(rol()); track t.id) {
+              <label class="flex items-center gap-2">
                 <input
-                  type="radio"
-                  name="rol"
-                  [value]="opcion"
-                  [checked]="rol() === opcion"
-                  (change)="rol.set(opcion)"
+                  type="checkbox"
+                  [checked]="asignadas().includes(t.id)"
+                  (change)="toggleAsignada(t.id)"
                 />
-                <span>
-                  <span class="px-opcion__titulo">{{ nombreRol(opcion) }}</span>
-                  <span class="px-opcion__detalle">{{ queHace(opcion) }}</span>
-                </span>
+                {{ t.nombre }}
               </label>
+            } @empty {
+              <p class="text-muted text-sm">
+                Todavía no hay {{ rol() === 'operador_stand' ? 'pantallas' : 'mesas' }}: las asignas
+                después, desde esta lista.
+              </p>
             }
           </fieldset>
-          @if (rol() === 'registrador') {
-            <px-campo
-              etiqueta="Tope de registros en la puerta"
-              [opcional]="true"
-              ayuda="Sin tope propio, usa el del evento."
-              #ct="pxCampo"
-            >
-              <input
-                [id]="ct.idControl"
-                [attr.aria-describedby]="ct.idDescripcion"
-                type="number"
-                min="1"
-                max="100000"
-                [value]="tope()"
-                (input)="tope.set(valorDe($event))"
-              />
-            </px-campo>
-          }
-          @if (rol() === 'operador_stand' || rol() === 'operador_mesa') {
-            <fieldset class="flex flex-col gap-2">
-              <legend class="mb-1 font-bold">
-                {{ rol() === 'operador_stand' ? 'Sus pantallas' : 'Sus mesas' }}
-              </legend>
-              @for (t of opcionesTerminal(rol()); track t.id) {
-                <label class="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    [checked]="asignadas().includes(t.id)"
-                    (change)="toggleAsignada(t.id)"
-                  />
-                  {{ t.nombre }}
-                </label>
-              } @empty {
-                <p class="text-muted text-sm">
-                  Todavía no hay {{ rol() === 'operador_stand' ? 'pantallas' : 'mesas' }}: las
-                  asignas después, desde esta lista.
-                </p>
-              }
-            </fieldset>
-          }
-          <div class="flex gap-3">
-            <button type="submit" pxBoton [cargando]="enviando()" [deshabilitado]="!valido()">
-              {{ enviando() ? 'Invitando…' : 'Enviar la invitación' }}
-            </button>
-            <button type="button" pxBoton="secundario" (click)="invitando.set(false)">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </px-tarjeta>
-    }
+        }
+      }
+    </pnl-panel-lateral>
 
     @switch (estado()) {
       @case ('cargando') {
@@ -178,32 +180,39 @@ const ESTADOS: Readonly<Record<MiembroEquipo['estado'], string>> = {
                   }}
                 </span>
               </span>
-              <px-chip
-                [variante]="
-                  miembro.estado === 'activo'
-                    ? 'ok'
-                    : miembro.estado === 'vencido'
-                      ? 'peligro'
-                      : 'atenuado'
-                "
-              >
-                {{ nombreEstado(miembro.estado) }}
-              </px-chip>
+              <span class="flex items-center gap-2">
+                <px-chip
+                  [variante]="
+                    miembro.estado === 'activo'
+                      ? 'ok'
+                      : miembro.estado === 'vencido'
+                        ? 'peligro'
+                        : 'atenuado'
+                  "
+                >
+                  {{ nombreEstado(miembro.estado) }}
+                </px-chip>
+                @if (canManage(miembro)) {
+                  <pnl-menu-acciones
+                    [etiqueta]="'Acciones de ' + (miembro.nombre ?? miembro.email)"
+                  >
+                    @if (miembro.estado !== 'activo') {
+                      <button type="button" (click)="resend(miembro)">
+                        Reenviar la invitación
+                      </button>
+                      <hr />
+                    }
+                    <button type="button" class="pnl-acciones__peligro" (click)="remove(miembro)">
+                      Quitar del equipo
+                    </button>
+                  </pnl-menu-acciones>
+                }
+              </span>
             </div>
             @if (canManage(miembro)) {
               <div class="mt-3 flex flex-wrap gap-2">
-                @if (miembro.estado !== 'activo') {
-                  <button
-                    type="button"
-                    pxBoton="secundario"
-                    [chico]="true"
-                    (click)="resend(miembro)"
-                  >
-                    Reenviar
-                  </button>
-                }
                 <label class="flex items-center gap-2 text-sm">
-                  Cambiar rol
+                  Rol
                   <select
                     [attr.aria-label]="'Rol de ' + (miembro.nombre ?? miembro.email)"
                     (change)="updateRol(miembro, valorDe($event))"
@@ -215,14 +224,6 @@ const ESTADOS: Readonly<Record<MiembroEquipo['estado'], string>> = {
                     }
                   </select>
                 </label>
-                <button
-                  type="button"
-                  pxBoton="peligro-contorno"
-                  [chico]="true"
-                  (click)="remove(miembro)"
-                >
-                  Quitar
-                </button>
               </div>
               @if (miembro.rol === 'operador_stand' || miembro.rol === 'operador_mesa') {
                 <fieldset class="mt-3 flex flex-wrap gap-3">
@@ -259,6 +260,7 @@ const ESTADOS: Readonly<Record<MiembroEquipo['estado'], string>> = {
 })
 export class EquipoPage implements OnInit {
   private readonly api = inject(EventosApi);
+  private readonly avisos = inject(AvisosService);
   private readonly actual = inject(EventoActualService);
 
   protected readonly estado = signal<'cargando' | 'error' | 'listo'>('cargando');
@@ -288,6 +290,11 @@ export class EquipoPage implements OnInit {
 
   ngOnInit(): void {
     void this.load();
+  }
+
+  protected setRol(rol: string): void {
+    this.rol.set(rol as RolInvitable);
+    this.asignadas.set([]);
   }
 
   protected opcionesTerminal(rol: RolEvento): readonly TerminalPanel[] {
@@ -340,7 +347,11 @@ export class EquipoPage implements OnInit {
   protected async submit(evento: Event): Promise<void> {
     evento.preventDefault();
     const actual = this.actual.evento();
-    if (!actual || !this.valido() || this.enviando()) {
+    if (!actual || this.enviando()) return;
+    if (!this.valido()) {
+      // El texto sale del esquema de libs/dominio.
+      const issue = esquemaEmail.safeParse(this.email()).error?.issues[0];
+      this.errorEmail.set(issue?.message ?? null);
       return;
     }
     this.enviando.set(true);
@@ -360,10 +371,7 @@ export class EquipoPage implements OnInit {
             : {}),
       });
       this.asignadas.set([]);
-      this.mensaje.set({
-        variante: 'ok',
-        texto: `Enviamos la invitación a ${this.email().trim()}. Vale 7 días.`,
-      });
+      this.avisos.ok(`Enviamos la invitación a ${this.email().trim()}. Vale 7 días.`);
       this.invitando.set(false);
       this.email.set('');
       this.nombre.set('');
@@ -408,7 +416,7 @@ export class EquipoPage implements OnInit {
     this.mensaje.set(null);
     try {
       await paso();
-      this.mensaje.set({ variante: 'ok', texto: exito });
+      this.avisos.ok(exito);
     } catch (error) {
       this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
     }

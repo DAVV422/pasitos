@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { esquemaEditarEvento } from '@pasitos/dominio/esquemas';
-import { getErrorCampo, getMensajeError, valorDe } from '@pasitos/panel';
+import { AvisosService, getErrorCampo, getMensajeError, valorDe } from '@pasitos/panel';
 import { AvisoComponent, BotonDirective, CampoComponent, TarjetaComponent } from '@pasitos/ui';
 import { EventoActualService } from './evento.layout';
 import { EventosApi, type MiembroEquipo, type ReglasEvento } from './eventos-api.service';
@@ -39,14 +39,19 @@ const toNumero = (t: string) => (t.trim() === '' ? null : Number(t));
     <px-tarjeta>
       <form class="flex flex-col gap-4" (submit)="save($event)" novalidate>
         <h2 class="text-xl font-bold">Registro en la puerta</h2>
-        <label class="flex items-center gap-2">
+        <label class="pnl-interruptor">
+          <span class="pnl-interruptor__texto">
+            Registro de personas nuevas en la puerta
+            <span class="pnl-interruptor__ayuda">
+              Quien no está en la lista se puede registrar al llegar.
+            </span>
+          </span>
           <input
             type="checkbox"
             role="switch"
             [checked]="form().registroPuertaActivo"
             (change)="set('registroPuertaActivo', !form().registroPuertaActivo)"
           />
-          Se puede registrar a personas nuevas en la puerta
         </label>
         <px-campo
           etiqueta="Tope de registros del evento"
@@ -89,13 +94,19 @@ const toNumero = (t: string) => (t.trim() === '' ? null : Number(t));
             (input)="set('puntosCheckIn', valorDe($event))"
           />
         </px-campo>
-        <label class="flex items-center gap-2">
+        <label class="pnl-interruptor">
+          <span class="pnl-interruptor__texto">
+            Los retos requieren check-in
+            <span class="pnl-interruptor__ayuda">
+              Solo gana puntos quien ya pasó por la puerta.
+            </span>
+          </span>
           <input
             type="checkbox"
+            role="switch"
             [checked]="form().retosRequierenCheckIn"
             (change)="set('retosRequierenCheckIn', !form().retosRequierenCheckIn)"
           />
-          Los retos requieren check-in (haber pasado por la puerta)
         </label>
         <div class="grid gap-4 md:grid-cols-2">
           <px-campo
@@ -132,7 +143,9 @@ const toNumero = (t: string) => (t.trim() === '' ? null : Number(t));
             />
           </px-campo>
         </div>
-        <button type="submit" pxBoton [cargando]="guardando()" class="self-start">Guardar</button>
+        <div class="pnl-pie-fijo">
+          <button type="submit" pxBoton [cargando]="guardando()">Guardar</button>
+        </div>
       </form>
     </px-tarjeta>
 
@@ -165,6 +178,7 @@ const toNumero = (t: string) => (t.trim() === '' ? null : Number(t));
 })
 export class ReglasPuertaComponent implements OnInit {
   private readonly api = inject(EventosApi);
+  private readonly avisos = inject(AvisosService);
   private readonly actual = inject(EventoActualService);
 
   protected readonly form = signal<Formulario>(this.toFormulario(null));
@@ -220,7 +234,7 @@ export class ReglasPuertaComponent implements OnInit {
       const actualizado = await this.api.updateEvento(e.id, cambios);
       this.actual.set(actualizado);
       this.form.set(this.toFormulario(actualizado.reglas));
-      this.mensaje.set({ variante: 'ok', texto: 'Guardado.' });
+      this.avisos.ok('Guardado.');
     } catch (error) {
       this.errores.set(Object.fromEntries(CAMPOS.map((c) => [c, getErrorCampo(error, c)])));
       if (CAMPOS.every((c) => !getErrorCampo(error, c))) {
@@ -244,10 +258,7 @@ export class ReglasPuertaComponent implements OnInit {
     this.mensaje.set(null);
     try {
       await this.api.updateMiembro(miembro.id, { topeRegistrosPuerta: tope });
-      this.mensaje.set({
-        variante: 'ok',
-        texto: `Guardamos el tope de ${miembro.nombre ?? miembro.email}.`,
-      });
+      this.avisos.ok(`Guardamos el tope de ${miembro.nombre ?? miembro.email}.`);
     } catch (error) {
       this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
     }

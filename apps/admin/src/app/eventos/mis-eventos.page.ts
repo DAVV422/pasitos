@@ -18,6 +18,7 @@ import {
   ChipComponent,
   EstadoComponent,
   TarjetaComponent,
+  FechaHoraDirective,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventosApi, type EventoResumen } from './eventos-api.service';
@@ -32,6 +33,7 @@ import { EventosApi, type EventoResumen } from './eventos-api.service';
     LayoutComponent,
     AvisoComponent,
     BotonDirective,
+    FechaHoraDirective,
     CampoComponent,
     ChipComponent,
     EstadoComponent,
@@ -80,9 +82,8 @@ import { EventosApi, type EventoResumen } from './eventos-api.service';
               <input
                 [id]="ci.idControl"
                 [attr.aria-describedby]="ci.idDescripcion"
-                type="datetime-local"
-                [value]="inicio()"
-                (input)="inicio.set(valorDe($event))"
+                [pxFechaHora]="inicio()"
+                (fechaHora)="inicio.set($event)"
               />
             </px-campo>
             <px-campo
@@ -94,9 +95,8 @@ import { EventosApi, type EventoResumen } from './eventos-api.service';
               <input
                 [id]="cf.idControl"
                 [attr.aria-describedby]="cf.idDescripcion"
-                type="datetime-local"
-                [value]="fin()"
-                (input)="fin.set(valorDe($event))"
+                [pxFechaHora]="fin()"
+                (fechaHora)="fin.set($event)"
               />
             </px-campo>
             <p class="text-muted text-sm">

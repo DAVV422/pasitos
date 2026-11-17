@@ -15,7 +15,18 @@ import {
   NOMBRES_ESTADO_ASISTENTE,
   NOMBRES_ESTADO_EMAIL,
 } from '@pasitos/dominio/esquemas';
-import { getErrorCampo, getMensajeError, valorDe } from '@pasitos/panel';
+import {
+  AvisosService,
+  DialogoComponent,
+  EncabezadoPaginaComponent,
+  FiltrosComponent,
+  getErrorCampo,
+  getMensajeError,
+  injectEsCelular,
+  MenuAccionesComponent,
+  PanelLateralComponent,
+  valorDe,
+} from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
@@ -23,7 +34,6 @@ import {
   ChipComponent,
   EstadoComponent,
   QrComponent,
-  TarjetaComponent,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
@@ -56,57 +66,39 @@ interface Candidato {
     ChipComponent,
     EstadoComponent,
     ImportacionComponent,
-    TarjetaComponent,
+    DialogoComponent,
+    EncabezadoPaginaComponent,
+    FiltrosComponent,
+    MenuAccionesComponent,
+    PanelLateralComponent,
   ],
   template: `
-    <header class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-display text-3xl font-extrabold">Invitados</h1>
-      <span class="flex flex-wrap gap-2">
-        <button type="button" pxBoton (click)="start(null)">Agregar invitado</button>
-        <button type="button" pxBoton="secundario" (click)="importando.set(!importando())">
-          Importar CSV
-        </button>
-        <button type="button" pxBoton="secundario" [cargando]="exportando()" (click)="export()">
-          Exportar
-        </button>
-      </span>
-    </header>
-    <div class="flex flex-wrap gap-2">
-      <button
-        type="button"
-        pxBoton
-        [cargando]="enviando()"
-        [deshabilitado]="(estimacion()?.pendientes ?? 0) === 0"
-        (click)="send()"
-      >
-        Enviar invitaciones ({{ estimacion()?.pendientes ?? 0 }} pendientes)
-      </button>
-      <button type="button" pxBoton="secundario" (click)="downloadEnlaces()">
-        Descargar enlaces
-      </button>
-      <a pxBoton="secundario" [routerLink]="['/eventos', eventoId(), 'invitados', 'imprimir']">
-        Imprimir tarjetas
-      </a>
-    </div>
-    @if (enlaceVisto(); as visto) {
-      <px-tarjeta>
-        <div class="flex flex-col items-center gap-3">
-          <p>
-            <b>{{ visto.codigo }} · {{ visto.nombre }}</b>
-          </p>
-          <px-qr [texto]="visto.enlace" [tamano]="220" descripcion="QR del enlace de invitación" />
-          <code class="bg-track rounded px-2 py-1 text-sm break-all">{{ visto.enlace }}</code>
-          <p class="text-muted text-sm">El enlace es personal. Verlo queda en la bitácora.</p>
-          <button type="button" pxBoton="secundario" (click)="enlaceVisto.set(null)">Cerrar</button>
-        </div>
-      </px-tarjeta>
-    }
-    @if (contadores(); as c) {
-      <p class="text-muted" aria-live="polite">
-        {{ c.total }} en la lista · {{ c.invitados }} invitados · {{ c.registrados }} registrados ·
-        {{ c.presentes }} presentes · {{ c.cancelados }} quitados
+    <pnl-encabezado-pagina titulo="Invitados">
+      <p pnlDetalle class="pnl-pagina__descripcion" aria-live="polite">
+        @if (contadores(); as c) {
+          {{ c.total }} en la lista · {{ c.presentes }} presentes.
+        }
+        Agrégalos, mándales su invitación y mira quién llegó.
       </p>
-    }
+      <button type="button" pxBoton (click)="start(null)">Agregar invitado</button>
+      <pnl-menu-acciones texto="Más">
+        <button
+          type="button"
+          [disabled]="enviando() || (estimacion()?.pendientes ?? 0) === 0"
+          (click)="send()"
+        >
+          Enviar invitaciones ({{ estimacion()?.pendientes ?? 0 }} pendientes)
+        </button>
+        <button type="button" (click)="importando.set(!importando())">Importar CSV</button>
+        <button type="button" [disabled]="exportando()" (click)="export()">
+          {{ exportando() ? 'Exportando…' : 'Exportar' }}
+        </button>
+        <hr />
+        <button type="button" (click)="downloadEnlaces()">Descargar enlaces</button>
+        <a [routerLink]="['/eventos', eventoId(), 'invitados', 'imprimir']">Imprimir tarjetas</a>
+      </pnl-menu-acciones>
+    </pnl-encabezado-pagina>
+
     @if (mensaje(); as aviso) {
       <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
     }
@@ -115,112 +107,117 @@ interface Candidato {
       <adm-importacion [eventoId]="eventoId()" (importados)="onImportados($event)" />
     }
 
-    @if (editando() !== null) {
-      <px-tarjeta>
-        <h2 class="mb-3 text-xl font-bold">
-          {{ editando() === 'nuevo' ? 'Agregar invitado' : 'Editar invitado' }}
-        </h2>
-        <form class="flex flex-col gap-4" (submit)="save($event, false)" novalidate>
-          <px-campo etiqueta="Nombre" [error]="errores()['nombre'] ?? null" #c1="pxCampo">
-            <input
-              [id]="c1.idControl"
-              [attr.aria-describedby]="c1.idDescripcion"
-              maxlength="120"
-              autocomplete="off"
-              [value]="nombre()"
-              (input)="nombre.set(valorDe($event))"
-            />
-          </px-campo>
-          <px-campo
-            etiqueta="Correo"
-            [opcional]="true"
-            ayuda="Para mandarle su invitación."
-            [error]="errores()['email'] ?? null"
-            #c2="pxCampo"
-          >
-            <input
-              [id]="c2.idControl"
-              [attr.aria-describedby]="c2.idDescripcion"
-              type="email"
-              autocomplete="off"
-              [value]="email()"
-              (input)="email.set(valorDe($event))"
-            />
-          </px-campo>
-          <px-campo
-            etiqueta="Código externo"
-            [opcional]="true"
-            ayuda="El de tu sistema de entradas, si tienes uno."
-            [error]="errores()['codigoExterno'] ?? null"
-            #c3="pxCampo"
-          >
-            <input
-              [id]="c3.idControl"
-              [attr.aria-describedby]="c3.idDescripcion"
-              maxlength="60"
-              autocomplete="off"
-              [value]="codigoExterno()"
-              (input)="codigoExterno.set(valorDe($event))"
-            />
-          </px-campo>
-          @if (candidatos().length > 0) {
-            <px-aviso variante="advertencia">
-              Hay alguien con un nombre muy parecido en la lista:
-              <ul class="mt-1">
-                @for (c of candidatos(); track c.codigo) {
-                  <li>{{ c.codigo }} · {{ c.nombre }}{{ c.email ? ' · ' + c.email : '' }}</li>
-                }
-              </ul>
-            </px-aviso>
-            <div class="flex gap-3">
-              <button type="button" pxBoton [cargando]="guardando()" (click)="save(null, true)">
-                Agregar igual
-              </button>
-              <button type="button" pxBoton="secundario" (click)="editando.set(null)">
-                Cancelar
-              </button>
-            </div>
-          } @else {
-            <div class="flex gap-3">
-              <button type="submit" pxBoton [cargando]="guardando()">Guardar</button>
-              <button type="button" pxBoton="secundario" (click)="editando.set(null)">
-                Cancelar
-              </button>
-            </div>
-          }
-        </form>
-      </px-tarjeta>
-    }
+    <pnl-dialogo
+      [titulo]="tituloEnlace()"
+      [abierto]="!!enlaceVisto()"
+      (cerrado)="enlaceVisto.set(null)"
+    >
+      @if (enlaceVisto(); as visto) {
+        <div class="flex flex-col items-center gap-3 text-center">
+          <px-qr [texto]="visto.enlace" [tamano]="240" descripcion="QR del enlace de invitación" />
+          <code class="bg-track rounded px-2 py-1 text-sm break-all">{{ visto.enlace }}</code>
+          <p class="text-muted text-sm">El enlace es personal. Verlo queda en la bitácora.</p>
+        </div>
+      }
+      <button pnlPie type="button" pxBoton="secundario" (click)="enlaceVisto.set(null)">
+        Listo
+      </button>
+    </pnl-dialogo>
 
-    <div class="flex flex-wrap items-end gap-3">
-      <label class="flex grow flex-col text-sm">
-        Buscar
-        <input
-          type="search"
-          placeholder="Nombre (3 letras o más), código o correo"
-          [value]="q()"
-          (input)="setBusqueda(valorDe($event))"
-        />
-      </label>
-      <label class="flex flex-col text-sm">
-        Estado
-        <select (change)="setFiltro('estado', valorDe($event))">
-          <option value="">Todos</option>
-          @for (e of estados; track e) {
-            <option [value]="e">{{ nombreEstado(e) }}</option>
-          }
-        </select>
-      </label>
-      <label class="flex flex-col text-sm">
-        Correo
-        <select (change)="setFiltro('emailEstado', valorDe($event))">
-          <option value="">Todos</option>
-          @for (e of estadosEmail; track e) {
-            <option [value]="e">{{ nombreEstadoEmail(e) }}</option>
-          }
-        </select>
-      </label>
+    <pnl-panel-lateral
+      [titulo]="editando() === 'nuevo' ? 'Agregar invitado' : 'Editar invitado'"
+      [abierto]="editando() !== null"
+      [guardando]="guardando()"
+      [textoGuardar]="candidatos().length > 0 ? 'Agregar igual' : 'Guardar'"
+      (guardar)="save(null, candidatos().length > 0)"
+      (cerrado)="editando.set(null)"
+    >
+      @if (editando() !== null) {
+        <px-campo etiqueta="Nombre" [error]="errores()['nombre'] ?? null" #c1="pxCampo">
+          <input
+            [id]="c1.idControl"
+            [attr.aria-describedby]="c1.idDescripcion"
+            maxlength="120"
+            autocomplete="off"
+            [value]="nombre()"
+            (input)="nombre.set(valorDe($event))"
+          />
+        </px-campo>
+        <px-campo
+          etiqueta="Correo"
+          [opcional]="true"
+          ayuda="Para mandarle su invitación."
+          [error]="errores()['email'] ?? null"
+          #c2="pxCampo"
+        >
+          <input
+            [id]="c2.idControl"
+            [attr.aria-describedby]="c2.idDescripcion"
+            type="email"
+            autocomplete="off"
+            [value]="email()"
+            (input)="email.set(valorDe($event))"
+          />
+        </px-campo>
+        <px-campo
+          etiqueta="Código externo"
+          [opcional]="true"
+          ayuda="El de tu sistema de entradas, si tienes uno."
+          [error]="errores()['codigoExterno'] ?? null"
+          #c3="pxCampo"
+        >
+          <input
+            [id]="c3.idControl"
+            [attr.aria-describedby]="c3.idDescripcion"
+            maxlength="60"
+            autocomplete="off"
+            [value]="codigoExterno()"
+            (input)="codigoExterno.set(valorDe($event))"
+          />
+        </px-campo>
+        @if (candidatos().length > 0) {
+          <px-aviso variante="advertencia">
+            Hay alguien con un nombre muy parecido en la lista:
+            <ul class="mt-1">
+              @for (c of candidatos(); track c.codigo) {
+                <li>{{ c.codigo }} · {{ c.nombre }}{{ c.email ? ' · ' + c.email : '' }}</li>
+              }
+            </ul>
+            Si es otra persona, toca <b>Agregar igual</b>.
+          </px-aviso>
+        }
+      }
+    </pnl-panel-lateral>
+
+    <div class="pnl-chips" role="group" aria-label="Filtrar por estado">
+      @for (f of filtrosEstado(); track f.clave) {
+        <button
+          type="button"
+          class="pnl-chip-filtro"
+          [attr.aria-pressed]="(filtroEstado() ?? '') === f.clave"
+          (click)="setFiltro('estado', f.clave)"
+        >
+          {{ f.texto }} <span class="pnl-chip-filtro__cuenta">{{ f.cuenta }}</span>
+        </button>
+      }
     </div>
+
+    <pnl-filtros [activos]="filtroEmail() ? 1 : 0">
+      <input
+        pnlBuscador
+        type="search"
+        aria-label="Buscar"
+        placeholder="Buscar por nombre (3 letras o más), código o correo"
+        [value]="q()"
+        (input)="setBusqueda(valorDe($event))"
+      />
+      <select aria-label="Estado del correo" (change)="setFiltro('emailEstado', valorDe($event))">
+        <option value="">Correo: todos</option>
+        @for (e of estadosEmail; track e) {
+          <option [value]="e">Correo: {{ nombreEstadoEmail(e) }}</option>
+        }
+      </select>
+    </pnl-filtros>
 
     @switch (estado()) {
       @case ('cargando') {
@@ -231,56 +228,65 @@ interface Candidato {
       }
       @default {
         @if (filas().length === 0) {
-          <px-estado tipo="vacio" titulo="Todavía no hay invitados">
-            Agrégalos uno por uno o importa tu lista en CSV.
-          </px-estado>
+          @if (contadores()?.total) {
+            <px-estado tipo="vacio" titulo="Nadie coincide con la búsqueda">
+              Prueba con otro nombre o quita los filtros.
+            </px-estado>
+          } @else {
+            <px-estado tipo="vacio" titulo="Todavía no hay invitados">
+              Agrégalos uno por uno o importa tu lista en CSV (en <b>Más</b>).
+            </px-estado>
+          }
         } @else {
+          <!-- Cada fila mide siempre lo mismo (la lista virtual lo necesita): 64 px en
+               escritorio y 104 px en el celular, donde la fila es una tarjeta de tres líneas. -->
           <cdk-virtual-scroll-viewport
-            itemSize="64"
-            class="border-line h-96 rounded-lg border"
+            [itemSize]="altoFila()"
+            class="border-line bg-surface rounded-xl border"
+            [style.height.px]="altoLista()"
             (scrolledIndexChange)="onScroll($event)"
           >
             <div
               *cdkVirtualFor="let a of filas(); trackBy: porId"
-              class="border-line flex h-16 items-center justify-between gap-2 border-b px-3"
+              class="adm-invitado border-line grid h-[104px] grid-cols-[minmax(0,1fr)_auto] content-center gap-x-3 gap-y-2 border-b px-4 md:h-16 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center"
             >
               <span class="min-w-0">
-                <span class="text-muted">{{ a.codigo }}</span> · <b>{{ a.nombre }}</b>
+                <span class="block truncate">
+                  <span class="text-muted">{{ a.codigo }}</span> · <b>{{ a.nombre }}</b>
+                </span>
                 <span class="text-muted block truncate text-sm">
                   {{ a.email ?? 'Sin correo' }}{{ a.codigoExterno ? ' · ' + a.codigoExterno : '' }}
                 </span>
               </span>
-              <span class="flex shrink-0 items-center gap-2">
+              <span
+                class="col-start-1 row-start-2 flex gap-2 overflow-hidden md:col-start-auto md:row-start-auto"
+              >
                 <px-chip [variante]="a.estado === 'cancelado' ? 'atenuado' : 'ok'">
                   {{ nombreEstado(a.estado) }}
                 </px-chip>
                 @if (a.estado !== 'cancelado') {
                   <px-chip [variante]="varianteInvitacion(a)">{{ textoInvitacion(a) }}</px-chip>
-                  @if (a.emailEstado === 'rebotado') {
-                    <button type="button" pxBoton="secundario" [chico]="true" (click)="start(a)">
-                      Corregir correo
+                }
+              </span>
+              <span class="col-start-2 row-start-1 md:col-start-auto md:row-start-auto">
+                @if (a.estado !== 'cancelado') {
+                  <pnl-menu-acciones [etiqueta]="'Acciones de ' + a.nombre">
+                    <button type="button" (click)="start(a)">Editar</button>
+                    @if (a.emailEstado === 'rebotado') {
+                      <button type="button" (click)="start(a)">Corregir correo</button>
+                    } @else if (a.email && a.invitacion?.estado !== 'usada') {
+                      <button type="button" (click)="resend(a)">Reenviar invitación</button>
+                    }
+                    @if (a.invitacion?.estado !== 'usada') {
+                      <button type="button" (click)="view(a)">Ver enlace</button>
+                    }
+                    <hr />
+                    <button type="button" class="pnl-acciones__peligro" (click)="cancel(a)">
+                      Quitar de la lista
                     </button>
-                  } @else if (a.email && a.invitacion?.estado !== 'usada') {
-                    <button type="button" pxBoton="secundario" [chico]="true" (click)="resend(a)">
-                      Reenviar
-                    </button>
-                  }
-                  @if (a.invitacion?.estado !== 'usada') {
-                    <button type="button" pxBoton="secundario" [chico]="true" (click)="view(a)">
-                      Ver enlace
-                    </button>
-                  }
-                  <button type="button" pxBoton="secundario" [chico]="true" (click)="start(a)">
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    pxBoton="peligro-contorno"
-                    [chico]="true"
-                    (click)="cancel(a)"
-                  >
-                    Quitar
-                  </button>
+                  </pnl-menu-acciones>
+                } @else {
+                  <span class="block w-10" aria-hidden="true"></span>
                 }
               </span>
             </div>
@@ -292,9 +298,9 @@ interface Candidato {
 })
 export class InvitadosPage implements OnInit {
   private readonly api = inject(EventosApi);
+  private readonly avisos = inject(AvisosService);
   private readonly actual = inject(EventoActualService);
 
-  protected readonly estados = ESTADOS_ASISTENTE;
   protected readonly estadosEmail = ESTADOS_EMAIL;
   protected readonly eventoId = computed(() => this.actual.evento()?.id ?? '');
   protected readonly estado = signal<'cargando' | 'error' | 'listo'>('cargando');
@@ -303,6 +309,25 @@ export class InvitadosPage implements OnInit {
   protected readonly contadores = signal<ContadoresInvitados | null>(null);
   protected readonly q = signal('');
   private readonly filtros = signal<{ estado?: string; emailEstado?: string }>({});
+  protected readonly filtroEstado = computed(() => this.filtros().estado);
+  protected readonly filtroEmail = computed(() => this.filtros().emailEstado);
+  /** Los contadores, como chips que filtran la lista (Fase 4 de UI). */
+  protected readonly filtrosEstado = computed(() => {
+    const c = this.contadores();
+    return [
+      { clave: '', texto: 'Todos', cuenta: c?.total ?? 0 },
+      { clave: 'invitado', texto: 'Invitados', cuenta: c?.invitados ?? 0 },
+      { clave: 'registrado', texto: 'Registrados', cuenta: c?.registrados ?? 0 },
+      { clave: 'presente', texto: 'Presentes', cuenta: c?.presentes ?? 0 },
+      { clave: 'cancelado', texto: 'Quitados', cuenta: c?.cancelados ?? 0 },
+    ];
+  });
+  private readonly esCelular = injectEsCelular();
+  protected readonly altoFila = computed(() => (this.esCelular() ? 104 : 64));
+  /** Hasta 8 filas a la vista (más el borde); con menos, la lista no deja espacio vacío. */
+  protected readonly altoLista = computed(
+    () => Math.min(this.filas().length, 8) * this.altoFila() + 2,
+  );
   private nextCursor: string | null = null;
   private cargandoMas = false;
   private espera: ReturnType<typeof setTimeout> | null = null;
@@ -312,6 +337,10 @@ export class InvitadosPage implements OnInit {
   protected readonly enviando = signal(false);
   protected readonly estimacion = signal<EstimacionEnvio | null>(null);
   protected readonly enlaceVisto = signal<EnlaceInvitacion | null>(null);
+  protected readonly tituloEnlace = computed(() => {
+    const visto = this.enlaceVisto();
+    return visto ? `${visto.codigo} · ${visto.nombre}` : 'Enlace de invitación';
+  });
   protected readonly editando = signal<'nuevo' | AsistentePanel | null>(null);
   protected readonly nombre = signal('');
   protected readonly email = signal('');
@@ -388,10 +417,7 @@ export class InvitadosPage implements OnInit {
           : await this.api.updateAsistente(editando.id, datos);
       this.editando.set(null);
       this.candidatos.set([]);
-      this.mensaje.set({
-        variante: 'ok',
-        texto: `${guardado.codigo} · ${guardado.nombre}: guardado.`,
-      });
+      this.avisos.ok(`${guardado.codigo} · ${guardado.nombre}: guardado.`);
       await this.load();
     } catch (error) {
       if (error instanceof ErrorApi && error.code === 'ASISTENTE_POSIBLE_DUPLICADO') {
@@ -414,7 +440,7 @@ export class InvitadosPage implements OnInit {
     }
     try {
       await this.api.cancelAsistente(asistente.id);
-      this.mensaje.set({ variante: 'ok', texto: `Quitamos a ${asistente.nombre} de la lista.` });
+      this.avisos.ok(`Quitamos a ${asistente.nombre} de la lista.`);
     } catch (error) {
       this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
     }
@@ -423,7 +449,7 @@ export class InvitadosPage implements OnInit {
 
   protected async onImportados(importados: number): Promise<void> {
     this.importando.set(false);
-    this.mensaje.set({ variante: 'ok', texto: `Importamos ${importados} invitados.` });
+    this.avisos.ok(`Importamos ${importados} invitados.`);
     await this.load();
   }
 
@@ -441,7 +467,7 @@ export class InvitadosPage implements OnInit {
         const operacion = await this.api.getOperacion(operacionId);
         if (operacion.descarga) {
           window.location.href = operacion.descarga.url;
-          this.mensaje.set({ variante: 'ok', texto: 'Descargamos la lista.' });
+          this.avisos.ok('Descargamos la lista.');
           return;
         }
         if (operacion.estado === 'fallida') throw new Error(operacion.error ?? 'Falló');
@@ -497,7 +523,7 @@ export class InvitadosPage implements OnInit {
     this.mensaje.set(null);
     try {
       const { encoladas } = await this.api.sendInvitaciones(this.eventoId());
-      this.mensaje.set({ variante: 'ok', texto: `Pusimos ${encoladas} invitaciones en la cola.` });
+      this.avisos.ok(`Pusimos ${encoladas} invitaciones en la cola.`);
       await this.load();
     } catch (error) {
       this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
@@ -514,7 +540,7 @@ export class InvitadosPage implements OnInit {
     }
     try {
       await this.api.resendInvitacion(a.id);
-      this.mensaje.set({ variante: 'ok', texto: `Reenviamos la invitación a ${a.nombre}.` });
+      this.avisos.ok(`Reenviamos la invitación a ${a.nombre}.`);
     } catch (error) {
       this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
     }

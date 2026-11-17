@@ -1,6 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, type OnInit, signal } from '@angular/core';
 import { NOMBRES_ROL_PLATAFORMA } from '@pasitos/dominio/esquemas';
-import { getMensajeError, valorDe } from '@pasitos/panel';
+import {
+  AvisosService,
+  EncabezadoPaginaComponent,
+  getMensajeError,
+  MenuAccionesComponent,
+  PanelLateralComponent,
+  valorDe,
+} from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
@@ -19,51 +26,79 @@ import { PlataformaApi, type PersonaFila } from './plataforma-api.service';
 @Component({
   selector: 'plt-usuarios-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AvisoComponent, BotonDirective, CampoComponent, EstadoComponent, TarjetaComponent],
+  imports: [
+    AvisoComponent,
+    BotonDirective,
+    CampoComponent,
+    EstadoComponent,
+    TarjetaComponent,
+    EncabezadoPaginaComponent,
+    MenuAccionesComponent,
+    PanelLateralComponent,
+  ],
   template: `
-    <h1 class="font-display text-3xl font-extrabold">Personas</h1>
+    <pnl-encabezado-pagina
+      titulo="Personas"
+      descripcion="Quién entra a la consola de Pasitos, y ayuda a cualquier persona con su acceso."
+    >
+      @if (permisos.esPrincipal()) {
+        <button type="button" pxBoton (click)="invitando.set(true)">Invitar a la consola</button>
+      }
+    </pnl-encabezado-pagina>
     @if (mensaje(); as aviso) {
       <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
     }
 
-    @if (permisos.esPrincipal()) {
-      <px-tarjeta>
-        <h2 class="mb-3 text-xl font-bold">Invitar a la consola</h2>
-        <form class="flex flex-col gap-3" (submit)="submitInvitar($event)" novalidate>
-          <px-campo etiqueta="Nombre" #i1="pxCampo">
-            <input
-              [id]="i1.idControl"
-              [attr.aria-describedby]="i1.idDescripcion"
-              [value]="nombre()"
-              (input)="nombre.set(valorDe($event))"
-            />
-          </px-campo>
-          <px-campo etiqueta="Correo" #i2="pxCampo">
-            <input
-              [id]="i2.idControl"
-              [attr.aria-describedby]="i2.idDescripcion"
-              type="email"
-              [value]="email()"
-              (input)="email.set(valorDe($event))"
-            />
-          </px-campo>
-          <px-campo etiqueta="Rol" #i3="pxCampo">
-            <select
-              [id]="i3.idControl"
-              [attr.aria-describedby]="i3.idDescripcion"
-              (change)="rol.set(valorDe($event) === 'soporte' ? 'soporte' : 'admin')"
-            >
-              <option value="admin">Administrador: puede hacer todo menos nombrar personas</option>
-              <option value="soporte">Soporte: solo lectura</option>
-            </select>
-          </px-campo>
-          <button type="submit" pxBoton [cargando]="enviando()">Enviar la invitación</button>
-        </form>
-      </px-tarjeta>
-    }
+    <pnl-panel-lateral
+      titulo="Invitar a la consola"
+      [abierto]="invitando()"
+      [guardando]="enviando()"
+      textoGuardar="Enviar la invitación"
+      (guardar)="submitInvitar($event)"
+      (cerrado)="invitando.set(false)"
+    >
+      @if (invitando()) {
+        <px-campo etiqueta="Nombre" #i1="pxCampo">
+          <input
+            [id]="i1.idControl"
+            [attr.aria-describedby]="i1.idDescripcion"
+            [value]="nombre()"
+            (input)="nombre.set(valorDe($event))"
+          />
+        </px-campo>
+        <px-campo etiqueta="Correo" #i2="pxCampo">
+          <input
+            [id]="i2.idControl"
+            [attr.aria-describedby]="i2.idDescripcion"
+            type="email"
+            [value]="email()"
+            (input)="email.set(valorDe($event))"
+          />
+        </px-campo>
+        <px-campo
+          etiqueta="Rol"
+          [ayuda]="
+            rol() === 'soporte' ? 'Solo lectura.' : 'Puede hacer todo menos nombrar personas.'
+          "
+          #i3="pxCampo"
+        >
+          <select
+            [id]="i3.idControl"
+            [attr.aria-describedby]="i3.idDescripcion"
+            (change)="rol.set(valorDe($event) === 'soporte' ? 'soporte' : 'admin')"
+          >
+            <option value="admin" [selected]="rol() === 'admin'">Administrador</option>
+            <option value="soporte" [selected]="rol() === 'soporte'">Soporte</option>
+          </select>
+        </px-campo>
+        @if (mensajePanel(); as texto) {
+          <px-aviso variante="peligro">{{ texto }}</px-aviso>
+        }
+      }
+    </pnl-panel-lateral>
 
-    <px-tarjeta>
-      <h2 class="mb-2 text-xl font-bold">Equipo de Pasitos</h2>
+    <section class="flex flex-col gap-3" aria-labelledby="equipo-pasitos">
+      <h2 id="equipo-pasitos" class="text-xl font-bold">Equipo de Pasitos</h2>
       @switch (estado()) {
         @case ('cargando') {
           <px-estado tipo="cargando" />
@@ -72,42 +107,55 @@ import { PlataformaApi, type PersonaFila } from './plataforma-api.service';
           <px-estado tipo="error" titulo="No pudimos cargar las personas" />
         }
         @default {
-          <ul class="flex flex-col gap-3">
-            @for (p of personas(); track p.id) {
-              <li class="flex flex-wrap items-center justify-between gap-2">
-                <span>
-                  <b>{{ p.nombre }}</b> · {{ nombreRol(p.rolPlataforma) }}
-                  <span class="text-muted block text-sm">
-                    {{ p.email }} · {{ p.aceptado ? 'Activa' : 'Invitación pendiente' }}
-                    {{ p.segundoFactor ? '· con segundo factor' : '' }}
-                  </span>
-                </span>
-                @if (permisos.esPrincipal() && p.rolPlataforma !== 'superadmin') {
-                  <span class="flex gap-2">
-                    <button
-                      type="button"
-                      pxBoton="secundario"
-                      [chico]="true"
-                      (click)="updateRol(p, p.rolPlataforma === 'admin' ? 'soporte' : 'admin')"
-                    >
-                      Pasar a {{ p.rolPlataforma === 'admin' ? 'soporte' : 'administrador' }}
-                    </button>
-                    <button
-                      type="button"
-                      pxBoton="peligro-contorno"
-                      [chico]="true"
-                      (click)="updateRol(p, null)"
-                    >
-                      Quitar el acceso
-                    </button>
-                  </span>
-                }
-              </li>
-            }
-          </ul>
+          <table class="pnl-tabla">
+            <thead>
+              <tr>
+                <th scope="col">Nombre</th>
+                <th scope="col">Correo</th>
+                <th scope="col">Rol</th>
+                <th scope="col">Estado</th>
+                <th scope="col"><span class="px-sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of personas(); track p.id) {
+                <tr>
+                  <td>{{ p.nombre }}</td>
+                  <td data-etiqueta="Correo" class="break-all">{{ p.email }}</td>
+                  <td data-etiqueta="Rol">{{ nombreRol(p.rolPlataforma) }}</td>
+                  <td data-etiqueta="Estado">
+                    {{ p.aceptado ? 'Activa' : 'Invitación pendiente' }}
+                    @if (p.segundoFactor) {
+                      <span class="text-muted text-sm">· con segundo factor</span>
+                    }
+                  </td>
+                  <td class="pnl-tabla__acciones">
+                    @if (permisos.esPrincipal() && p.rolPlataforma !== 'superadmin') {
+                      <pnl-menu-acciones [etiqueta]="'Acciones de ' + p.nombre">
+                        <button
+                          type="button"
+                          (click)="updateRol(p, p.rolPlataforma === 'admin' ? 'soporte' : 'admin')"
+                        >
+                          Pasar a {{ p.rolPlataforma === 'admin' ? 'soporte' : 'administrador' }}
+                        </button>
+                        <hr />
+                        <button
+                          type="button"
+                          class="pnl-acciones__peligro"
+                          (click)="updateRol(p, null)"
+                        >
+                          Quitar el acceso
+                        </button>
+                      </pnl-menu-acciones>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         }
       }
-    </px-tarjeta>
+    </section>
 
     <px-tarjeta>
       <h2 class="mb-1 text-xl font-bold">Ayudar a una persona</h2>
@@ -170,12 +218,16 @@ import { PlataformaApi, type PersonaFila } from './plataforma-api.service';
 })
 export class UsuariosPage implements OnInit {
   private readonly api = inject(PlataformaApi);
+  private readonly avisos = inject(AvisosService);
   protected readonly permisos = usePermisosConsola();
 
   protected readonly estado = signal<'cargando' | 'error' | 'listo'>('cargando');
   protected readonly personas = signal<readonly PersonaFila[]>([]);
   protected readonly mensaje = signal<{ variante: 'ok' | 'peligro'; texto: string } | null>(null);
   protected readonly enviando = signal(false);
+  protected readonly invitando = signal(false);
+  /** El error de la invitación se muestra dentro del panel (el resto de la página queda atrás). */
+  protected readonly mensajePanel = signal<string | null>(null);
   protected readonly nombre = signal('');
   protected readonly email = signal('');
   protected readonly rol = signal<'admin' | 'soporte'>('admin');
@@ -196,7 +248,8 @@ export class UsuariosPage implements OnInit {
 
   protected async submitInvitar(evento: Event): Promise<void> {
     evento.preventDefault();
-    await this.run(
+    this.mensajePanel.set(null);
+    const ok = await this.run(
       () =>
         this.api
           .invitePersona({
@@ -207,6 +260,14 @@ export class UsuariosPage implements OnInit {
           .then(() => undefined),
       `Enviamos la invitación a ${this.email().trim()}.`,
     );
+    if (ok) {
+      this.invitando.set(false);
+      this.nombre.set('');
+      this.email.set('');
+    } else {
+      this.mensajePanel.set(this.mensaje()?.texto ?? null);
+      this.mensaje.set(null);
+    }
   }
 
   protected async updateRol(persona: PersonaFila, rol: 'admin' | 'soporte' | null): Promise<void> {
@@ -241,19 +302,21 @@ export class UsuariosPage implements OnInit {
     );
   }
 
-  private async run(paso: () => Promise<void>, exito: string): Promise<void> {
+  private async run(paso: () => Promise<void>, exito: string): Promise<boolean> {
     if (this.enviando()) {
-      return;
+      return false;
     }
     this.enviando.set(true);
     this.mensaje.set(null);
     try {
       await paso();
-      this.mensaje.set({ variante: 'ok', texto: exito });
+      this.avisos.ok(exito);
       await this.load();
+      return true;
     } catch (error) {
       const campo = error instanceof ErrorApi ? error.errors[0]?.message : undefined;
       this.mensaje.set({ variante: 'peligro', texto: campo ?? getMensajeError(error) });
+      return false;
     } finally {
       this.enviando.set(false);
     }

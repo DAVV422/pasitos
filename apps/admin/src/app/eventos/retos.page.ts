@@ -9,7 +9,16 @@ import {
 } from '@angular/core';
 import { canDo } from '@pasitos/dominio';
 import { MODOS_QR, NOMBRES_MODO_QR, ROTACIONES_QR } from '@pasitos/dominio/esquemas';
-import { getErrorCampo, getMensajeError, valorDe } from '@pasitos/panel';
+import {
+  AvisosService,
+  EncabezadoPaginaComponent,
+  getErrorCampo,
+  getMensajeError,
+  MenuAccionesComponent,
+  PanelLateralComponent,
+  SeccionComponent,
+  valorDe,
+} from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
@@ -17,6 +26,7 @@ import {
   ChipComponent,
   EstadoComponent,
   TarjetaComponent,
+  FechaHoraDirective,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
@@ -69,28 +79,38 @@ function toIso(local: string): string | null {
     DatePipe,
     AvisoComponent,
     BotonDirective,
+    FechaHoraDirective,
     CampoComponent,
     ChipComponent,
     EstadoComponent,
     TarjetaComponent,
+    EncabezadoPaginaComponent,
+    MenuAccionesComponent,
+    PanelLateralComponent,
+    SeccionComponent,
   ],
   template: `
-    <header class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-display text-3xl font-extrabold">Retos</h1>
-      @if (puedeEditar() && editando() === null) {
+    <pnl-encabezado-pagina
+      titulo="Retos"
+      descripcion="Lo que la gente hace para ganar puntos: escanear un QR o recibirlos del equipo."
+    >
+      @if (puedeEditar()) {
         <button type="button" pxBoton (click)="start(null)">Nuevo reto</button>
       }
-    </header>
+    </pnl-encabezado-pagina>
     @if (mensaje(); as aviso) {
       <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
     }
 
-    @if (editando() !== null) {
-      <px-tarjeta>
-        <h2 class="mb-3 text-xl font-bold">
-          {{ editando() === 'nuevo' ? 'Nuevo reto' : 'Editar reto' }}
-        </h2>
-        <form class="flex flex-col gap-4" (submit)="save($event)" novalidate>
+    <pnl-panel-lateral
+      [titulo]="editando() === 'nuevo' ? 'Nuevo reto' : 'Editar reto'"
+      [abierto]="editando() !== null"
+      [guardando]="guardando()"
+      (guardar)="save($event)"
+      (cerrado)="editando.set(null)"
+    >
+      @if (editando() !== null) {
+        <pnl-seccion titulo="Básico">
           <px-campo etiqueta="Nombre" [error]="errores()['nombre'] ?? null" #f1="pxCampo">
             <input
               [id]="f1.idControl"
@@ -116,53 +136,49 @@ function toIso(local: string): string | null {
             ></textarea>
           </px-campo>
           <fieldset class="flex flex-col gap-2">
-            <legend class="mb-1 font-bold">Tipo</legend>
-            <label class="px-opcion">
-              <input
-                type="radio"
-                name="tipo"
-                [checked]="form().tipo === 'qr'"
-                (change)="set('tipo', 'qr')"
-              />
-              <span
-                ><span class="px-opcion__titulo">Con QR</span
-                ><span class="px-opcion__detalle"
-                  >La persona escanea el QR de una pantalla.</span
-                ></span
-              >
-            </label>
-            <label class="px-opcion">
-              <input
-                type="radio"
-                name="tipo"
-                [checked]="form().tipo === 'otorgado'"
-                (change)="set('tipo', 'otorgado')"
-              />
-              <span
-                ><span class="px-opcion__titulo">Otorgado</span
-                ><span class="px-opcion__detalle"
-                  >Los da el equipo a mano (por ejemplo, al que hace una pregunta).</span
-                ></span
-              >
-            </label>
+            <legend class="mb-1 font-semibold">Tipo</legend>
+            <div class="pnl-opciones">
+              <label class="pnl-opcion">
+                <input
+                  type="radio"
+                  name="tipo"
+                  [checked]="form().tipo === 'qr'"
+                  (change)="set('tipo', 'qr')"
+                />
+                <span class="pnl-opcion__titulo">Con QR</span>
+                <span class="pnl-opcion__detalle">La persona escanea el QR de una pantalla.</span>
+              </label>
+              <label class="pnl-opcion">
+                <input
+                  type="radio"
+                  name="tipo"
+                  [checked]="form().tipo === 'otorgado'"
+                  (change)="set('tipo', 'otorgado')"
+                />
+                <span class="pnl-opcion__titulo">Otorgado</span>
+                <span class="pnl-opcion__detalle">Lo da el equipo a mano.</span>
+              </label>
+            </div>
           </fieldset>
-          @if (form().tipo === 'qr') {
+        </pnl-seccion>
+        @if (form().tipo === 'qr') {
+          <pnl-seccion titulo="El QR">
             <fieldset class="flex flex-col gap-2">
-              <legend class="mb-1 font-bold">Modo del QR</legend>
-              @for (modo of modos; track modo) {
-                <label class="px-opcion">
-                  <input
-                    type="radio"
-                    name="modo"
-                    [checked]="form().modoQr === modo"
-                    (change)="set('modoQr', modo)"
-                  />
-                  <span
-                    ><span class="px-opcion__titulo">{{ modoTexto(modo).titulo }}</span
-                    ><span class="px-opcion__detalle">{{ modoTexto(modo).cuando }}</span></span
-                  >
-                </label>
-              }
+              <legend class="mb-1 font-semibold">Modo del QR</legend>
+              <div class="pnl-opciones">
+                @for (modo of modos; track modo) {
+                  <label class="pnl-opcion">
+                    <input
+                      type="radio"
+                      name="modo"
+                      [checked]="form().modoQr === modo"
+                      (change)="set('modoQr', modo)"
+                    />
+                    <span class="pnl-opcion__titulo">{{ modoTexto(modo).titulo }}</span>
+                    <span class="pnl-opcion__detalle">{{ modoTexto(modo).cuando }}</span>
+                  </label>
+                }
+              </div>
             </fieldset>
             @if (form().modoQr === 'por_tiempo') {
               <px-campo etiqueta="Cambia cada" #f3="pxCampo">
@@ -198,53 +214,55 @@ function toIso(local: string): string | null {
                 }
               </select>
             </px-campo>
-          }
-          <div class="grid gap-4 md:grid-cols-3">
-            <px-campo
-              etiqueta="Puntos"
-              ayuda="De 1 a 1000."
-              [error]="errores()['puntos'] ?? null"
-              #f5="pxCampo"
-            >
-              <input
-                [id]="f5.idControl"
-                [attr.aria-describedby]="f5.idDescripcion"
-                type="number"
-                min="1"
-                max="1000"
-                [value]="form().puntos"
-                (input)="set('puntos', valorDe($event))"
-              />
-            </px-campo>
-            <px-campo
-              etiqueta="Tope de participaciones"
-              [ayuda]="ayudaTope()"
-              [error]="errores()['topeTotal'] ?? null"
-              #f6="pxCampo"
-            >
-              <input
-                [id]="f6.idControl"
-                [attr.aria-describedby]="f6.idDescripcion"
-                type="number"
-                min="1"
-                max="100000"
-                [value]="form().topeTotal"
-                (input)="set('topeTotal', valorDe($event))"
-              />
-            </px-campo>
-            <px-campo etiqueta="Veces por persona" #f7="pxCampo">
-              <input
-                [id]="f7.idControl"
-                [attr.aria-describedby]="f7.idDescripcion"
-                type="number"
-                min="1"
-                max="10"
-                [value]="form().vecesPorPersona"
-                (input)="set('vecesPorPersona', valorDe($event))"
-              />
-            </px-campo>
-          </div>
-          <div class="grid gap-4 md:grid-cols-2">
+          </pnl-seccion>
+        }
+        <pnl-seccion titulo="Recompensa">
+          <px-campo
+            etiqueta="Puntos"
+            ayuda="De 1 a 1000."
+            [error]="errores()['puntos'] ?? null"
+            #f5="pxCampo"
+          >
+            <input
+              [id]="f5.idControl"
+              [attr.aria-describedby]="f5.idDescripcion"
+              type="number"
+              min="1"
+              max="1000"
+              [value]="form().puntos"
+              (input)="set('puntos', valorDe($event))"
+            />
+          </px-campo>
+          <px-campo
+            etiqueta="Tope de participaciones"
+            [ayuda]="ayudaTope()"
+            [error]="errores()['topeTotal'] ?? null"
+            #f6="pxCampo"
+          >
+            <input
+              [id]="f6.idControl"
+              [attr.aria-describedby]="f6.idDescripcion"
+              type="number"
+              min="1"
+              max="100000"
+              [value]="form().topeTotal"
+              (input)="set('topeTotal', valorDe($event))"
+            />
+          </px-campo>
+          <px-campo etiqueta="Veces por persona" #f7="pxCampo">
+            <input
+              [id]="f7.idControl"
+              [attr.aria-describedby]="f7.idDescripcion"
+              type="number"
+              min="1"
+              max="10"
+              [value]="form().vecesPorPersona"
+              (input)="set('vecesPorPersona', valorDe($event))"
+            />
+          </px-campo>
+        </pnl-seccion>
+        <pnl-seccion titulo="Cuándo">
+          <div class="grid gap-4 @sm:grid-cols-2">
             <px-campo
               etiqueta="Disponible desde"
               [opcional]="true"
@@ -255,9 +273,8 @@ function toIso(local: string): string | null {
               <input
                 [id]="f8.idControl"
                 [attr.aria-describedby]="f8.idDescripcion"
-                type="datetime-local"
-                [value]="form().desde"
-                (input)="set('desde', valorDe($event))"
+                [pxFechaHora]="form().desde"
+                (fechaHora)="set('desde', $event)"
               />
             </px-campo>
             <px-campo
@@ -269,12 +286,13 @@ function toIso(local: string): string | null {
               <input
                 [id]="f9.idControl"
                 [attr.aria-describedby]="f9.idDescripcion"
-                type="datetime-local"
-                [value]="form().hasta"
-                (input)="set('hasta', valorDe($event))"
+                [pxFechaHora]="form().hasta"
+                (fechaHora)="set('hasta', $event)"
               />
             </px-campo>
           </div>
+        </pnl-seccion>
+        <pnl-seccion titulo="Avanzado" [plegable]="true" [abierta]="!!form().sponsorId">
           <px-campo
             etiqueta="Sponsor"
             [opcional]="true"
@@ -294,15 +312,9 @@ function toIso(local: string): string | null {
               }
             </select>
           </px-campo>
-          <div class="flex gap-3">
-            <button type="submit" pxBoton [cargando]="guardando()">Guardar</button>
-            <button type="button" pxBoton="secundario" (click)="editando.set(null)">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </px-tarjeta>
-    }
+        </pnl-seccion>
+      }
+    </pnl-panel-lateral>
 
     @switch (estado()) {
       @case ('cargando') {
@@ -326,12 +338,24 @@ function toIso(local: string): string | null {
                   }
                 </span>
               </span>
-              <span class="flex flex-wrap gap-2">
+              <span class="flex flex-wrap items-center gap-2">
                 @if (reto.estado === 'desactivado') {
                   <px-chip variante="atenuado">Desactivado</px-chip>
                 }
                 @if (publicado() && !reto.registradoEnStellar && reto.estado === 'activo') {
                   <px-chip variante="puntos">Registrando en Stellar…</px-chip>
+                }
+                @if (puedeEditar()) {
+                  <pnl-menu-acciones [etiqueta]="'Acciones de ' + reto.nombre">
+                    <button type="button" (click)="start(reto)">Editar</button>
+                    <button type="button" (click)="toggleActivo(reto)">
+                      {{ reto.estado === 'activo' ? 'Desactivar' : 'Activar' }}
+                    </button>
+                    <hr />
+                    <button type="button" class="pnl-acciones__peligro" (click)="remove(reto)">
+                      Borrar
+                    </button>
+                  </pnl-menu-acciones>
                 }
               </span>
             </div>
@@ -354,29 +378,6 @@ function toIso(local: string): string | null {
                 >Su lugar no tiene pantalla todavía.</px-aviso
               >
             }
-            @if (puedeEditar()) {
-              <div class="mt-3 flex flex-wrap gap-2">
-                <button type="button" pxBoton="secundario" [chico]="true" (click)="start(reto)">
-                  Editar
-                </button>
-                <button
-                  type="button"
-                  pxBoton="secundario"
-                  [chico]="true"
-                  (click)="toggleActivo(reto)"
-                >
-                  {{ reto.estado === 'activo' ? 'Desactivar' : 'Activar' }}
-                </button>
-                <button
-                  type="button"
-                  pxBoton="peligro-contorno"
-                  [chico]="true"
-                  (click)="remove(reto)"
-                >
-                  Borrar
-                </button>
-              </div>
-            }
           </px-tarjeta>
         } @empty {
           <px-estado tipo="vacio" titulo="Todavía no hay retos"
@@ -389,6 +390,7 @@ function toIso(local: string): string | null {
 })
 export class RetosPage implements OnInit {
   private readonly api = inject(EventosApi);
+  private readonly avisos = inject(AvisosService);
   private readonly actual = inject(EventoActualService);
 
   protected readonly modos = MODOS_QR;
@@ -481,8 +483,7 @@ export class RetosPage implements OnInit {
         await this.api.updateReto(editando.id, datos);
       }
       this.editando.set(null);
-      this.mensaje.set({ variante: 'ok', texto: 'Guardado.' });
-      setTimeout(() => this.mensaje.set(null), 3_000);
+      this.avisos.ok('Guardado.');
       await this.load();
     } catch (error) {
       const campos = [
@@ -529,7 +530,7 @@ export class RetosPage implements OnInit {
     this.mensaje.set(null);
     try {
       await paso();
-      if (exito) this.mensaje.set({ variante: 'ok', texto: exito });
+      if (exito) this.avisos.ok(exito);
     } catch (error) {
       this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
     }

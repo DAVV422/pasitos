@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, type OnInit, signal } from '@angular/core';
 import { INTERVALOS_ANCLAJE_MIN } from '@pasitos/dominio';
-import { getMensajeError, valorDe } from '@pasitos/panel';
+import { AvisosService, getMensajeError, valorDe } from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
@@ -129,6 +129,7 @@ import { PlataformaApi, type CostoRed, type EventoFila } from './plataforma-api.
 })
 export class EventosPage implements OnInit {
   private readonly api = inject(PlataformaApi);
+  private readonly avisos = inject(AvisosService);
   protected readonly permisos = usePermisosConsola();
   protected readonly intervalos = INTERVALOS_ANCLAJE_MIN;
 
@@ -172,10 +173,7 @@ export class EventosPage implements OnInit {
     try {
       const valor = this.intervalo() || String(fila.intervaloAnclajeMin ?? '');
       await this.api.updateIntervalo(fila.id, valor ? Number(valor) : null, this.motivo().trim());
-      this.mensaje.set({
-        variante: 'ok',
-        texto: 'Intervalo cambiado: vale desde el próximo ciclo del sellador.',
-      });
+      this.avisos.ok('Intervalo cambiado: vale desde el próximo ciclo del sellador.');
       this.editando.set(null);
       this.motivo.set('');
       await this.load();

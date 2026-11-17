@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  AvisosComponent,
+  AvisosService,
+  EncabezadoPaginaComponent,
+  FiltrosComponent,
+  MenuAccionesComponent,
+  PanelLateralComponent,
+  PestanasComponent,
+  SeccionComponent,
+} from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
@@ -34,6 +44,13 @@ import {
     OpcionComponent,
     QrComponent,
     TarjetaComponent,
+    AvisosComponent,
+    EncabezadoPaginaComponent,
+    FiltrosComponent,
+    MenuAccionesComponent,
+    PanelLateralComponent,
+    PestanasComponent,
+    SeccionComponent,
   ],
   template: `
     <section class="flex flex-col gap-6 pb-16">
@@ -156,6 +173,81 @@ import {
       <px-estado tipo="error" titulo="Algo salió mal" traceId="01a1d7c0-8672-75a4"
         >Intenta de nuevo.</px-estado
       >
+
+      <h2 class="text-2xl font-extrabold">Patrones de página del panel</h2>
+      <pnl-encabezado-pagina
+        titulo="Invitados"
+        descripcion="Quién viene al evento y su invitación."
+      >
+        <button type="button" pxBoton (click)="panelAbierto.set(true)">Agregar invitado</button>
+        <pnl-menu-acciones texto="Más">
+          <button type="button" (click)="avisos.ok('Importamos 12 invitados.')">
+            Importar CSV
+          </button>
+          <button type="button" (click)="avisos.ok('Descargamos la lista.')">Exportar</button>
+          <hr />
+          <button type="button" class="pnl-acciones__peligro">Borrar todo</button>
+        </pnl-menu-acciones>
+      </pnl-encabezado-pagina>
+
+      <pnl-filtros [activos]="1">
+        <input pnlBuscador type="search" aria-label="Buscar" placeholder="Buscar por nombre" />
+        <select aria-label="Invitación">
+          <option>Todas las invitaciones</option>
+          <option>Pendientes</option>
+        </select>
+      </pnl-filtros>
+
+      <table class="pnl-tabla">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Código</th>
+            <th>Invitación</th>
+            <th><span class="px-sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of filas; track fila.codigo) {
+            <tr>
+              <td>{{ fila.nombre }}</td>
+              <td data-etiqueta="Código">{{ fila.codigo }}</td>
+              <td data-etiqueta="Invitación">{{ fila.invitacion }}</td>
+              <td class="pnl-tabla__acciones">
+                <pnl-menu-acciones [etiqueta]="'Acciones de ' + fila.nombre">
+                  <button type="button">Editar</button>
+                  <button type="button">Reenviar invitación</button>
+                  <button type="button" class="pnl-acciones__peligro">Quitar</button>
+                </pnl-menu-acciones>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <pnl-pestanas etiqueta="Ejemplo de pestañas" [pestanas]="pestanas" [(activa)]="pestana">
+        <px-tarjeta>Contenido de la pestaña «{{ pestana() }}».</px-tarjeta>
+      </pnl-pestanas>
+
+      <pnl-panel-lateral
+        titulo="Nuevo invitado"
+        [abierto]="panelAbierto()"
+        (guardar)="panelAbierto.set(false); avisos.ok('Guardado.')"
+        (cerrado)="panelAbierto.set(false)"
+      >
+        <pnl-seccion titulo="Básico">
+          <px-campo etiqueta="Nombre" #n="pxCampo">
+            <input [id]="n.idControl" [attr.aria-describedby]="n.idDescripcion" />
+          </px-campo>
+        </pnl-seccion>
+        <pnl-seccion titulo="Avanzado" [plegable]="true">
+          <px-campo etiqueta="Código externo" [opcional]="true" #c="pxCampo">
+            <input [id]="c.idControl" [attr.aria-describedby]="c.idDescripcion" />
+          </px-campo>
+        </pnl-seccion>
+      </pnl-panel-lateral>
+      <!-- Fuera de pnl-layout: los avisos flotantes van aquí. -->
+      <pnl-avisos />
     </section>
   `,
 })
@@ -163,6 +255,20 @@ export class CatalogoUiPage {
   protected readonly tema = signal<'claro' | 'oscuro'>('claro');
   protected readonly opcion = signal<string | null>('intento');
   protected readonly vence = new Date(Date.now() + 102_000);
+  protected readonly avisos = inject(AvisosService);
+  protected readonly panelAbierto = signal(false);
+  protected readonly pestanas = [
+    { clave: 'datos', texto: 'Datos' },
+    { clave: 'imagenes', texto: 'Imágenes' },
+    { clave: 'ubicacion', texto: 'Ubicación' },
+    { clave: 'visibilidad', texto: 'Visibilidad' },
+    { clave: 'reglas', texto: 'Reglas y puerta' },
+  ];
+  protected readonly pestana = signal('datos');
+  protected readonly filas = [
+    { nombre: 'Valeria Quispe', codigo: 'A-0001', invitacion: 'Enviada' },
+    { nombre: 'Luis Mamani', codigo: 'A-0002', invitacion: 'Pendiente' },
+  ];
 
   protected cambiarTema(): void {
     const siguiente = this.tema() === 'claro' ? 'oscuro' : 'claro';

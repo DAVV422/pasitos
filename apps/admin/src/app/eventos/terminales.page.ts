@@ -11,12 +11,22 @@ import {
 } from '@angular/core';
 import { canDo } from '@pasitos/dominio';
 import { NOMBRES_ESTADO_CONEXION, type EstadoConexion } from '@pasitos/dominio/esquemas';
-import { getErrorCampo, getMensajeError, valorDe } from '@pasitos/panel';
+import {
+  AvisosService,
+  DialogoComponent,
+  EncabezadoPaginaComponent,
+  getErrorCampo,
+  getMensajeError,
+  MenuAccionesComponent,
+  PanelLateralComponent,
+  valorDe,
+} from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
   CampoComponent,
   ChipComponent,
+  CuentaRegresivaComponent,
   EstadoComponent,
   QrComponent,
   TarjetaComponent,
@@ -68,95 +78,96 @@ const VARIANTE_CONEXION: Readonly<Record<EstadoConexion, 'ok' | 'peligro' | 'ate
     EstadoComponent,
     QrComponent,
     TarjetaComponent,
+    CuentaRegresivaComponent,
+    DialogoComponent,
+    EncabezadoPaginaComponent,
+    MenuAccionesComponent,
+    PanelLateralComponent,
   ],
   template: `
-    <header class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-display text-3xl font-extrabold">{{ textos().titulo }}</h1>
-      @if (puedeEditar() && editando() === null) {
+    <pnl-encabezado-pagina [titulo]="textos().titulo" [descripcion]="textos().detalle">
+      @if (puedeEditar()) {
         <button type="button" pxBoton (click)="start(null)">{{ textos().nuevo }}</button>
       }
-    </header>
-    <p class="text-muted">{{ textos().detalle }}</p>
+    </pnl-encabezado-pagina>
     @if (mensaje(); as aviso) {
       <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
     }
 
-    @if (editando() !== null) {
-      <px-tarjeta>
-        <h2 class="mb-3 text-xl font-bold">
-          {{ editando() === 'nuevo' ? textos().nuevo : 'Editar' }}
-        </h2>
-        <form class="flex flex-col gap-4" (submit)="save($event)" novalidate>
+    <pnl-panel-lateral
+      [titulo]="editando() === 'nuevo' ? textos().nuevo : 'Editar'"
+      [abierto]="editando() !== null"
+      [guardando]="guardando()"
+      (guardar)="save($event)"
+      (cerrado)="editando.set(null)"
+    >
+      @if (editando() !== null) {
+        <px-campo
+          etiqueta="Nombre"
+          [ayuda]="tipo() === 'pantalla' ? 'Por ejemplo: Tablet Sala A.' : 'Por ejemplo: Mesa 1.'"
+          [error]="errores()['nombre'] ?? null"
+          #f1="pxCampo"
+        >
+          <input
+            [id]="f1.idControl"
+            [attr.aria-describedby]="f1.idDescripcion"
+            maxlength="60"
+            [value]="nombre()"
+            (input)="nombre.set(valorDe($event))"
+          />
+        </px-campo>
+        <px-campo
+          etiqueta="Lugar"
+          [opcional]="tipo() === 'mesa'"
+          [ayuda]="tipo() === 'pantalla' ? 'Muestra el QR de los retos de este lugar.' : ''"
+          [error]="errores()['lugarId'] ?? null"
+          #f2="pxCampo"
+        >
+          <select
+            [id]="f2.idControl"
+            [attr.aria-describedby]="f2.idDescripcion"
+            (change)="lugarId.set(valorDe($event))"
+          >
+            <option value="">{{ tipo() === 'pantalla' ? 'Elige un lugar' : 'Ninguno' }}</option>
+            @for (l of lugares(); track l.id) {
+              <option [value]="l.id" [selected]="lugarId() === l.id">{{ l['nombre'] }}</option>
+            }
+          </select>
+        </px-campo>
+        @if (tipo() === 'pantalla') {
           <px-campo
-            etiqueta="Nombre"
-            [ayuda]="tipo() === 'pantalla' ? 'Por ejemplo: Tablet Sala A.' : 'Por ejemplo: Mesa 1.'"
-            [error]="errores()['nombre'] ?? null"
-            #f1="pxCampo"
+            [etiqueta]="editando() === 'nuevo' ? 'PIN de los controles' : 'PIN nuevo'"
+            [opcional]="editando() !== 'nuevo'"
+            ayuda="4 números. Lo pide la pantalla para sus controles; no se vuelve a mostrar."
+            [error]="errores()['pin'] ?? null"
+            #f3="pxCampo"
           >
             <input
-              [id]="f1.idControl"
-              [attr.aria-describedby]="f1.idDescripcion"
-              maxlength="60"
-              [value]="nombre()"
-              (input)="nombre.set(valorDe($event))"
+              [id]="f3.idControl"
+              [attr.aria-describedby]="f3.idDescripcion"
+              inputmode="numeric"
+              autocomplete="off"
+              maxlength="4"
+              [value]="pin()"
+              (input)="pin.set(valorDe($event))"
             />
           </px-campo>
-          <px-campo
-            etiqueta="Lugar"
-            [opcional]="tipo() === 'mesa'"
-            [ayuda]="tipo() === 'pantalla' ? 'Muestra el QR de los retos de este lugar.' : ''"
-            [error]="errores()['lugarId'] ?? null"
-            #f2="pxCampo"
-          >
-            <select
-              [id]="f2.idControl"
-              [attr.aria-describedby]="f2.idDescripcion"
-              (change)="lugarId.set(valorDe($event))"
-            >
-              <option value="">{{ tipo() === 'pantalla' ? 'Elige un lugar' : 'Ninguno' }}</option>
-              @for (l of lugares(); track l.id) {
-                <option [value]="l.id" [selected]="lugarId() === l.id">{{ l['nombre'] }}</option>
-              }
-            </select>
-          </px-campo>
-          @if (tipo() === 'pantalla') {
-            <px-campo
-              [etiqueta]="editando() === 'nuevo' ? 'PIN de los controles' : 'PIN nuevo'"
-              [opcional]="editando() !== 'nuevo'"
-              ayuda="4 números. Lo pide la pantalla para sus controles; no se vuelve a mostrar."
-              [error]="errores()['pin'] ?? null"
-              #f3="pxCampo"
-            >
-              <input
-                [id]="f3.idControl"
-                [attr.aria-describedby]="f3.idDescripcion"
-                inputmode="numeric"
-                autocomplete="off"
-                maxlength="4"
-                [value]="pin()"
-                (input)="pin.set(valorDe($event))"
-              />
-            </px-campo>
-          }
-          <div class="flex gap-3">
-            <button type="submit" pxBoton [cargando]="guardando()">Guardar</button>
-            <button type="button" pxBoton="secundario" (click)="editando.set(null)">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </px-tarjeta>
-    }
+        }
+      }
+    </pnl-panel-lateral>
 
-    @if (conectando(); as actual) {
-      <px-tarjeta>
-        <h2 class="mb-3 text-xl font-bold">Conectar «{{ actual.terminal.nombre }}»</h2>
+    <pnl-dialogo
+      [titulo]="'Conectar «' + (conectando()?.terminal?.nombre ?? '') + '»'"
+      [abierto]="!!conectando()"
+      (cerrado)="close()"
+    >
+      @if (conectando(); as actual) {
         @if (actual.pideMotivo && !actual.conexion) {
           <px-aviso variante="advertencia">
             Esta pantalla ya está registrada en Stellar. Si conectas otra tablet, se crea una
             pantalla nueva con otro número.
           </px-aviso>
-          <form class="mt-3 flex flex-col gap-4" (submit)="generate($event)" novalidate>
+          <form class="flex flex-col gap-4" (submit)="generate($event)" novalidate>
             <px-campo
               etiqueta="Motivo"
               ayuda="Por ejemplo: Se rompió la tablet. De 5 a 300 caracteres."
@@ -172,34 +183,30 @@ const VARIANTE_CONEXION: Readonly<Record<EstadoConexion, 'ok' | 'peligro' | 'ate
                 (input)="motivo.set(valorDe($event))"
               ></textarea>
             </px-campo>
-            <div class="flex gap-3">
+            <div>
               <button type="submit" pxBoton [cargando]="guardando()">Generar la conexión</button>
-              <button type="button" pxBoton="secundario" (click)="conectando.set(null)">
-                Cancelar
-              </button>
             </div>
           </form>
         } @else if (actual.conexion; as conexion) {
-          <div class="flex flex-col items-center gap-3">
+          <div class="flex flex-col items-center gap-3 text-center">
             @if (segundosQr() > 0) {
               <px-qr
                 [texto]="conexion.qr"
-                [tamano]="280"
+                [tamano]="300"
                 descripcion="QR para conectar la tablet"
               />
-              <p class="text-muted text-sm" aria-live="polite">
-                Escanéalo con la tablet. Vence en {{ cuentaRegresiva() }}.
-              </p>
+              <px-cuenta-regresiva [hasta]="venceQr()" />
+              <p class="text-muted text-sm">Escanéalo con la cámara de la tablet.</p>
             } @else {
-              <p>El QR venció.</p>
+              <p class="font-bold">El QR venció.</p>
               <button type="button" pxBoton (click)="generate(null)">Generar otro</button>
             }
           </div>
-          <div class="mt-4 flex flex-col gap-2">
+          <div class="border-line flex flex-col gap-2 border-t pt-4">
             <p class="font-bold">O con un enlace</p>
             <p class="text-muted text-sm">Vale 24 horas y sirve una vez. Ábrelo en la tablet.</p>
             <div class="flex flex-wrap items-center gap-2">
-              <code class="bg-track rounded px-2 py-1 text-sm break-all">{{
+              <code class="bg-track min-w-0 flex-1 rounded px-2 py-1 text-sm break-all">{{
                 conexion.enlace
               }}</code>
               <button type="button" pxBoton="secundario" [chico]="true" (click)="copy(conexion)">
@@ -207,12 +214,12 @@ const VARIANTE_CONEXION: Readonly<Record<EstadoConexion, 'ok' | 'peligro' | 'ate
               </button>
             </div>
           </div>
-          <div class="mt-4">
-            <button type="button" pxBoton="secundario" (click)="close()">Listo</button>
-          </div>
+        } @else {
+          <px-estado tipo="cargando" />
         }
-      </px-tarjeta>
-    }
+      }
+      <button pnlPie type="button" pxBoton="secundario" (click)="close()">Listo</button>
+    </pnl-dialogo>
 
     @switch (estado()) {
       @case ('cargando') {
@@ -273,23 +280,25 @@ const VARIANTE_CONEXION: Readonly<Record<EstadoConexion, 'ok' | 'peligro' | 'ate
               </px-aviso>
             }
             @if (puedeEditar() && !terminal.reemplazadaPor) {
-              <div class="mt-3 flex flex-wrap gap-2">
+              <div class="mt-3 flex flex-wrap items-center gap-2">
                 <button type="button" pxBoton [chico]="true" (click)="openConexion(terminal)">
                   Conectar
                 </button>
-                @if (terminal.conexion !== 'desconectada') {
-                  <button
-                    type="button"
-                    pxBoton="peligro-contorno"
-                    [chico]="true"
-                    (click)="disconnect(terminal)"
-                  >
-                    Desconectar
+                <pnl-menu-acciones [etiqueta]="'Acciones de ' + terminal.nombre">
+                  <button type="button" (click)="start(terminal)">
+                    {{ tipo() === 'pantalla' ? 'Editar o cambiar PIN' : 'Editar' }}
                   </button>
-                }
-                <button type="button" pxBoton="secundario" [chico]="true" (click)="start(terminal)">
-                  {{ tipo() === 'pantalla' ? 'Editar o cambiar PIN' : 'Editar' }}
-                </button>
+                  @if (terminal.conexion !== 'desconectada') {
+                    <hr />
+                    <button
+                      type="button"
+                      class="pnl-acciones__peligro"
+                      (click)="disconnect(terminal)"
+                    >
+                      Desconectar
+                    </button>
+                  }
+                </pnl-menu-acciones>
               </div>
             }
           </px-tarjeta>
@@ -303,6 +312,7 @@ const VARIANTE_CONEXION: Readonly<Record<EstadoConexion, 'ok' | 'peligro' | 'ate
 export class TerminalesPage implements OnInit {
   readonly tipo = input<Tipo>('pantalla');
   private readonly api = inject(EventosApi);
+  private readonly avisos = inject(AvisosService);
   private readonly actual = inject(EventoActualService);
 
   protected readonly textos = computed(() => TEXTOS[this.tipo()]);
@@ -336,10 +346,9 @@ export class TerminalesPage implements OnInit {
       ? Math.max(0, Math.ceil((new Date(conexion.expiraQrAt).getTime() - this.ahora()) / 1000))
       : 0;
   });
-  protected readonly cuentaRegresiva = computed(() => {
-    const s = this.segundosQr();
-    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-  });
+  protected readonly venceQr = computed(
+    () => new Date(this.conectando()?.conexion?.expiraQrAt ?? 0),
+  );
   protected readonly valorDe = valorDe;
 
   constructor() {
@@ -406,7 +415,7 @@ export class TerminalesPage implements OnInit {
         await this.api.updateTerminal(editando.id, this.tipo(), datos);
       }
       this.editando.set(null);
-      this.mensaje.set({ variante: 'ok', texto: 'Guardado.' });
+      this.avisos.ok('Guardado.');
       await this.load();
     } catch (error) {
       const campos = ['nombre', 'lugarId', 'pin'];
@@ -465,6 +474,7 @@ export class TerminalesPage implements OnInit {
   }
 
   protected close(): void {
+    if (!this.conectando()) return;
     this.conectando.set(null);
     void this.load();
   }
@@ -474,7 +484,7 @@ export class TerminalesPage implements OnInit {
     this.mensaje.set(null);
     try {
       await this.api.disconnectTerminal(terminal.id, this.tipo());
-      this.mensaje.set({ variante: 'ok', texto: `Desconectamos «${terminal.nombre}».` });
+      this.avisos.ok(`Desconectamos «${terminal.nombre}».`);
     } catch (error) {
       this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
     }

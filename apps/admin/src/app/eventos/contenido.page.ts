@@ -10,13 +10,22 @@ import {
 } from '@angular/core';
 import { canDo } from '@pasitos/dominio';
 import { NOMBRES_TIPO_LUGAR, TIPOS_LUGAR } from '@pasitos/dominio/esquemas';
-import { getErrorCampo, getMensajeError, SubidaImagenComponent, valorDe } from '@pasitos/panel';
+import {
+  AvisosService,
+  EncabezadoPaginaComponent,
+  getErrorCampo,
+  getMensajeError,
+  PanelLateralComponent,
+  SubidaImagenComponent,
+  valorDe,
+} from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
   CampoComponent,
   EstadoComponent,
   TarjetaComponent,
+  FechaHoraDirective,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
@@ -130,139 +139,135 @@ function toLocal(iso: unknown): string {
     DatePipe,
     AvisoComponent,
     BotonDirective,
+    FechaHoraDirective,
     CampoComponent,
     EstadoComponent,
     TarjetaComponent,
     SubidaImagenComponent,
+    EncabezadoPaginaComponent,
+    PanelLateralComponent,
   ],
   template: `
     @if (config(); as c) {
-      <header class="flex flex-wrap items-center justify-between gap-3">
-        <h1 class="font-display text-3xl font-extrabold">{{ c.titulo }}</h1>
-        @if (puedeEditar() && editando() === null) {
+      <pnl-encabezado-pagina [titulo]="c.titulo" [descripcion]="c.vacio">
+        @if (puedeEditar()) {
           <button type="button" pxBoton (click)="start(null)">Agregar {{ c.singular }}</button>
         }
-      </header>
+      </pnl-encabezado-pagina>
       @if (mensaje(); as aviso) {
         <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
       }
 
-      @if (editando() !== null) {
-        <px-tarjeta>
-          <h2 class="mb-3 text-xl font-bold">
-            {{ editando() === 'nuevo' ? 'Nuevo: ' + c.singular : 'Editar ' + c.singular }}
-          </h2>
-          <form class="flex flex-col gap-4" (submit)="save($event)" novalidate>
-            @for (campo of c.campos; track campo.clave) {
-              @switch (campo.tipo) {
-                @case ('logoSponsor') {
-                  <pnl-subida-imagen
-                    [eventoId]="eventoId()"
-                    proposito="logo_sponsor"
-                    [etiqueta]="campo.etiqueta"
-                    [valor]="valorTexto(campo.clave) || null"
-                    (valorChange)="set(campo.clave, $event ?? '')"
-                  />
-                }
-                @default {
-                  <px-campo
-                    [etiqueta]="campo.etiqueta"
-                    [opcional]="!!campo.opcional"
-                    [ayuda]="campo.ayuda ?? null"
-                    [error]="errores()[campo.clave] ?? null"
-                    #pc="pxCampo"
-                  >
-                    @switch (campo.tipo) {
-                      @case ('textarea') {
-                        <textarea
-                          [id]="pc.idControl"
-                          [attr.aria-describedby]="pc.idDescripcion"
-                          rows="3"
-                          [value]="valorTexto(campo.clave)"
-                          (input)="set(campo.clave, valorDe($event))"
-                        ></textarea>
-                      }
-                      @case ('tipoLugar') {
-                        <select
-                          [id]="pc.idControl"
-                          [attr.aria-describedby]="pc.idDescripcion"
-                          (change)="set(campo.clave, valorDe($event))"
-                        >
-                          @for (t of tiposLugar; track t) {
-                            <option [value]="t" [selected]="valorTexto(campo.clave) === t">
-                              {{ nombreTipo(t) }}
-                            </option>
-                          }
-                        </select>
-                      }
-                      @case ('lugar') {
-                        <select
-                          [id]="pc.idControl"
-                          [attr.aria-describedby]="pc.idDescripcion"
-                          (change)="set(campo.clave, valorDe($event))"
-                        >
-                          <option value="">Ninguno</option>
-                          @for (l of lugares(); track l.id) {
-                            <option [value]="l.id" [selected]="valorTexto(campo.clave) === l.id">
-                              {{ l['nombre'] }}
-                            </option>
-                          }
-                        </select>
-                      }
-                      @case ('sponsor') {
-                        <select
-                          [id]="pc.idControl"
-                          [attr.aria-describedby]="pc.idDescripcion"
-                          (change)="set(campo.clave, valorDe($event))"
-                        >
-                          <option value="">Ninguno</option>
-                          @for (s of sponsorsLista(); track s.id) {
-                            <option [value]="s.id" [selected]="valorTexto(campo.clave) === s.id">
-                              {{ s['nombre'] }}
-                            </option>
-                          }
-                        </select>
-                      }
-                      @case ('fechaHora') {
-                        <input
-                          [id]="pc.idControl"
-                          [attr.aria-describedby]="pc.idDescripcion"
-                          type="datetime-local"
-                          [value]="valorTexto(campo.clave)"
-                          (input)="set(campo.clave, valorDe($event))"
-                        />
-                      }
-                      @case ('numero') {
-                        <input
-                          [id]="pc.idControl"
-                          [attr.aria-describedby]="pc.idDescripcion"
-                          type="number"
-                          [value]="valorTexto(campo.clave)"
-                          (input)="set(campo.clave, valorDe($event))"
-                        />
-                      }
-                      @default {
-                        <input
-                          [id]="pc.idControl"
-                          [attr.aria-describedby]="pc.idDescripcion"
-                          [value]="valorTexto(campo.clave)"
-                          (input)="set(campo.clave, valorDe($event))"
-                        />
-                      }
+      <pnl-panel-lateral
+        [titulo]="editando() === 'nuevo' ? 'Nuevo: ' + c.singular : 'Editar ' + c.singular"
+        [abierto]="editando() !== null"
+        [guardando]="guardando()"
+        (guardar)="save($event)"
+        (cerrado)="editando.set(null)"
+      >
+        @if (editando() !== null) {
+          @for (campo of c.campos; track campo.clave) {
+            @switch (campo.tipo) {
+              @case ('logoSponsor') {
+                <pnl-subida-imagen
+                  [eventoId]="eventoId()"
+                  proposito="logo_sponsor"
+                  [etiqueta]="campo.etiqueta"
+                  [valor]="valorTexto(campo.clave) || null"
+                  (valorChange)="set(campo.clave, $event ?? '')"
+                />
+              }
+              @default {
+                <px-campo
+                  [etiqueta]="campo.etiqueta"
+                  [opcional]="!!campo.opcional"
+                  [ayuda]="campo.ayuda ?? null"
+                  [error]="errores()[campo.clave] ?? null"
+                  #pc="pxCampo"
+                >
+                  @switch (campo.tipo) {
+                    @case ('textarea') {
+                      <textarea
+                        [id]="pc.idControl"
+                        [attr.aria-describedby]="pc.idDescripcion"
+                        rows="3"
+                        [value]="valorTexto(campo.clave)"
+                        (input)="set(campo.clave, valorDe($event))"
+                      ></textarea>
                     }
-                  </px-campo>
-                }
+                    @case ('tipoLugar') {
+                      <select
+                        [id]="pc.idControl"
+                        [attr.aria-describedby]="pc.idDescripcion"
+                        (change)="set(campo.clave, valorDe($event))"
+                      >
+                        @for (t of tiposLugar; track t) {
+                          <option [value]="t" [selected]="valorTexto(campo.clave) === t">
+                            {{ nombreTipo(t) }}
+                          </option>
+                        }
+                      </select>
+                    }
+                    @case ('lugar') {
+                      <select
+                        [id]="pc.idControl"
+                        [attr.aria-describedby]="pc.idDescripcion"
+                        (change)="set(campo.clave, valorDe($event))"
+                      >
+                        <option value="">Ninguno</option>
+                        @for (l of lugares(); track l.id) {
+                          <option [value]="l.id" [selected]="valorTexto(campo.clave) === l.id">
+                            {{ l['nombre'] }}
+                          </option>
+                        }
+                      </select>
+                    }
+                    @case ('sponsor') {
+                      <select
+                        [id]="pc.idControl"
+                        [attr.aria-describedby]="pc.idDescripcion"
+                        (change)="set(campo.clave, valorDe($event))"
+                      >
+                        <option value="">Ninguno</option>
+                        @for (s of sponsorsLista(); track s.id) {
+                          <option [value]="s.id" [selected]="valorTexto(campo.clave) === s.id">
+                            {{ s['nombre'] }}
+                          </option>
+                        }
+                      </select>
+                    }
+                    @case ('fechaHora') {
+                      <input
+                        [id]="pc.idControl"
+                        [attr.aria-describedby]="pc.idDescripcion"
+                        [pxFechaHora]="valorTexto(campo.clave)"
+                        (fechaHora)="set(campo.clave, $event)"
+                      />
+                    }
+                    @case ('numero') {
+                      <input
+                        [id]="pc.idControl"
+                        [attr.aria-describedby]="pc.idDescripcion"
+                        type="number"
+                        [value]="valorTexto(campo.clave)"
+                        (input)="set(campo.clave, valorDe($event))"
+                      />
+                    }
+                    @default {
+                      <input
+                        [id]="pc.idControl"
+                        [attr.aria-describedby]="pc.idDescripcion"
+                        [value]="valorTexto(campo.clave)"
+                        (input)="set(campo.clave, valorDe($event))"
+                      />
+                    }
+                  }
+                </px-campo>
               }
             }
-            <div class="flex gap-3">
-              <button type="submit" pxBoton [cargando]="guardando()">Guardar</button>
-              <button type="button" pxBoton="secundario" (click)="editando.set(null)">
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </px-tarjeta>
-      }
+          }
+        }
+      </pnl-panel-lateral>
 
       @switch (estado()) {
         @case ('cargando') {
@@ -355,6 +360,7 @@ function toLocal(iso: unknown): string {
 })
 export class ContenidoPage implements OnInit {
   private readonly api = inject(EventosApi);
+  private readonly avisos = inject(AvisosService);
   private readonly actual = inject(EventoActualService);
 
   /** De la ruta (`data`): `lugares`, `actividades`, `sponsors` o `preguntas`. */
@@ -442,8 +448,7 @@ export class ContenidoPage implements OnInit {
         await this.api.updateContenido(c.recurso, id, datos);
       }
       this.editando.set(null);
-      this.mensaje.set({ variante: 'ok', texto: 'Guardado.' });
-      setTimeout(() => this.mensaje.set(null), 3_000);
+      this.avisos.ok('Guardado.');
       await this.load();
     } catch (error) {
       this.errores.set(
