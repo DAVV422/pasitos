@@ -1,0 +1,62 @@
+# Pasitos · Caddy de la demo (rutas de Infraestructura §4.3, D49).
+# Cloudflare va delante con el proxy activado. Caddy acepta HTTP (modo Flexible) y HTTPS con un
+# certificado propio (modo Full); con T-002 pasa a Full (strict) con el certificado de origen.
+# Los rangos de Cloudflare los completa preparar-servidor.sh en {$CLOUDFLARE_RANGOS}.
+
+{
+	servers {
+		trusted_proxies static {$CLOUDFLARE_RANGOS}
+		client_ip_headers Cf-Connecting-Ip
+	}
+	admin off
+}
+
+(pasitos) {
+	# Sin compresión en los avisos en vivo, para no demorarlos.
+	@comprimible not path /api/*/en-vivo*
+	encode @comprimible gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+
+	# El API recibe la IP real de la persona (la que manda Cloudflare).
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3000 {
+			header_up X-Forwarded-For {client_ip}
+			flush_interval -1
+		}
+	}
+
+	# Buzón de la demo (Mailpit, con su propia contraseña).
+	handle /correos* {
+		reverse_proxy 127.0.0.1:8025
+	}
+
+	@corto path_regexp corto ^/v/([^/]+)$
+	redir @corto /app/acceso/corto/{re.corto.1}
+	@qr path_regexp qr ^/r/([^/]+)$
+	redir @qr /app/r/{re.qr.1}
+
+	@apps path_regexp app ^/(app|sala|mesa|admin|plataforma)(/.*)?$
+	handle @apps {
+		root * /srv/estaticos
+		try_files {path} /{re.app.1}/index.html
+		file_server
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:4000
+	}
+}
+
+http://pasitos.com.bo, http://www.pasitos.com.bo {
+	import pasitos
+}
+
+https://pasitos.com.bo, https://www.pasitos.com.bo {
+	tls internal
+	import pasitos
+}

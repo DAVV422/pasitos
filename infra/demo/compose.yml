@@ -1,0 +1,101 @@
+# Pasitos · despliegue temporal para la demo, en un solo VPS (antes de T-002).
+# Uso en el servidor, desde /srv/pasitos: `docker compose up -d --build`.
+# Los secretos van en /srv/pasitos/.env (lo arma infra/demo/preparar-servidor.sh, nunca el repo).
+#
+# Todo escucha solo en 127.0.0.1 menos Caddy, que corre en la red del host: así el firewall (ufw)
+# decide quién llega a los puertos 80 y 443 (los puertos publicados por Docker se lo saltean).
+
+name: pasitos
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PASITOS_OWNER_PASSWORD: ${PASITOS_OWNER_PASSWORD}
+      PASITOS_APP_PASSWORD: ${PASITOS_APP_PASSWORD}
+      PASITOS_SISTEMA_PASSWORD: ${PASITOS_SISTEMA_PASSWORD}
+      PASITOS_COPIAS_PASSWORD: ${PASITOS_COPIAS_PASSWORD}
+    volumes:
+      - ./datos/postgres:/var/lib/postgresql/data
+      - ./postgres/inicio.sh:/docker-entrypoint-initdb.d/inicio.sh:ro
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d pasitos']
+      interval: 5s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    environment:
+      MP_WEBROOT: /correos/
+      MP_UI_AUTH: ${MAILPIT_UI_AUTH}
+      MP_MAX_MESSAGES: 5000
+    ports:
+      - '127.0.0.1:8025:8025'
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL_APP: postgres://pasitos_app:${PASITOS_APP_PASSWORD}@postgres:5432/pasitos
+      DATABASE_URL_SISTEMA: postgres://pasitos_sistema:${PASITOS_SISTEMA_PASSWORD}@postgres:5432/pasitos
+      DATABASE_URL_OWNER: postgres://pasitos_owner:${PASITOS_OWNER_PASSWORD}@postgres:5432/pasitos
+      ARCHIVOS_DIR: /srv/archivos
+      TRUST_PROXY_SALTOS: 1
+    volumes:
+      - ./datos/archivos:/srv/archivos
+    ports:
+      - '127.0.0.1:3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  trabajador:
+    build: ./trabajador
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL_SISTEMA: postgres://pasitos_sistema:${PASITOS_SISTEMA_PASSWORD}@postgres:5432/pasitos
+      ARCHIVOS_DIR: /srv/archivos
+      STELLAR_OPERADOR_LLAVE_ARCHIVO: /run/secretos/stellar-operador.key
+      CORREO_ADAPTADOR: smtp
+      CORREO_SMTP_URL: smtp://mailpit:1025
+    volumes:
+      - ./datos/archivos:/srv/archivos
+      - ./secretos/stellar-operador.key:/run/secretos/stellar-operador.key:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  sitio:
+    build: ./sitio
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # El SSR de Angular solo responde a los hosts conocidos (protección contra SSRF).
+      NG_ALLOWED_HOSTS: pasitos.com.bo,www.pasitos.com.bo
+    ports:
+      - '127.0.0.1:4000:4000'
+
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      CLOUDFLARE_RANGOS: ${CLOUDFLARE_RANGOS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./estaticos:/srv/estaticos:ro
+      - ./datos/caddy:/data
+    depends_on:
+      - api
+      - sitio

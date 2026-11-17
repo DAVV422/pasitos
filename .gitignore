@@ -53,3 +53,6 @@ vitest.config.*.timestamp*
 
 # Correos guardados por el adaptador a archivo (T-007a)
 .correos/
+
+# Datos de acceso a servidores (IP, usuario, contraseña): nunca al repositorio.
+server/
