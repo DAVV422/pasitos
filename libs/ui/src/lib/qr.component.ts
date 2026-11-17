@@ -9,7 +9,8 @@ import qrcode from 'qrcode-generator';
   selector: 'px-qr',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'px-qr', role: 'img', '[attr.aria-label]': 'descripcion()' },
-  template: `<span [innerHTML]="svg()"></span>`,
+  // El SVG de la librería es escalable (sin ancho propio): sin un tamaño fijo se achica a 0.
+  template: `<span class="px-qr__svg" [style.width.px]="tamano()" [innerHTML]="svg()"></span>`,
 })
 export class QrComponent {
   readonly texto = input.required<string>();

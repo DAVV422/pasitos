@@ -61,6 +61,11 @@ describe('componentes base', () => {
     const elemento: HTMLElement = fixture.nativeElement;
     expect(elemento.querySelector('svg')).not.toBeNull();
     expect(elemento.getAttribute('aria-label')).toBe('QR de asistente para Carla Mendoza');
+    // Con su tamaño: el SVG es escalable y sin esto se achica a 0.
+    fixture.componentRef.setInput('tamano', 280);
+    await fixture.whenStable();
+    const caja = elemento.querySelector<HTMLElement>('.px-qr__svg');
+    expect(caja?.style.width).toBe('280px');
   });
 
   it('el estado de error muestra el código de soporte con 8 caracteres', async () => {

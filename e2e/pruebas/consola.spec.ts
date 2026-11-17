@@ -136,6 +136,9 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await sala.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
   await page.getByRole('button', { name: 'Conectar' }).click();
   await expect(page.getByRole('img', { name: 'QR para conectar la tablet' })).toBeVisible();
+  // El QR se dibuja de verdad (no un recuadro vacío).
+  const qr = await page.getByRole('img', { name: 'QR para conectar la tablet' }).boundingBox();
+  expect(qr?.width).toBeGreaterThan(200);
   const enlaceSala = (await page.locator('code').textContent()) ?? '';
   await sala.goto(new URL(enlaceSala).pathname);
   await expect(sala.getByText('Conectada')).toBeVisible();
