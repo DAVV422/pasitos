@@ -367,7 +367,12 @@ function toIso(local: string): string | null {
                 >
                   {{ reto.estado === 'activo' ? 'Desactivar' : 'Activar' }}
                 </button>
-                <button type="button" pxBoton="peligro" [chico]="true" (click)="remove(reto)">
+                <button
+                  type="button"
+                  pxBoton="peligro-contorno"
+                  [chico]="true"
+                  (click)="remove(reto)"
+                >
                   Borrar
                 </button>
               </div>

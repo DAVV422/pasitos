@@ -66,15 +66,21 @@ h3 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  width: 100%;
+  gap: 8px;
+  width: var(--boton-ancho);
+  align-self: var(--boton-alinear);
   min-height: var(--alto-boton);
-  padding: 0 20px;
-  border-radius: var(--radio-chico);
-  border: 0;
-  font: 700 17px/1.2 var(--font-body);
+  padding: 0 18px;
+  border-radius: var(--radio-control);
+  border: var(--borde-control) solid transparent;
+  font: 700 var(--boton-texto) / 1.2 var(--font-body);
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    filter 0.15s;
 }
 
 .px-boton--primario {
@@ -82,29 +88,70 @@ h3 {
   color: var(--on-points);
 }
 
-.px-boton--secundario {
-  background: transparent;
-  color: var(--text);
-  border: 1.5px solid var(--line-strong);
+.px-boton--primario:hover {
+  filter: brightness(1.05);
 }
 
+.px-boton--secundario {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.px-boton--secundario:hover {
+  background: var(--surface2);
+}
+
+/* Sin borde: acciones de menos peso (las de cada fila de una lista). */
+.px-boton--fantasma {
+  background: transparent;
+  color: var(--text);
+}
+
+.px-boton--fantasma:hover {
+  background: var(--surface2);
+}
+
+/* Rojo lleno: solo para confirmar algo irreversible. */
 .px-boton--peligro {
   background: var(--danger-fill);
   color: var(--surface);
 }
 
+.px-boton--peligro:hover {
+  filter: brightness(1.08);
+}
+
+/* Rojo en contorno: Quitar o Borrar en una lista (pide confirmación después). */
+.px-boton--peligro-contorno {
+  background: var(--surface);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.px-boton--peligro-contorno:hover {
+  background: var(--danger-bg);
+}
+
 .px-boton--chico {
   width: auto;
-  min-height: 44px;
-  font-size: 15px;
-  padding: 0 16px;
+  min-height: var(--alto-boton-chico);
+  padding: 0 12px;
+  font-size: var(--boton-chico-texto);
+}
+
+/* De punta a punta, donde el botón es la acción de la pantalla (Entrar, Confirmar). */
+.px-boton--bloque {
+  width: 100%;
+  align-self: stretch;
 }
 
 .px-boton:disabled,
 .px-boton[aria-disabled='true'] {
   background: var(--track);
   color: var(--muted);
-  border: 0;
+  border-color: transparent;
+  filter: none;
   cursor: not-allowed;
 }
 
@@ -114,10 +161,10 @@ h3 {
 
 .px-boton[aria-busy='true']::before {
   content: '';
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border: 3px solid currentcolor;
+  border: 2.5px solid currentcolor;
   border-right-color: transparent;
   animation: px-girar 0.8s linear infinite;
 }
@@ -175,7 +222,7 @@ h3 {
   gap: 10px;
   align-items: flex-start;
   padding: 12px 14px;
-  border-radius: var(--radio-chico);
+  border-radius: var(--radio-control);
   font-size: 15px;
   font-weight: 600;
   line-height: 1.4;
@@ -212,8 +259,8 @@ h3 {
   display: block;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radio-grande);
-  padding: 14px;
+  border-radius: var(--radio-tarjeta);
+  padding: var(--tarjeta-espacio);
 }
 
 .px-tarjeta--destacada {
@@ -267,26 +314,93 @@ h3 {
   color: var(--danger);
 }
 
-.px-campo input,
-.px-campo select,
-.px-campo textarea {
-  min-height: var(--area-tactil);
-  border-radius: var(--radio-chico);
-  background: var(--surface);
-  border: 1.5px solid var(--line-strong);
-  padding: 0 14px;
-  font: 16px var(--font-body);
+/*
+ * Controles: el mismo aspecto dentro de un px-campo, con la clase px-control, o en el panel
+ * cualquier campo de texto, select o textarea (buscadores y filtros incluidos).
+ */
+.px-campo :is(input, select, textarea),
+.px-control,
+[data-densidad='panel']
+  :is(
+    input:not([type='checkbox'], [type='radio'], [type='file'], [type='range'], [type='color']),
+    select,
+    textarea
+  ) {
+  box-sizing: border-box;
+  min-height: var(--alto-control);
+  border-radius: var(--radio-control);
+  background-color: var(--surface);
+  border: var(--borde-control) solid var(--line-strong);
+  padding: 0 12px;
+  font: var(--control-texto) / 1.4 var(--font-body);
   color: var(--text);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
-.px-campo input:focus-visible {
+.px-campo textarea,
+textarea.px-control,
+[data-densidad='panel'] textarea {
+  padding: 8px 12px;
+  min-height: calc(var(--alto-control) * 2);
+  resize: vertical;
+}
+
+/* Select con su propia flecha (la del navegador cambia en cada sistema). */
+.px-campo select,
+select.px-control,
+[data-densidad='panel'] select {
+  appearance: none;
+  padding-right: 36px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    right 18px center,
+    right 13px center;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.px-campo :is(input, select, textarea):hover,
+.px-control:hover,
+[data-densidad='panel'] :is(input, select, textarea):hover {
+  border-color: var(--text);
+}
+
+.px-campo :is(input, select, textarea):focus-visible,
+.px-control:focus-visible,
+[data-densidad='panel'] :is(input, select, textarea):focus-visible {
   outline: 0;
   border-color: var(--points-fill);
   box-shadow: 0 0 0 3px var(--pts-bg);
 }
 
-.px-campo--invalido input {
+.px-campo--invalido :is(input, select, textarea),
+[aria-invalid='true'] {
   border-color: var(--danger);
+}
+
+.px-campo :is(input, select, textarea):disabled,
+.px-control:disabled,
+[data-densidad='panel'] :is(input, select, textarea):disabled {
+  background-color: var(--surface2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--points-fill);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
 }
 
 /* ---------- Opción (radio grande) ---------- */
@@ -294,9 +408,9 @@ h3 {
   display: flex;
   gap: 14px;
   align-items: flex-start;
-  padding: 16px;
-  border: 1.5px solid var(--line-strong);
-  border-radius: var(--radio-medio);
+  padding: 14px 16px;
+  border: var(--borde-control) solid var(--line-strong);
+  border-radius: var(--radio-opcion);
   background: var(--surface);
   cursor: pointer;
 }
@@ -374,7 +488,7 @@ h3 {
 
 .px-dialogo {
   border: 1px solid var(--line);
-  border-radius: var(--radio-grande);
+  border-radius: var(--radio-tarjeta);
   background: var(--sheet);
   color: var(--text);
   padding: 22px;
@@ -457,4 +571,15 @@ h3 {
 .px-encabezado__chips {
   display: flex;
   gap: 6px;
+}
+
+/* ---------- Contenido del panel ----------
+ * Lo que está dentro de cada pantalla queda en columna con la misma separación (antes las
+ * tarjetas quedaban pegadas). La pantalla es el hijo de <main class="pnl-contenido">.
+ */
+.pnl-contenido > :not(router-outlet) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }

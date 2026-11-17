@@ -94,7 +94,7 @@ import { PlataformaApi, type PersonaFila } from './plataforma-api.service';
                     </button>
                     <button
                       type="button"
-                      pxBoton="peligro"
+                      pxBoton="peligro-contorno"
                       [chico]="true"
                       (click)="updateRol(p, null)"
                     >

@@ -9,7 +9,11 @@ import { ErrorApi } from '@pasitos/web-core';
   imports: [EncabezadoComponent],
   template: `
     <px-encabezado />
-    <main class="mx-auto flex w-full max-w-md flex-col gap-5 px-5 pt-8 pb-12">
+    <!-- Pantallas de una sola acción (Entrar, Confirmar): los botones van de punta a punta. -->
+    <main
+      class="mx-auto flex w-full max-w-md flex-col gap-5 px-5 pt-8 pb-12"
+      style="--boton-ancho: 100%; --boton-alinear: stretch"
+    >
       <header class="flex flex-col gap-1">
         <h1 class="font-display text-3xl font-extrabold">{{ titulo() }}</h1>
         @if (bajada(); as texto) {

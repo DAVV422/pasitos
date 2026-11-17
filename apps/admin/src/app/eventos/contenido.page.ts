@@ -331,7 +331,12 @@ function toLocal(iso: unknown): string {
                     <button type="button" pxBoton="secundario" [chico]="true" (click)="start(fila)">
                       Editar
                     </button>
-                    <button type="button" pxBoton="peligro" [chico]="true" (click)="remove(fila)">
+                    <button
+                      type="button"
+                      pxBoton="peligro-contorno"
+                      [chico]="true"
+                      (click)="remove(fila)"
+                    >
                       Borrar
                     </button>
                   </span>

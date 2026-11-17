@@ -98,4 +98,52 @@
   --radio-hoja: 24px;
   --area-tactil: 48px;
   --alto-boton: 56px;
+
+  /* Controles y superficies: lo que cambia con la densidad. Estos valores son los de las apps
+     del celular (/app, /sala, /mesa); el panel los redefine abajo. */
+  --radio-control: var(--radio-chico);
+  --radio-opcion: var(--radio-medio);
+  --radio-tarjeta: var(--radio-grande);
+  --alto-control: var(--area-tactil);
+  --alto-boton-chico: 44px;
+  --borde-control: 1.5px;
+  --boton-ancho: 100%;
+  --boton-alinear: auto;
+  --boton-texto: 17px;
+  --boton-chico-texto: 15px;
+  --control-texto: 16px;
+  --tarjeta-espacio: 14px;
+}
+
+/*
+ * Densidad del panel (/admin y /plataforma): escritorio primero, más compacto y sobrio.
+ * Radio de 8 px en campos y botones, 12 px en tarjetas; controles de 40 px (44 px en el celular,
+ * para el dedo). Se activa con <html data-densidad="panel">.
+ */
+[data-densidad='panel'] {
+  --radio-control: 8px;
+  --radio-opcion: 10px;
+  --radio-tarjeta: 12px;
+  --alto-control: 40px;
+  --alto-boton: 40px;
+  --alto-boton-chico: 32px;
+  --borde-control: 1px;
+  --boton-ancho: auto;
+
+  /* En una columna (los formularios), el botón no se estira: queda de su tamaño. */
+  --boton-alinear: flex-start;
+  --boton-texto: 15px;
+  --boton-chico-texto: 14px;
+  --control-texto: 15px;
+  --tarjeta-espacio: 20px;
+}
+
+@media (width < 768px) {
+  [data-densidad='panel'] {
+    --alto-control: 44px;
+    --alto-boton: 44px;
+    --alto-boton-chico: 36px;
+    --control-texto: 16px;
+    --tarjeta-espacio: 16px;
+  }
 }

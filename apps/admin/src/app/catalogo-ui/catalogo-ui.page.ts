@@ -59,10 +59,13 @@ import {
         <button pxBoton="peligro" type="button">Cerrar el evento</button>
         <button pxBoton type="button" [cargando]="true">Confirmando…</button>
         <button pxBoton type="button" disabled>Deshabilitado</button>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <button pxBoton [chico]="true" type="button">Chico</button>
           <button pxBoton="secundario" [chico]="true" type="button">Chico secundario</button>
+          <button pxBoton="fantasma" [chico]="true" type="button">Fantasma</button>
+          <button pxBoton="peligro-contorno" [chico]="true" type="button">Quitar</button>
         </div>
+        <button pxBoton [bloque]="true" type="button">De punta a punta</button>
       </div>
 
       <h3 class="text-lg font-bold">Chips</h3>

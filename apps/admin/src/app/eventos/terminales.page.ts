@@ -280,7 +280,7 @@ const VARIANTE_CONEXION: Readonly<Record<EstadoConexion, 'ok' | 'peligro' | 'ate
                 @if (terminal.conexion !== 'desconectada') {
                   <button
                     type="button"
-                    pxBoton="peligro"
+                    pxBoton="peligro-contorno"
                     [chico]="true"
                     (click)="disconnect(terminal)"
                   >

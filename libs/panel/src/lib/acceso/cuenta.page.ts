@@ -109,7 +109,7 @@ type Carga<T> =
                   </span>
                   <button
                     type="button"
-                    pxBoton="peligro"
+                    pxBoton="peligro-contorno"
                     [chico]="true"
                     (click)="deletePasskey(passkey)"
                   >
@@ -127,7 +127,12 @@ type Carga<T> =
                   }}</span>
                 </span>
                 @if (tieneTotp()) {
-                  <button type="button" pxBoton="peligro" [chico]="true" (click)="removeTotp()">
+                  <button
+                    type="button"
+                    pxBoton="peligro-contorno"
+                    [chico]="true"
+                    (click)="removeTotp()"
+                  >
                     Quitar
                   </button>
                 }

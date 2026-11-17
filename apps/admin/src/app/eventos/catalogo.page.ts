@@ -233,7 +233,12 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
                   >
                     {{ premio.estado === 'activo' ? 'Ocultar' : 'Mostrar' }}
                   </button>
-                  <button type="button" pxBoton="peligro" [chico]="true" (click)="remove(premio)">
+                  <button
+                    type="button"
+                    pxBoton="peligro-contorno"
+                    [chico]="true"
+                    (click)="remove(premio)"
+                  >
                     Borrar
                   </button>
                 </div>

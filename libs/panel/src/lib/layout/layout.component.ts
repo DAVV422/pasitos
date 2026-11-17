@@ -37,14 +37,22 @@ export interface ItemMenu {
         <div class="border-line mt-4 hidden border-t pt-4 md:block">
           <p class="text-muted text-sm">{{ sesion.usuario()?.nombre }}</p>
           <div class="mt-2 flex flex-col gap-2">
-            <a pxBoton="secundario" [chico]="true" routerLink="/cuenta">Mi cuenta</a>
-            <button type="button" pxBoton="secundario" [chico]="true" (click)="logout()">
+            <a pxBoton="secundario" [chico]="true" [bloque]="true" routerLink="/cuenta"
+              >Mi cuenta</a
+            >
+            <button
+              type="button"
+              pxBoton="secundario"
+              [chico]="true"
+              [bloque]="true"
+              (click)="logout()"
+            >
               Salir
             </button>
           </div>
         </div>
       </nav>
-      <main class="flex min-w-0 flex-1 flex-col gap-4">
+      <main class="pnl-contenido flex min-w-0 flex-1 flex-col gap-4">
         <ng-content />
       </main>
     </div>

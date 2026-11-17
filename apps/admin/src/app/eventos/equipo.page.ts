@@ -215,7 +215,12 @@ const ESTADOS: Readonly<Record<MiembroEquipo['estado'], string>> = {
                     }
                   </select>
                 </label>
-                <button type="button" pxBoton="peligro" [chico]="true" (click)="remove(miembro)">
+                <button
+                  type="button"
+                  pxBoton="peligro-contorno"
+                  [chico]="true"
+                  (click)="remove(miembro)"
+                >
                   Quitar
                 </button>
               </div>

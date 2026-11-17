@@ -273,7 +273,12 @@ interface Candidato {
                   <button type="button" pxBoton="secundario" [chico]="true" (click)="start(a)">
                     Editar
                   </button>
-                  <button type="button" pxBoton="peligro" [chico]="true" (click)="cancel(a)">
+                  <button
+                    type="button"
+                    pxBoton="peligro-contorno"
+                    [chico]="true"
+                    (click)="cancel(a)"
+                  >
                     Quitar
                   </button>
                 }
