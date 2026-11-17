@@ -45,8 +45,8 @@
 		# Internet lento en el evento: los archivos con huella en el nombre (main-XF7DKZCZ.js)
 		# no cambian nunca y quedan en el navegador y en Cloudflare por un año; el index.html
 		# se revisa siempre, para que una versión nueva llegue al instante.
-		@con_huella path_regexp \-[A-Za-z0-9]{8}\.(js|css)$
-		@sin_huella not path_regexp \-[A-Za-z0-9]{8}\.(js|css)$
+		@con_huella path_regexp /(main|chunk|polyfills|styles)-[A-Za-z0-9_-]{8}\.(js|css)$
+		@sin_huella not path_regexp /(main|chunk|polyfills|styles)-[A-Za-z0-9_-]{8}\.(js|css)$
 		header @con_huella Cache-Control "public, max-age=31536000, immutable"
 		header @sin_huella Cache-Control "no-cache"
 		root * /srv/estaticos
