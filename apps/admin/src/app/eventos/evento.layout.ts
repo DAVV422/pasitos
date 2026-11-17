@@ -41,21 +41,24 @@ export const eventoGuard: CanActivateFn = async (ruta) => {
   }
 };
 
-/** Menú del evento según el rol: cada HU suma sus pantallas. */
+/**
+ * Menú del evento según el rol, en grupos (Fase 2 de UI): cada HU suma sus pantallas.
+ * Un grupo sin ninguna opción para el rol no aparece.
+ */
 const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
-  { ruta: '', texto: 'Resumen', accion: 'evento.read' },
-  { ruta: 'configuracion', texto: 'Configuración', accion: 'evento.update' },
-  { ruta: 'retos', texto: 'Retos', accion: 'contenido.read' },
-  { ruta: 'catalogo', texto: 'Catálogo', accion: 'contenido.read' },
-  { ruta: 'pantallas', texto: 'Pantallas', accion: 'terminales.read' },
-  { ruta: 'mesas', texto: 'Mesas', accion: 'terminales.read' },
-  { ruta: 'lugares', texto: 'Lugares', accion: 'contenido.read' },
-  { ruta: 'agenda', texto: 'Agenda', accion: 'contenido.read' },
-  { ruta: 'sponsors', texto: 'Sponsors', accion: 'contenido.read' },
-  { ruta: 'preguntas', texto: 'Preguntas', accion: 'contenido.read' },
-  { ruta: 'invitados', texto: 'Invitados', accion: 'invitados.update' },
-  { ruta: 'equipo', texto: 'Equipo', accion: 'equipo.read' },
-  { ruta: 'bitacora', texto: 'Bitácora', accion: 'bitacora.read' },
+  { ruta: '', texto: 'Resumen', grupo: 'Evento', exacto: true, accion: 'evento.read' },
+  { ruta: 'configuracion', texto: 'Configuración', grupo: 'Evento', accion: 'evento.update' },
+  { ruta: 'bitacora', texto: 'Bitácora', grupo: 'Evento', accion: 'bitacora.read' },
+  { ruta: 'lugares', texto: 'Lugares', grupo: 'Contenido', accion: 'contenido.read' },
+  { ruta: 'agenda', texto: 'Agenda', grupo: 'Contenido', accion: 'contenido.read' },
+  { ruta: 'sponsors', texto: 'Sponsors', grupo: 'Contenido', accion: 'contenido.read' },
+  { ruta: 'preguntas', texto: 'Preguntas', grupo: 'Contenido', accion: 'contenido.read' },
+  { ruta: 'retos', texto: 'Retos', grupo: 'Juego', accion: 'contenido.read' },
+  { ruta: 'catalogo', texto: 'Catálogo', grupo: 'Juego', accion: 'contenido.read' },
+  { ruta: 'pantallas', texto: 'Pantallas', grupo: 'Dispositivos', accion: 'terminales.read' },
+  { ruta: 'mesas', texto: 'Mesas', grupo: 'Dispositivos', accion: 'terminales.read' },
+  { ruta: 'invitados', texto: 'Invitados', grupo: 'Personas', accion: 'invitados.update' },
+  { ruta: 'equipo', texto: 'Equipo', grupo: 'Personas', accion: 'equipo.read' },
 ];
 
 @Component({
@@ -63,7 +66,11 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [LayoutComponent, RouterOutlet],
   template: `
-    <pnl-layout [titulo]="actual.evento()?.nombre ?? 'Evento'" [menu]="menu()">
+    <pnl-layout
+      [contexto]="actual.evento()?.nombre ?? 'Evento'"
+      [volver]="{ ruta: '/eventos', texto: 'Mis eventos' }"
+      [menu]="menu()"
+    >
       <router-outlet />
     </pnl-layout>
   `,
@@ -75,12 +82,11 @@ export class EventoLayout {
     if (!evento) {
       return [];
     }
-    return [
-      { ruta: '/eventos', texto: '← Mis eventos' },
-      ...MENU_EVENTO.filter((item) => canDo(evento.miRol, item.accion)).map((item) => ({
-        ruta: `/eventos/${evento.id}${item.ruta ? `/${item.ruta}` : ''}`,
-        texto: item.texto,
-      })),
-    ];
+    return MENU_EVENTO.filter((item) => canDo(evento.miRol, item.accion)).map((item): ItemMenu => ({
+      texto: item.texto,
+      ruta: `/eventos/${evento.id}${item.ruta ? `/${item.ruta}` : ''}`,
+      ...(item.grupo ? { grupo: item.grupo } : {}),
+      ...(item.exacto ? { exacto: true } : {}),
+    }));
   });
 }

@@ -44,6 +44,7 @@ type Carga<T> =
   ],
   template: `
     <pnl-marco-acceso titulo="Mi cuenta" [bajada]="sesion.usuario()?.email ?? null">
+      <a class="pnl-menu__volver -mt-2 self-start px-0" routerLink="/">← Volver al panel</a>
       <!-- Contraseña -->
       <px-tarjeta>
         <h2 class="mb-3 text-xl font-bold">Contraseña</h2>

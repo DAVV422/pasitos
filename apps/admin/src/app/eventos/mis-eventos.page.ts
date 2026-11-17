@@ -38,7 +38,7 @@ import { EventosApi, type EventoResumen } from './eventos-api.service';
     TarjetaComponent,
   ],
   template: `
-    <pnl-layout titulo="Panel" [menu]="[{ ruta: '/eventos', texto: 'Mis eventos' }]">
+    <pnl-layout contexto="Panel" [menu]="[{ ruta: '/eventos', texto: 'Mis eventos' }]">
       <header class="flex flex-wrap items-center justify-between gap-3">
         <h1 class="font-display text-3xl font-extrabold">Mis eventos</h1>
         @if (organizaciones().length > 0 && !creando()) {

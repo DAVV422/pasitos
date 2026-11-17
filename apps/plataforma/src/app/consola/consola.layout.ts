@@ -16,7 +16,7 @@ const MENU: readonly ItemMenu[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [LayoutComponent, RouterOutlet],
   template: `
-    <pnl-layout titulo="Consola" [menu]="menu">
+    <pnl-layout contexto="Consola de plataforma" [menu]="menu">
       <router-outlet />
     </pnl-layout>
   `,

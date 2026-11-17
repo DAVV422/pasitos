@@ -119,4 +119,11 @@ test('capturas del panel', async ({ page }, testInfo) => {
 
   await page.goto('/admin/cuenta');
   await capturar(page, '22-mi-cuenta');
+
+  // El menú del celular, abierto (Fase 2).
+  await page.goBack();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Menú' }).click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `${DIR}/23-menu-abierto-celular.png` });
 });

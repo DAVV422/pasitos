@@ -67,6 +67,11 @@ export const ICONOS = {
     { t: 'path', d: 'm6 6 12 12' },
   ],
   back: [{ t: 'path', d: 'm15 18-6-6 6-6' }],
+  menu: [
+    { t: 'path', d: 'M4 6h16' },
+    { t: 'path', d: 'M4 12h16' },
+    { t: 'path', d: 'M4 18h16' },
+  ],
   users: [
     { t: 'path', d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' },
     { t: 'circle', cx: '9', cy: '7', r: '4' },
