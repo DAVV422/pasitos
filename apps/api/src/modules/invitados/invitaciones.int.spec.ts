@@ -61,7 +61,7 @@ describe('Invitaciones por correo (HU-211)', () => {
   }
 
   it('envía a los pendientes: estima los días, encola y la lista dice En cola', async () => {
-    const conCorreo = [];
+    const conCorreo: { id: string; codigo: string }[] = [];
     for (let i = 1; i <= 3; i++) {
       conCorreo.push(await agregar(`Invitado Número ${i}`, `invitado${i}@example.com`));
     }

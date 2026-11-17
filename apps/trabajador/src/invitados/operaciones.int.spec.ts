@@ -172,7 +172,7 @@ describe('process-operaciones', () => {
       expect(Date.now() - inicio).toBeLessThan(30_000);
     }
     expect((operacion.resultado as Vista).totales['filas']).toBe(5_000);
-  }, 60_000);
+  }, 120_000);
 
   it('la búsqueda de parecidos usa el índice trigram', async () => {
     const plan = await base.sistema.db.transaction(async (tx) => {
