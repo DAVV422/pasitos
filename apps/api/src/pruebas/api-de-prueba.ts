@@ -51,6 +51,8 @@ export async function startApiDePrueba(
     controladores?: Type[];
     destinoLogs?: NodeJS.WritableStream;
     archivosDir?: string;
+    /** Variables de configuración que cambian para un test. */
+    config?: Readonly<Record<string, string>>;
     traerMapa?: (lat: number, lng: number) => Promise<Buffer | null>;
   } = {},
 ): Promise<ApiDePrueba> {
@@ -65,6 +67,7 @@ export async function startApiDePrueba(
     PUBLIC_URL: 'http://localhost:8080',
     HIBP_ACTIVO: 'false',
     ...(opciones.archivosDir ? { ARCHIVOS_DIR: opciones.archivosDir } : {}),
+    ...opciones.config,
   });
   const modulo = await Test.createTestingModule({
     imports: [

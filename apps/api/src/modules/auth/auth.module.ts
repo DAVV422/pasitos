@@ -58,9 +58,11 @@ export const CIFRADOR = Symbol('CIFRADOR');
     },
     {
       provide: SesionesService,
-      inject: [AuthRepository, RELOJ],
-      useFactory: (repositorio: AuthRepository, reloj: Reloj) =>
-        new SesionesService(repositorio, reloj),
+      inject: [AuthRepository, RELOJ, APP_CONFIG],
+      useFactory: (repositorio: AuthRepository, reloj: Reloj, config: AppConfig) =>
+        new SesionesService(repositorio, reloj, {
+          segundoFactorOrganizaciones: config.SEGUNDO_FACTOR_ORGANIZACIONES === 'obligatorio',
+        }),
     },
     {
       provide: AuthService,

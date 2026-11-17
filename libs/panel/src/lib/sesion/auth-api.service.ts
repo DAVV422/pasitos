@@ -18,6 +18,8 @@ export interface Yo {
     readonly configurado: boolean;
     readonly metodos: readonly MetodoSegundoFactor[];
     readonly estado: EstadoSegundoFactor;
+    /** Apagado para las organizaciones (la demo): se entra solo con la contraseña. */
+    readonly apagado?: boolean;
     readonly verificadoAt: string | null;
   };
 }
@@ -153,6 +155,13 @@ export class AuthApi {
 
   deletePasskey(id: string): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${BASE}/passkeys/${id}`));
+  }
+
+  /** Lo que falló en el navegador al usar una passkey: solo el nombre del error, para los logs. */
+  reportPasskey(etapa: 'registro' | 'verificacion', error: string): void {
+    this.http
+      .post(`${BASE}/passkeys/diagnostico`, { etapa, error })
+      .subscribe({ error: () => undefined });
   }
 
   startVerificacionPasskey(): Promise<Record<string, unknown>> {

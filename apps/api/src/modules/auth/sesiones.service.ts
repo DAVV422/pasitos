@@ -32,6 +32,8 @@ export interface ContextoSesion {
     readonly requerido: boolean;
     readonly metodos: readonly MetodoSegundoFactor[];
     readonly estado: EstadoSegundoFactor;
+    /** Apagado para las organizaciones (`SEGUNDO_FACTOR_ORGANIZACIONES=apagado`, la demo). */
+    readonly apagado: boolean;
   };
 }
 
@@ -46,6 +48,9 @@ export class SesionesService {
   constructor(
     private readonly repositorio: AuthRepository,
     private readonly reloj: Reloj,
+    private readonly opciones: { readonly segundoFactorOrganizaciones: boolean } = {
+      segundoFactorOrganizaciones: true,
+    },
   ) {}
 
   async create(usuarioId: string, dispositivo: string): Promise<string> {
@@ -91,8 +96,11 @@ export class SesionesService {
     segundoFactorAt: Date | null,
     dispositivo: string | null = null,
   ): Promise<ContextoSesion> {
+    // Apagado para las organizaciones (la demo): solo la plataforma lo pide. Lo configurado se
+    // conserva: al encenderlo, cada uno vuelve a confirmar con lo que ya tenía.
+    const apagado = !this.opciones.segundoFactorOrganizaciones && usuario.rolPlataforma === null;
     const [requerido, cantidadPasskeys] = await Promise.all([
-      this.repositorio.isSegundoFactorRequerido(usuario),
+      apagado ? Promise.resolve(false) : this.repositorio.isSegundoFactorRequerido(usuario),
       this.repositorio.countPasskeys(usuario.id),
     ]);
     const metodos: MetodoSegundoFactor[] = [
@@ -105,7 +113,7 @@ export class SesionesService {
       (usuario.rolPlataforma === null ||
         this.reloj.now().getTime() - segundoFactorAt.getTime() < SEGUNDO_FACTOR_PLATAFORMA_MS);
     const estado: EstadoSegundoFactor =
-      metodos.length === 0
+      apagado || metodos.length === 0
         ? requerido
           ? 'por_configurar'
           : 'no_aplica'
@@ -122,7 +130,7 @@ export class SesionesService {
       },
       segundoFactorAt,
       dispositivo,
-      segundoFactor: { requerido, metodos, estado },
+      segundoFactor: { requerido, metodos, estado, apagado },
     };
   }
 

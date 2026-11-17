@@ -5,10 +5,11 @@ import { AuthApi } from '../sesion/auth-api.service';
 import { SesionService } from '../sesion/sesion.service';
 import { getMensajeError, MarcoAccesoComponent, toVolverSeguro, valorDe } from './comun';
 import {
-  createPasskey,
   getNombrePasskeyPorDefecto,
+  isNavegadorDeOtraApp,
   isPasskeyDisponible,
-  PasskeyCanceladaError,
+  PasskeyError,
+  PasskeyPreparada,
 } from './passkeys';
 
 type Paso = 'elegir' | 'passkey' | 'totp';
@@ -27,7 +28,7 @@ type Paso = 'elegir' | 'passkey' | 'totp';
         @case ('elegir') {
           <div class="flex flex-col gap-3">
             @if (passkeyDisponible) {
-              <button type="button" pxBoton (click)="paso.set('passkey')">
+              <button type="button" pxBoton (click)="openPasskey()">
                 Usar una passkey (recomendado)
               </button>
               <p class="text-muted text-sm">
@@ -51,6 +52,12 @@ type Paso = 'elegir' | 'passkey' | 'totp';
         }
         @case ('passkey') {
           <form class="flex flex-col gap-4" (submit)="submitPasskey($event)" novalidate>
+            @if (otraApp) {
+              <px-aviso variante="advertencia">
+                Estás dentro de otra app (Gmail, WhatsApp…): ahí las passkeys suelen fallar. Abre
+                esta página en Safari o Chrome, o usa la app de códigos.
+              </px-aviso>
+            }
             <px-campo
               etiqueta="Nombre de la passkey"
               ayuda="Para reconocerla en Mi cuenta."
@@ -150,6 +157,8 @@ export class ConfigurarPage {
   readonly volver = input<string | undefined>();
 
   protected readonly passkeyDisponible = isPasskeyDisponible();
+  protected readonly otraApp = isNavegadorDeOtraApp();
+  private readonly passkey = new PasskeyPreparada(() => this.api.startRegistroPasskey());
   protected readonly paso = signal<Paso>('elegir');
   protected readonly obligatorio = computed(
     () => this.sesion.yo()?.segundoFactor.estado === 'por_configurar',
@@ -183,11 +192,19 @@ export class ConfigurarPage {
     await this.run(() => this.api.confirmTotp(this.codigo()));
   }
 
+  /** Trae el desafío y la librería antes del toque (Safari en iPhone, ver passkeys.ts). */
+  protected openPasskey(): void {
+    this.paso.set('passkey');
+    this.error.set(null);
+    void this.passkey.prepare().catch(() => undefined);
+  }
+
   protected async submitPasskey(evento: Event): Promise<void> {
     evento.preventDefault();
     await this.run(async () => {
-      const opciones = await this.api.startRegistroPasskey();
-      await this.api.registerPasskey(await createPasskey(opciones), this.nombrePasskey().trim());
+      // `create()` primero, sin esperas antes: así la passkey se abre dentro del toque.
+      const respuesta = this.passkey.create();
+      await this.api.registerPasskey(await respuesta, this.nombrePasskey().trim());
     });
   }
 
@@ -210,10 +227,15 @@ export class ConfigurarPage {
       }
     } catch (error) {
       this.codigo.set('');
-      this.cancelada.set(error instanceof PasskeyCanceladaError);
-      this.error.set(
-        error instanceof PasskeyCanceladaError ? error.message : getMensajeError(error),
-      );
+      this.cancelada.set(error instanceof PasskeyError && error.motivo === 'cancelada');
+      this.error.set(error instanceof PasskeyError ? error.message : getMensajeError(error));
+      if (error instanceof PasskeyError) {
+        this.api.reportPasskey('registro', error.original);
+      }
+      // El desafío ya se usó: el próximo intento queda listo.
+      if (this.paso() === 'passkey') {
+        void this.passkey.prepare().catch(() => undefined);
+      }
     } finally {
       this.enviando.set(false);
     }

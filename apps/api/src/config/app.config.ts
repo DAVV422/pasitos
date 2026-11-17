@@ -19,6 +19,10 @@ const esquemaConfig = z.object({
   // Origen de las apps: los enlaces de los correos y el origen de WebAuthn.
   PUBLIC_URL: z.string().url().default('http://localhost:8080'),
   WEBAUTHN_RP_ID: z.string().min(1).default('localhost'),
+  // Segundo factor de las organizaciones (dueños, coorganizadores y su equipo). `apagado` (solo para
+  // la demo): entran con la contraseña; los administradores de plataforma lo siguen necesitando.
+  // Los métodos ya configurados se conservan y vuelven a pedirse al encenderlo.
+  SEGUNDO_FACTOR_ORGANIZACIONES: z.enum(['obligatorio', 'apagado']).default('obligatorio'),
   WEBAUTHN_RP_NAME: z.string().min(1).default('Pasitos'),
   // Have I Been Pwned (k-anonimato). Apagado en los tests y el CI.
   HIBP_ACTIVO: z

@@ -78,7 +78,10 @@ type Carga<T> =
       <px-tarjeta>
         <h2 class="mb-1 text-xl font-bold">Segundo factor</h2>
         <p class="text-muted mb-3 text-sm">
-          @if (sesion.yo()?.segundoFactor?.requerido) {
+          @if (sesion.yo()?.segundoFactor?.apagado) {
+            Por ahora no se pide: entras solo con tu contraseña. Lo que configures aquí se va a usar
+            cuando se active.
+          } @else if (sesion.yo()?.segundoFactor?.requerido) {
             Tu rol lo necesita: siempre tiene que quedar al menos uno.
           } @else {
             Opcional para tu rol, pero recomendado.

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Inject,
+  Logger,
   Param,
   ParseUUIDPipe,
   Post,
@@ -41,10 +42,17 @@ const esquemaRespuestaWebAuthn = z.looseObject({
 
 const esquemaAltaPasskey = esquemaNombrePasskey.extend({ respuesta: esquemaRespuestaWebAuthn });
 
+const esquemaDiagnosticoPasskey = z.object({
+  etapa: z.enum(['registro', 'verificacion']),
+  error: z.string().max(80),
+});
+
 /** `/auth` (API §3.1, HU-201). El controlador solo valida y arma la respuesta. */
 @Controller('auth')
 @SoloSesion()
 export class AuthController {
+  private readonly logger = new Logger('Passkeys');
+
   constructor(
     private readonly auth: AuthService,
     private readonly sesiones: SesionesService,
@@ -200,6 +208,23 @@ export class AuthController {
     await this.segundoFactor.deletePasskey(sesion, id);
   }
 
+  /**
+   * Lo que falló en el navegador al crear o usar una passkey (el servidor no se entera de otro
+   * modo). Solo el nombre del error y el tipo de equipo: nada personal.
+   */
+  @Post('passkeys/diagnostico')
+  @SinSegundoFactor('cualquiera')
+  @HttpCode(204)
+  reportPasskey(@Sesion() sesion: ContextoSesion, @Body() cuerpo: unknown): void {
+    const datos = esquemaDiagnosticoPasskey.safeParse(cuerpo);
+    if (datos.success) {
+      this.logger.warn(
+        { usuarioId: sesion.usuario.id, dispositivo: sesion.dispositivo, ...datos.data },
+        'La passkey falló en el navegador',
+      );
+    }
+  }
+
   @Post('segundo-factor/passkey/opciones')
   @SinSegundoFactor('verificar')
   @HttpCode(200)
@@ -244,6 +269,7 @@ function toSegundoFactor(sesion: ContextoSesion) {
     configurado: sesion.segundoFactor.metodos.length > 0,
     metodos: sesion.segundoFactor.metodos,
     estado: sesion.segundoFactor.estado,
+    apagado: sesion.segundoFactor.apagado,
     verificadoAt: sesion.segundoFactorAt,
   };
 }
