@@ -1,0 +1,1 @@
+ALTER TABLE "eventos" ADD COLUMN "llave_entradas" "bytea" DEFAULT sha256((gen_random_uuid()::text || gen_random_uuid()::text)::bytea) NOT NULL;

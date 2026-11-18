@@ -1,8 +1,12 @@
+import { eq } from 'drizzle-orm';
 import {
   actividades,
   asistentes,
+  eventos,
   invitaciones,
+  lotes,
   lugares,
+  movimientosLote,
   premios,
   retos,
   withOrganizacion,
@@ -13,8 +17,13 @@ import { createParLlaves, exportLlavePublica } from '@pasitos/firmas';
 import { LibroRepository, LibroService } from '@pasitos/libro';
 import { uuidv7 } from 'uuidv7';
 import { startApiDePrueba, type ApiDePrueba } from '../../pruebas/api-de-prueba';
-import { createEventoDePrueba, type EventoDePrueba } from '../../pruebas/equipo-de-prueba';
+import {
+  createEventoDePrueba,
+  createPersonaConSesion,
+  type EventoDePrueba,
+} from '../../pruebas/equipo-de-prueba';
 import { createTokenAleatorio } from '../auth/auth.repository';
+import { verifyQrEntrada } from './entrada';
 
 const CHROME_ANDROID =
   'Mozilla/5.0 (Linux; Android 14; SM-A145M) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
@@ -224,5 +233,105 @@ describe('Inicio de la app (HU-308)', () => {
   it('sin sesión no responde', async () => {
     const respuesta = await get('/api/v1/app/evento', 'px_asistente=inventada');
     expect(respuesta.json().code).toBe('NO_AUTENTICADO');
+  });
+  describe('Mi entrada e historial (HU-311)', () => {
+    it('Mi entrada: un PXE1 que la puerta lee con la llave del evento, sin caché', async () => {
+      const sara = await newVinculado('Sara Entrada');
+      const respuesta = await get('/api/v1/app/mi-entrada', sara.cookie);
+      expect(respuesta.statusCode).toBe(200);
+      expect(respuesta.headers['cache-control']).toBe('no-store');
+      const entrada = respuesta.json();
+      expect(entrada).toMatchObject({ nombre: 'Sara Entrada', grupos: [] });
+      expect(entrada.codigo).toMatch(/^A-\d{4}$/);
+      const [fila] = await base.sistema.db
+        .select({ llave: eventos.llaveEntradas })
+        .from(eventos)
+        .where(eq(eventos.id, evento.eventoId));
+      expect(
+        verifyQrEntrada(fila?.llave ?? Buffer.alloc(32), entrada.qr, api.reloj.now().getTime()),
+      ).toEqual({ valido: true, asistenteId: sara.asistenteId });
+      expect(JSON.stringify(entrada)).not.toContain(
+        (fila?.llave ?? Buffer.alloc(1)).toString('base64'),
+      );
+    });
+
+    it('el historial marca Registrado en Stellar cuando su lote se confirma y muestra la anulación', async () => {
+      const tito = await newVinculado('Tito Historial');
+      const retoA = await newReto({ nombre: 'Reto confirmado' });
+      const retoB = await newReto({ nombre: 'Reto pendiente' });
+      const autor = await createPersonaConSesion(base, 'Organizadora');
+      const ids = await withOrganizacion(base.app.db, evento.organizacionId, async (tx) => {
+        const a = await libro.addMovimiento(tx, {
+          eventoId: evento.eventoId,
+          asistenteId: tito.asistenteId,
+          tipo: 'reto',
+          origen: 'asistente',
+          retoId: retoA,
+        });
+        const b = await libro.addMovimiento(tx, {
+          eventoId: evento.eventoId,
+          asistenteId: tito.asistenteId,
+          tipo: 'reto',
+          origen: 'asistente',
+          retoId: retoB,
+        });
+        const anulacion = await libro.addMovimiento(tx, {
+          eventoId: evento.eventoId,
+          asistenteId: tito.asistenteId,
+          tipo: 'anulacion',
+          origen: 'equipo',
+          puntos: -20,
+          anulaMovimientoId: b.movimiento.id,
+          autorId: autor.usuarioId,
+          motivo: 'Motivo interno del equipo',
+        });
+        return { a: a.movimiento.id, b: b.movimiento.id, anulacion: anulacion.movimiento.id };
+      });
+      const loteId = uuidv7();
+      await base.sistema.db.insert(lotes).values({
+        id: loteId,
+        organizacionId: evento.organizacionId,
+        eventoId: evento.eventoId,
+        numero: 1,
+        huellaAnterior: Buffer.alloc(32),
+        raiz: Buffer.alloc(32, 1),
+        huella: Buffer.alloc(32, 2),
+        cantidadMovimientos: 1,
+        conteosPorReto: {},
+        estado: 'confirmado',
+        txHash: 'ab'.repeat(32),
+      });
+      await base.sistema.db.insert(movimientosLote).values({
+        movimientoId: ids.a,
+        organizacionId: evento.organizacionId,
+        eventoId: evento.eventoId,
+        loteId,
+        n: 1,
+      });
+
+      const respuesta = await get('/api/v1/app/movimientos', tito.cookie);
+      expect(respuesta.statusCode).toBe(200);
+      const { items, pagination } = respuesta.json();
+      expect(pagination).toEqual({ limit: 50, nextCursor: null });
+      expect(items).toMatchObject([
+        {
+          id: ids.anulacion,
+          puntos: -20,
+          detalle: 'Anulado: Reto pendiente',
+          anulaMovimientoId: ids.b,
+        },
+        { id: ids.b, detalle: 'Reto pendiente', estado: 'confirmado', enlaceStellar: null },
+        { id: ids.a, detalle: 'Reto confirmado', estado: 'registrado_en_stellar' },
+      ]);
+      expect(respuesta.body).not.toContain('Motivo interno');
+    });
+
+    it('pagina con el cursor y rechaza uno inventado', async () => {
+      const uma = await newVinculado('Uma Paginas');
+      const primera = await get('/api/v1/app/movimientos', uma.cookie);
+      expect(primera.json()).toEqual({ items: [], pagination: { limit: 50, nextCursor: null } });
+      const mala = await get('/api/v1/app/movimientos?cursor=nada', uma.cookie);
+      expect(mala.json().code).toBe('VALIDACION');
+    });
   });
 });

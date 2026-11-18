@@ -37,6 +37,11 @@ export const eventos = pgTable(
     salAnonima: bytea('sal_anonima')
       .notNull()
       .default(sql`sha256((gen_random_uuid()::text || gen_random_uuid()::text)::bytea)`),
+    // HU-311: la llave del QR de *Mi entrada* (HMAC, 32 bytes). Como la sal: la genera la base y
+    // no sale del servidor.
+    llaveEntradas: bytea('llave_entradas')
+      .notNull()
+      .default(sql`sha256((gen_random_uuid()::text || gen_random_uuid()::text)::bytea)`),
     // HU-205: ciclo de vida.
     publicadoAt: timestamp('publicado_at', { withTimezone: true }),
     publicadoPor: uuid('publicado_por'),

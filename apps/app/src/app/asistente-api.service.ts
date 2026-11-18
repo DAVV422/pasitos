@@ -101,6 +101,33 @@ export interface ActividadApp {
   readonly retoId: string | null;
 }
 
+/** `GET /app/mi-entrada` (HU-311 §1). */
+export interface MiEntrada {
+  readonly qr: string;
+  readonly codigo: string;
+  readonly nombre: string;
+  readonly validoHasta: string;
+  readonly grupos: readonly string[];
+  readonly ci: { readonly cargado: boolean; readonly verificado: boolean };
+}
+
+/** Un movimiento del historial (HU-311 §2). */
+export interface MovimientoHistorial {
+  readonly id: string;
+  readonly tipo: string;
+  readonly puntos: number;
+  readonly detalle: string;
+  readonly hora: string;
+  readonly estado: 'confirmado' | 'registrado_en_stellar';
+  readonly enlaceStellar: string | null;
+  readonly anulaMovimientoId: string | null;
+}
+
+export interface PaginaHistorial {
+  readonly items: readonly MovimientoHistorial[];
+  readonly pagination: { readonly limit: number; readonly nextCursor: string | null };
+}
+
 export interface DatosVincular {
   readonly tipo: TipoAcceso;
   readonly token: string;
@@ -130,6 +157,15 @@ export class AsistenteApi {
   /** El navegador revalida solo con `If-None-Match` (`Cache-Control: no-cache`) y usa el 304. */
   getEstado(): Promise<EstadoApp> {
     return firstValueFrom(this.http.get<EstadoApp>(`${BASE}/app/estado`));
+  }
+
+  getMiEntrada(): Promise<MiEntrada> {
+    return firstValueFrom(this.http.get<MiEntrada>(`${BASE}/app/mi-entrada`));
+  }
+
+  listMovimientos(cursor?: string): Promise<PaginaHistorial> {
+    const consulta = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+    return firstValueFrom(this.http.get<PaginaHistorial>(`${BASE}/app/movimientos${consulta}`));
   }
 
   getEvento(): Promise<EventoApp> {

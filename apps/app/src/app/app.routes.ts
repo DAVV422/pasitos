@@ -30,6 +30,14 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./pendiente.page').then((m) => m.PendientePage),
       },
       {
+        path: 'mi-entrada',
+        loadComponent: () => import('./mi-entrada/mi-entrada.page').then((m) => m.MiEntradaPage),
+      },
+      {
+        path: 'historial',
+        loadComponent: () => import('./historial/historial.page').then((m) => m.HistorialPage),
+      },
+      {
         path: 'mas',
         loadComponent: () => import('./mas/mas.page').then((m) => m.MasPage),
       },

@@ -1,4 +1,15 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { withOrganizacion } from '@pasitos/db';
 import { AppError, TIPOS_ACCESO, type TipoAcceso } from '@pasitos/dominio';
 import { esquemaVincular } from '@pasitos/dominio/esquemas';
@@ -12,6 +23,7 @@ import { AccesoService } from './acceso.service';
 import { RELOJ, type Reloj } from '../auth/sesiones.service';
 import { getEstadoApp, getEtag } from './estado-app';
 import { getEventoApp } from './evento-app';
+import { getMiEntrada, listMovimientosApp } from './movimientos-app';
 import { COOKIE_ASISTENTE, COOKIE_DISPOSITIVO } from './sesiones-asistente';
 
 function toTipo(valor: string): TipoAcceso {
@@ -88,7 +100,33 @@ export class AppAsistenteController {
     private readonly db: DbService,
     private readonly enVivo: EnVivoService,
     @Inject(RELOJ) private readonly reloj: Reloj,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
+
+  /** HU-311 §1: el QR que cambia cada 30 s y el código para dictar. Nunca se guarda en caché. */
+  @Get('mi-entrada')
+  @Asistente()
+  getMiEntrada(
+    @AsistenteActual() asistente: ContextoAsistente,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    void reply.header('Cache-Control', 'no-store');
+    return withOrganizacion(this.db.db, asistente.organizacionId, (tx) =>
+      getMiEntrada(tx, asistente.asistenteId, this.reloj.now()),
+    );
+  }
+
+  /** HU-311 §2: el historial, de 50 en 50. */
+  @Get('movimientos')
+  @Asistente()
+  listMovimientos(
+    @AsistenteActual() asistente: ContextoAsistente,
+    @Query('cursor') cursor: string | undefined,
+  ) {
+    return withOrganizacion(this.db.db, asistente.organizacionId, (tx) =>
+      listMovimientosApp(tx, asistente.asistenteId, cursor, this.config.STELLAR_RED),
+    );
+  }
 
   /** HU-308 §1: la llamada al abrir. Con `If-None-Match`, `304` si nada cambió. */
   @Get('estado')

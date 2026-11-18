@@ -183,6 +183,13 @@
       "when": 1794994346790,
       "tag": "0025_registro_tecnico",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794995537551,
+      "tag": "0026_llave_entradas",
+      "breakpoints": true
     }
   ]
 }

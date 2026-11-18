@@ -213,7 +213,17 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await celular.getByRole('button', { name: 'Entrar' }).click();
   await expect(celular).toHaveURL(/\/app\/inicio$/);
   await expect(celular.getByText('Pasa por la puerta para empezar a ganar puntos.')).toBeVisible();
-  await expect(celular.getByText('A-0001')).toBeVisible();
+  await expect(celular.getByTestId('saldo')).toHaveText('0');
+  // HU-308 y HU-311: la barra inferior, Mi entrada con su código y el historial vacío.
+  const barra = celular.getByRole('navigation', { name: 'Principal' });
+  await expect(barra.getByRole('link', { name: 'Retos' })).toBeVisible();
+  await celular.getByRole('link', { name: 'Mi entrada' }).click();
+  await expect(celular).toHaveURL(/\/app\/mi-entrada$/);
+  await expect(celular.getByTestId('codigo')).toHaveText('A-0001');
+  await expect(celular.getByRole('img', { name: 'QR de tu entrada' })).toBeVisible();
+  await barra.getByRole('link', { name: 'Más' }).click();
+  await celular.getByRole('link', { name: /Historial/ }).click();
+  await expect(celular.getByText('Todavía no tienes movimientos.')).toBeVisible();
   // Al volver a abrir la app, entra directo (la sesión vive en la cookie).
   await celular.goto(new URL('/app/', page.url()).href);
   await expect(celular).toHaveURL(/\/app\/inicio$/);
