@@ -282,6 +282,11 @@ export const CATALOGO_ERRORES = {
     title: 'QR de otra persona',
     mensaje: 'Este QR de registro lo muestra otra persona o una tablet.',
   },
+  PERMISO_REGISTRO_VENCIDO: {
+    status: 422,
+    title: 'Permiso de registro vencido',
+    mensaje: 'Pasó mucho tiempo. Vuelve a escanear el QR.',
+  },
   CONFIRMAR_RIESGO: {
     status: 422,
     title: 'Falta confirmar el riesgo',

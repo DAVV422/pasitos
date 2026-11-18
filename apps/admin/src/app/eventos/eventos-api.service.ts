@@ -116,9 +116,13 @@ export interface AsistentePanel {
   readonly codigoExterno: string | null;
   readonly estado: 'invitado' | 'registrado' | 'presente' | 'cancelado';
   readonly emailEstado: 'sin_correo' | 'pendiente' | 'en_cola' | 'enviado' | 'rebotado';
-  readonly origen: 'lista' | 'csv' | 'puerta';
-  /** HU-303: quién lo registró en la puerta (*"Luis C."*). */
+  readonly origen: 'lista' | 'csv' | 'puerta' | 'autoregistro';
+  /** HU-303: quién lo registró en la puerta (*"Luis C."*); HU-320: quién activó la cuenta. */
   readonly registradoPor?: string | null;
+  /** HU-320: el nombre del QR de registro del que salió. */
+  readonly qrRegistro?: string | null;
+  /** HU-320: el carnet enmascarado (`•••890`). */
+  readonly ci?: string | null;
   /** HU-211: la invitación vigente; `saleEl` si su correo está en cola. */
   readonly invitacion: { readonly estado: string; readonly saleEl: string | null } | null;
 }
@@ -446,6 +450,7 @@ export class EventosApi {
       estado?: string;
       emailEstado?: string;
       origen?: string;
+      qrRegistroId?: string;
       cursor?: string | null;
     },
   ): Promise<Pagina<AsistentePanel>> {

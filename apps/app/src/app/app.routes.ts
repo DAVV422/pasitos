@@ -1,4 +1,5 @@
 import { Route } from '@angular/router';
+import { RegistroPage } from './acceso/registro.page';
 import { sesionGuard } from './sesion-asistente';
 
 /** Rutas de la app del asistente (Aplicaciones web §2.1). */
@@ -6,6 +7,11 @@ export const appRoutes: Route[] = [
   {
     path: 'acceso/:tipo/:token',
     loadComponent: () => import('./acceso/acceso.page').then((m) => m.AccesoPage),
+  },
+  {
+    // HU-320: el autorregistro va en el paquete inicial (es lo primero que ve la persona).
+    path: 'registro/:tipo/:codigo',
+    component: RegistroPage,
   },
   {
     path: '',
@@ -62,6 +68,10 @@ export const appRoutes: Route[] = [
       {
         path: 'cuenta',
         loadComponent: () => import('./cuenta/cuenta.page').then((m) => m.CuentaPage),
+      },
+      {
+        path: 'cuenta/datos',
+        loadComponent: () => import('./cuenta/mis-datos.page').then((m) => m.MisDatosPage),
       },
       {
         path: 'cuenta/dispositivo',

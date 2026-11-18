@@ -1,4 +1,6 @@
 import * as z from 'zod';
+import { esquemaDeviceId, esquemaSenales } from '../acceso/esquemas';
+import { esquemaLlavePublica } from '../terminales/esquemas';
 import { MUESTRAS_QR_REGISTRO, TIPOS_QR_REGISTRO } from './qr-registro';
 
 const fecha = z.iso.datetime({ offset: true });
@@ -51,3 +53,49 @@ export const esquemaInvalidarQrRegistro = z.object({
 export const esquemaImprimibleQrRegistro = z.object({
   formato: z.enum(['png', 'pdf']).default('png'),
 });
+
+/**
+ * El correo del autorregistro (D60): opcional y sin validar el dominio ni que no se repita. Solo
+ * un formato mínimo `algo@algo` de hasta 254 caracteres.
+ */
+const correoLibre = z
+  .string()
+  .trim()
+  .max(254)
+  .regex(/^[^\s@]+@[^\s@]+$/, { error: 'Escribe un correo como nombre@dominio.' });
+
+/** El carnet tal como lo escribe la persona: texto libre de hasta 20 caracteres (D60). */
+const carnetLibre = z.string().trim().min(1).max(20);
+
+const nombrePersona = z.string().trim().min(2).max(80);
+
+/** Lo vacío cuenta como «sin dato». */
+function vacioANulo(valor: unknown): unknown {
+  return typeof valor === 'string' && valor.trim() === '' ? null : valor;
+}
+
+/** `POST /app/registro` (HU-320 §2), con el permiso `px_registro`. */
+export const esquemaAutoregistro = z
+  .object({
+    nombre: nombrePersona,
+    email: z.preprocess(vacioANulo, correoLibre.nullable()).default(null),
+    ci: z.preprocess(vacioANulo, carnetLibre.nullable()).default(null),
+    deviceId: esquemaDeviceId,
+    llavePublica: esquemaLlavePublica,
+    senales: esquemaSenales.optional(),
+    terminos: z.object({ version: z.string().max(40), privacidad: z.string().max(40) }),
+  })
+  .strict();
+export type DatosAutoregistro = z.infer<typeof esquemaAutoregistro>;
+
+/** *Mis datos* (`PATCH /app/yo`, HU-320 §4). */
+export const esquemaMisDatos = z
+  .object({
+    nombre: nombrePersona,
+    email: z.preprocess(vacioANulo, correoLibre.nullable()),
+    ci: z.preprocess(vacioANulo, carnetLibre.nullable()),
+  })
+  .partial()
+  .strict()
+  .refine((d) => Object.keys(d).length > 0, { error: 'Indica qué cambiar.' });
+export type MisDatos = z.infer<typeof esquemaMisDatos>;

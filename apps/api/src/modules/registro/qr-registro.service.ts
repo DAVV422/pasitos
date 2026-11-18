@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
-import { and, asc, eq, inArray, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, type SQL } from 'drizzle-orm';
 import {
+  asistentes,
   eventos,
   miembrosEvento,
   miembrosOrganizacion,
@@ -29,6 +30,7 @@ import { hashToken } from '../auth/auth.repository';
 import type { Reloj } from '../auth/sesiones.service';
 import { toActor } from '../bitacora/actores';
 import { BitacoraService } from '../bitacora/bitacora.service';
+import { getNombreCorto } from '../puerta/check-in.service';
 import type { TerminalConectada } from '../terminales/conexion.service';
 import { buildUrlFijo, buildUrlRotativo, createTokenFijo } from './firma-registro';
 import { renderPdf, renderPng } from './imprimible';
@@ -50,6 +52,8 @@ export interface QrRegistroApi {
   readonly hasta: string | null;
   readonly estado: EstadoQrRegistro;
   readonly registros: number;
+  /** HU-320: las cuentas de la última hora (*"23 cuentas · 4 en la última hora"*). */
+  readonly ultimaHora: number;
   readonly invalidadoAt: string | null;
   readonly motivoInvalidacion: string | null;
   readonly createdAt: string;
@@ -82,6 +86,8 @@ export interface FranjaQrRegistro {
   readonly horaServidor: number;
   readonly registros: number;
   readonly tope: number | null;
+  /** HU-320: las últimas cuentas (*"Valeria Q. · hace 1 min"*). */
+  readonly ultimas: readonly { readonly nombre: string; readonly at: string }[];
 }
 
 function errorCampo(field: string, message: string): AppError {
@@ -400,6 +406,12 @@ export class QrRegistroService {
     const disponibilidad = evento
       ? getDisponibilidadQr(qr, evento, ahora)
       : ('evento_no_activo' as const);
+    const ultimas = await tx
+      .select({ nombre: asistentes.nombre, at: asistentes.createdAt })
+      .from(asistentes)
+      .where(eq(asistentes.qrRegistroId, qr.id))
+      .orderBy(desc(asistentes.createdAt))
+      .limit(5);
     const base = {
       id: qr.id,
       nombre: qr.nombre,
@@ -407,6 +419,10 @@ export class QrRegistroService {
       horaServidor: ahora.getTime(),
       registros: qr.registros,
       tope: qr.tope,
+      ultimas: ultimas.map((u) => ({
+        nombre: getNombreCorto(u.nombre) ?? '',
+        at: u.at.toISOString(),
+      })),
     };
     if (disponibilidad !== 'activo' || !qr.secretoCifrado) {
       return { ...base, url: null, franja: null, validoHasta: null };
@@ -573,6 +589,23 @@ export class QrRegistroService {
       .where(donde)
       .orderBy(asc(qrRegistro.estado), asc(qrRegistro.nombre));
     const ahora = this.reloj.now();
+    const recientes =
+      filas.length === 0
+        ? []
+        : await tx
+            .select({ qrId: asistentes.qrRegistroId, cuentas: count() })
+            .from(asistentes)
+            .where(
+              and(
+                inArray(
+                  asistentes.qrRegistroId,
+                  filas.map((f) => f.qr.id),
+                ),
+                gte(asistentes.createdAt, new Date(ahora.getTime() - 3_600_000)),
+              ),
+            )
+            .groupBy(asistentes.qrRegistroId);
+    const porQr = new Map(recientes.map((r) => [r.qrId, r.cuentas]));
     return filas.map(({ qr, usuarioNombre, pantallaNombre }) => ({
       id: qr.id,
       nombre: qr.nombre,
@@ -587,6 +620,7 @@ export class QrRegistroService {
       hasta: qr.hasta?.toISOString() ?? null,
       estado: getEstadoQrRegistro(qr, ahora),
       registros: qr.registros,
+      ultimaHora: porQr.get(qr.id) ?? 0,
       invalidadoAt: qr.invalidadoAt?.toISOString() ?? null,
       motivoInvalidacion: qr.motivoInvalidacion,
       createdAt: qr.createdAt.toISOString(),

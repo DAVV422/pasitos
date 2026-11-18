@@ -409,6 +409,9 @@ const CAMPOS = ['nombre', 'usuarioId', 'pantallaId', 'tope', 'desde', 'hasta', '
                   @if (qr.tope) {
                     de {{ qr.tope }}
                   }
+                  @if (qr.ultimaHora > 0) {
+                    · {{ qr.ultimaHora }} en la última hora
+                  }
                 </span>
                 @if (qr.motivoInvalidacion) {
                   <span class="text-muted block text-sm">Motivo: {{ qr.motivoInvalidacion }}</span>
@@ -434,6 +437,7 @@ const CAMPOS = ['nombre', 'usuarioId', 'pantallaId', 'tope', 'desde', 'hasta', '
                   @if (qr.tipo === 'fijo' && qr.estado !== 'invalidado') {
                     <button type="button" (click)="download(qr, 'png')">Descargar en PNG</button>
                   }
+                  <a routerLink="../invitados" [queryParams]="{ qr: qr.id }">Ver cuentas</a>
                   @if (qr.estado !== 'invalidado') {
                     <button type="button" (click)="start(qr)">Editar</button>
                   }

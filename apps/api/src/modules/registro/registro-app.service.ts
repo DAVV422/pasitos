@@ -27,6 +27,8 @@ export interface AperturaRegistro {
   readonly terminos: { readonly version: string; readonly privacidad: string };
   /** Hasta cuándo sirve el permiso para terminar el formulario. */
   readonly permisoHasta: string;
+  /** HU-321: el formulario muestra el carnet (opcional) solo si el evento lo pide. */
+  readonly pideCarnet: boolean;
 }
 
 const MOTIVOS: Partial<Record<CodigoError, string>> = {
@@ -140,6 +142,7 @@ export class RegistroAppService {
         qr: { nombre: qr.nombre },
         terminos: { version: VERSION_TERMINOS, privacidad: VERSION_TERMINOS },
         permisoHasta: new Date(exp).toISOString(),
+        pideCarnet: false,
       },
       permiso: valor,
       expira: new Date(exp),

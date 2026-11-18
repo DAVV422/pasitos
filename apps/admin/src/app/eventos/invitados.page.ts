@@ -1,5 +1,5 @@
 import { ScrollingModule } from '@angular/cdk/scrolling';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -222,7 +222,13 @@ interface Candidato {
         <option value="lista">Origen: lista</option>
         <option value="csv">Origen: importados</option>
         <option value="puerta">Origen: puerta</option>
+        <option value="autoregistro">Origen: autorregistro</option>
       </select>
+      @if (filtroQr(); as qr) {
+        <button type="button" class="pnl-chip-filtro" aria-pressed="true" (click)="clearQr()">
+          Solo un QR de registro ✕
+        </button>
+      }
     </pnl-filtros>
 
     @switch (estado()) {
@@ -262,11 +268,7 @@ interface Candidato {
                 </span>
                 <span class="text-muted block truncate text-sm">
                   {{ a.email ?? 'Sin correo' }}{{ a.codigoExterno ? ' · ' + a.codigoExterno : ''
-                  }}{{
-                    a.origen === 'puerta'
-                      ? ' · Puerta' + (a.registradoPor ? ' · ' + a.registradoPor : '')
-                      : ''
-                  }}
+                  }}{{ describeOrigen(a) }}
                 </span>
               </span>
               <span
@@ -311,6 +313,7 @@ export class InvitadosPage implements OnInit {
   private readonly api = inject(EventosApi);
   private readonly avisos = inject(AvisosService);
   private readonly actual = inject(EventoActualService);
+  private readonly ruta = inject(ActivatedRoute);
 
   protected readonly estadosEmail = ESTADOS_EMAIL;
   protected readonly eventoId = computed(() => this.actual.evento()?.id ?? '');
@@ -319,7 +322,13 @@ export class InvitadosPage implements OnInit {
   protected readonly filas = signal<readonly AsistentePanel[]>([]);
   protected readonly contadores = signal<ContadoresInvitados | null>(null);
   protected readonly q = signal('');
-  private readonly filtros = signal<{ estado?: string; emailEstado?: string; origen?: string }>({});
+  private readonly filtros = signal<{
+    estado?: string;
+    emailEstado?: string;
+    origen?: string;
+    qrRegistroId?: string;
+  }>({});
+  protected readonly filtroQr = computed(() => this.filtros().qrRegistroId);
   protected readonly filtroEstado = computed(() => this.filtros().estado);
   protected readonly filtroEmail = computed(() => this.filtros().emailEstado);
   protected readonly filtroOrigen = computed(() => this.filtros().origen);
@@ -374,7 +383,27 @@ export class InvitadosPage implements OnInit {
   }
 
   ngOnInit(): void {
+    // HU-320: *Ver cuentas* de un QR de registro llega con `?qr=`.
+    const qr = this.ruta.snapshot.queryParamMap.get('qr');
+    if (qr) this.filtros.set({ ...this.filtros(), qrRegistroId: qr });
     void this.load();
+  }
+
+  protected clearQr(): void {
+    const { qrRegistroId, ...resto } = this.filtros();
+    void qrRegistroId;
+    this.filtros.set(resto);
+    void this.load();
+  }
+
+  /** *"Puerta · Luis C."* o *"Autorregistro · QR «Entrada principal» · Rita R."*. */
+  protected describeOrigen(a: AsistentePanel): string {
+    const quien = a.registradoPor ? ` · ${a.registradoPor}` : '';
+    if (a.origen === 'puerta') return ` · Puerta${quien}`;
+    if (a.origen === 'autoregistro') {
+      return ` · Autorregistro${a.qrRegistro ? ` · QR «${a.qrRegistro}»` : ''}${quien}`;
+    }
+    return '';
   }
 
   protected nombreEstado(estado: (typeof ESTADOS_ASISTENTE)[number]): string {

@@ -38,7 +38,7 @@ import { EventosApi, type FilaBitacoraEvento } from './eventos-api.service';
               }}{{ fila.dispositivo ? ' · ' + fila.dispositivo : '' }}
             </p>
             <p>
-              <b>{{ fila.texto }}</b>{{ fila.objeto?.nombre ? ': ' + fila.objeto?.nombre : '' }}
+              <b>{{ fila.texto }}</b>{{ fila.objeto?.nombre ? ': ' + fila.objeto.nombre : '' }}
             </p>
             @if (fila.despues) {
               <p class="text-muted text-sm break-all">

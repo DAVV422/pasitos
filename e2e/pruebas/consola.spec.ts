@@ -1,5 +1,11 @@
 import { devices, expect, test, type Page } from '@playwright/test';
-import { createEmailPrueba, createIpPrueba, createPersona, getEnlaceCorreo } from './apoyo/base';
+import {
+  createEmailPrueba,
+  createIpPrueba,
+  createPersona,
+  getEnlaceCorreo,
+  setEstadoEvento,
+} from './apoyo/base';
 
 /**
  * Consola de plataforma de punta a punta (HU-202): un administrador entra con passkey, crea una
@@ -43,7 +49,7 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   browser,
 }) => {
   // Recorre varias HU seguidas: con toda la suite en paralelo, 30 s no alcanzan.
-  test.setTimeout(90_000);
+  test.setTimeout(150_000);
   const adminEmail = createEmailPrueba('admin-consola');
   const password = 'una frase larga para la consola';
   await createPersona({ email: adminEmail, password, nombre: 'Admin e2e', rolPlataforma: 'admin' });
@@ -299,4 +305,47 @@ test('un administrador crea una organización y la dueña acepta la invitación'
 
   await page.reload();
   await expect(page.getByText('Activo')).toBeVisible();
+
+  // HU-319 y HU-320: con el evento publicado y el autorregistro activo, la dueña crea un QR
+  // rotativo que muestra ella; un celular lo escanea, escribe su nombre y entra presente.
+  const eventoE2e = /eventos\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? '';
+  await setEstadoEvento(eventoE2e, 'publicado');
+  await page.reload();
+  await page.getByRole('link', { name: 'Configuración', exact: true }).click();
+  await page.getByRole('tab', { name: 'Reglas y puerta' }).click();
+  await page.getByRole('switch', { name: /Autorregistro con QR/ }).check();
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Guardado.')).toBeVisible();
+  await page.getByRole('link', { name: 'QR de registro', exact: true }).click();
+  await page.getByRole('button', { name: 'Nuevo QR' }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill('Entrada e2e');
+  await page.getByLabel('Persona').selectOption({ index: 1 });
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Entrada e2e')).toBeVisible();
+  const qrs = (await (
+    await page.request.get(`/api/v1/eventos/${eventoE2e}/qr-registro`)
+  ).json()) as {
+    items: { id: string; nombre: string }[];
+  };
+  const qrId = qrs.items.find((q) => q.nombre === 'Entrada e2e')?.id ?? '';
+  await page.getByRole('link', { name: 'Puerta', exact: true }).click();
+  await page.getByRole('link', { name: 'Activar cuentas con mi QR' }).click();
+  await expect(page.getByRole('img', { name: 'QR para crear tu cuenta' })).toBeVisible();
+  const franja = (await (await page.request.get(`/api/v1/qr-registro/${qrId}/franja`)).json()) as {
+    url: string;
+  };
+  const celularNuevo = await browser.newContext({ ...devices['Pixel 7'] });
+  const nuevo = await celularNuevo.newPage();
+  await nuevo.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
+  await nuevo.goto(new URL(franja.url).pathname);
+  await expect(nuevo.getByRole('heading', { level: 1 })).toHaveText('Entra al evento');
+  await nuevo.getByLabel('Nombre').fill('Rosa Mamani');
+  await nuevo.getByRole('button', { name: 'Entrar' }).click();
+  await expect(nuevo).toHaveURL(/\/app\/inicio$/);
+  await expect(nuevo.getByText('¡Listo, Rosa! Ya estás en el evento.')).toBeVisible();
+  await expect(nuevo.getByTestId('saldo')).toHaveText('10');
+  await celularNuevo.close();
+  await page.getByRole('link', { name: 'Salir' }).click();
+  await page.getByRole('link', { name: 'Invitados', exact: true }).click();
+  await expect(page.getByText(/Autorregistro · QR «Entrada e2e»/)).toBeVisible();
 });

@@ -53,6 +53,8 @@ export class SesionAsistente {
   readonly actualizadoAt = signal<number | null>(null);
   /** No se pudo traer el contenido del evento y no hay copia (HU-309: el estado de error). */
   readonly errorEvento = signal(false);
+  /** HU-320: *"¡Listo, Valeria! Ya estás en el evento"*, una vez, al llegar a *Inicio*. */
+  readonly bienvenida = signal<string | null>(null);
   /** El último aviso del organizador (P2; si llega, se muestra). */
   readonly aviso = signal<string | null>(null);
 

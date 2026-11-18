@@ -156,24 +156,7 @@ export class AccesoService {
 
   async vincular(datos: DatosVincular, ip: string, userAgent: string): Promise<Vinculado> {
     this.checkLimite(datos.tipo, ip, datos.token);
-    if (!isNavegadorSoportado(userAgent)) {
-      throw new AppError('NAVEGADOR_NO_SOPORTADO');
-    }
-    if (
-      datos.terminos.version !== VERSION_TERMINOS ||
-      datos.terminos.privacidad !== VERSION_TERMINOS
-    ) {
-      throw new AppError('VALIDACION', {
-        errors: [
-          {
-            field: 'terminos',
-            code: 'DESACTUALIZADOS',
-            message: 'Los términos cambiaron. Vuelve a cargar la página.',
-          },
-        ],
-      });
-    }
-    checkPuntoP256(datos.llavePublica);
+    this.checkPedido(datos, userAgent);
     const organizacionId = await this.findOrganizacion(datos.tipo, datos.token, ip);
     const ahora = this.reloj.now();
     const senales = datos.senales ?? null;
@@ -221,6 +204,175 @@ export class AccesoService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Lo que se revisa antes de vincular, sin tocar la base: el navegador, los términos vigentes y
+   * que la llave sea un punto de la curva. También lo usa el autorregistro (HU-320).
+   */
+  checkPedido(datos: Pick<DatosVincular, 'terminos' | 'llavePublica'>, userAgent: string): void {
+    if (!isNavegadorSoportado(userAgent)) {
+      throw new AppError('NAVEGADOR_NO_SOPORTADO');
+    }
+    if (
+      datos.terminos.version !== VERSION_TERMINOS ||
+      datos.terminos.privacidad !== VERSION_TERMINOS
+    ) {
+      throw new AppError('VALIDACION', {
+        errors: [
+          {
+            field: 'terminos',
+            code: 'DESACTUALIZADOS',
+            message: 'Los términos cambiaron. Vuelve a cargar la página.',
+          },
+        ],
+      });
+    }
+    checkPuntoP256(datos.llavePublica);
+  }
+
+  /** El dispositivo de este navegador en el evento y su vinculación activa, si tiene. */
+  async findDispositivo(
+    tx: Tx,
+    eventoId: string,
+    deviceId: string,
+  ): Promise<{
+    dispositivoId: string;
+    vinculacionId: string | null;
+    asistenteId: string | null;
+  } | null> {
+    const [existente] = await tx
+      .select({ id: dispositivos.id })
+      .from(dispositivos)
+      .where(
+        and(
+          eq(dispositivos.eventoId, eventoId),
+          eq(dispositivos.deviceIdHash, hashDeviceId(deviceId)),
+        ),
+      )
+      .for('update');
+    if (!existente) return null;
+    const [activa] = await tx
+      .select({ id: vinculaciones.id, asistenteId: vinculaciones.asistenteId })
+      .from(vinculaciones)
+      .where(and(eq(vinculaciones.dispositivoId, existente.id), isNull(vinculaciones.anuladaAt)));
+    return {
+      dispositivoId: existente.id,
+      vinculacionId: activa?.id ?? null,
+      asistenteId: activa?.asistenteId ?? null,
+    };
+  }
+
+  /**
+   * HU-320: vincula el celular de una cuenta recién creada con un QR de registro: dispositivo,
+   * vinculación `autoregistro`, términos y sesión, con las alertas A1 y A8. Dentro de la
+   * transacción del registro.
+   */
+  async linkAutoregistro(
+    tx: Tx,
+    datos: {
+      organizacionId: string;
+      eventoId: string;
+      finAt: Date;
+      asistenteId: string;
+      registradorId: string | null;
+      existente: string | null;
+      deviceId: string;
+      llavePublica: DatosVincular['llavePublica'];
+      senales: SenalesDispositivo | undefined;
+      userAgent: string;
+    },
+  ): Promise<{ sesion: string; expiraAt: Date; dispositivoId: string; modelo: string }> {
+    const modelo = describeModelo(datos.senales, describeDispositivo(datos.userAgent));
+    const huella = getHuella(datos.senales);
+    const dispositivoId = await this.upsertDispositivo(tx, {
+      existente: datos.existente,
+      asistenteId: datos.asistenteId,
+      eventoId: datos.eventoId,
+      organizacionId: datos.organizacionId,
+      deviceIdHash: hashDeviceId(datos.deviceId),
+      llave: Buffer.from(toLlaveCruda(datos.llavePublica)),
+      modelo,
+      huella,
+      borrarAt: getVencimientoSesion(datos.finAt),
+    });
+    const vinculacionId = uuidv7();
+    await tx.insert(vinculaciones).values({
+      id: vinculacionId,
+      organizacionId: datos.organizacionId,
+      eventoId: datos.eventoId,
+      asistenteId: datos.asistenteId,
+      dispositivoId,
+      metodo: 'autoregistro',
+      invitacionId: null,
+      tokenId: null,
+      registradorId: datos.registradorId,
+    });
+    await tx.insert(aceptacionesTerminos).values([
+      {
+        id: uuidv7(),
+        asistenteId: datos.asistenteId,
+        documento: 'terminos',
+        version: VERSION_TERMINOS,
+      },
+      {
+        id: uuidv7(),
+        asistenteId: datos.asistenteId,
+        documento: 'privacidad',
+        version: VERSION_TERMINOS,
+      },
+    ]);
+    await this.raiseAlertasDeVinculacion(tx, {
+      organizacionId: datos.organizacionId,
+      eventoId: datos.eventoId,
+      asistenteId: datos.asistenteId,
+      dispositivoId,
+      huella,
+      motivosA8: getMotivosAutomatizado(datos.senales),
+    });
+    const expiraAt = getVencimientoSesion(datos.finAt);
+    const sesion = await this.sesiones.create(tx, {
+      vinculacionId,
+      organizacionId: datos.organizacionId,
+      expiraAt,
+      modelo,
+    });
+    return { sesion, expiraAt, dispositivoId, modelo };
+  }
+
+  /**
+   * HU-320: el mismo navegador ya se registró en el evento. No se crea otra cuenta: vuelve a entrar
+   * a la que tiene, con una sesión nueva (la llave se actualiza, como al volver a vincular).
+   */
+  async reenterAutoregistro(
+    tx: Tx,
+    datos: {
+      organizacionId: string;
+      finAt: Date;
+      dispositivoId: string;
+      vinculacionId: string;
+      llavePublica: DatosVincular['llavePublica'];
+      senales: SenalesDispositivo | undefined;
+      userAgent: string;
+    },
+  ): Promise<{ sesion: string; expiraAt: Date }> {
+    const modelo = describeModelo(datos.senales, describeDispositivo(datos.userAgent));
+    await tx
+      .update(dispositivos)
+      .set({
+        llavePublica: Buffer.from(toLlaveCruda(datos.llavePublica)),
+        modelo,
+        huella: getHuella(datos.senales),
+      })
+      .where(eq(dispositivos.id, datos.dispositivoId));
+    const expiraAt = getVencimientoSesion(datos.finAt);
+    const sesion = await this.sesiones.create(tx, {
+      vinculacionId: datos.vinculacionId,
+      organizacionId: datos.organizacionId,
+      expiraAt,
+      modelo,
+    });
+    return { sesion, expiraAt };
   }
 
   /** Los pasos de vincular, dentro de la transacción. */

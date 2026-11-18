@@ -33,6 +33,11 @@ export function isA3(personas: number): boolean {
   return personas > UMBRALES_ALERTAS.a3Personas;
 }
 
+/** A9: 3 o más cuentas con la misma huella desde el mismo QR de registro en 10 minutos. */
+export function isA9(cuentas: number): boolean {
+  return cuentas >= UMBRALES_ALERTAS.a9Cuentas;
+}
+
 /** A4: más de 3 del registrador en 30 minutos, o más de 2 del mismo asistente. */
 export function isA4(revinculaciones: { delRegistrador: number; delAsistente: number }): boolean {
   return (

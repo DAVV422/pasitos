@@ -81,6 +81,13 @@ const MARGEN_MS = 300;
                     · te quedan {{ quedan() }}
                   }
                 </p>
+                @if (f.ultimas.length > 0) {
+                  <ul class="text-muted text-sm" aria-label="Últimas cuentas">
+                    @for (u of f.ultimas; track u.at) {
+                      <li>{{ u.nombre }} · {{ hace(u.at) }}</li>
+                    }
+                  </ul>
+                }
               } @else {
                 <px-aviso variante="advertencia">{{ motivo(f) }}</px-aviso>
               }
@@ -158,6 +165,13 @@ export class ActivarCuentasPage implements OnInit {
     this.elegido.set(id);
     this.franja.set(null);
     void this.refresh();
+  }
+
+  /** *"hace 1 min"*, con la hora del servidor. */
+  protected hace(iso: string): string {
+    const servidor = this.franja()?.horaServidor ?? Date.now();
+    const minutos = Math.max(0, Math.floor((servidor - Date.parse(iso)) / 60_000));
+    return minutos < 1 ? 'recién' : `hace ${minutos} min`;
   }
 
   protected motivo(f: FranjaQrRegistro): string {

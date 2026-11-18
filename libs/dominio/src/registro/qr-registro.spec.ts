@@ -1,4 +1,11 @@
-import { getEstadoQrRegistro, getFranjaRegistro, isFranjaRegistroVigente } from './qr-registro';
+import {
+  getCiUltimos,
+  getEstadoQrRegistro,
+  getFranjaRegistro,
+  getMetodoAutoregistro,
+  isFranjaRegistroVigente,
+  maskCi,
+} from './qr-registro';
 
 describe('QR de registro (HU-319)', () => {
   const base = { estado: 'activo', desde: null, hasta: null, tope: null, registros: 0 };
@@ -26,5 +33,21 @@ describe('QR de registro (HU-319)', () => {
     expect(isFranjaRegistroVigente(998, inicio + 1_000)).toBe(false);
     // Una del futuro, nunca.
     expect(isFranjaRegistroVigente(1_001, inicio + 29_000)).toBe(false);
+  });
+});
+
+describe('carnet y método del autorregistro (HU-320)', () => {
+  it('los últimos 3 dígitos, sin la extensión ni letras', () => {
+    expect(getCiUltimos('4567890 LP')).toBe('890');
+    expect(getCiUltimos('4567890-1B')).toBe('890');
+    expect(getCiUltimos('sin numero')).toBeNull();
+    expect(maskCi('890')).toBe('•••890');
+    expect(maskCi(null)).toBeNull();
+  });
+
+  it('el check-in según quién muestra el QR', () => {
+    expect(getMetodoAutoregistro('miembro')).toBe('autoregistro_equipo');
+    expect(getMetodoAutoregistro('pantalla')).toBe('autoregistro_tablet');
+    expect(getMetodoAutoregistro('impreso')).toBe('autoregistro_impreso');
   });
 });

@@ -50,6 +50,28 @@ export function isFranjaRegistroVigente(franja: number, ahoraMs: number): boolea
   return franja === actual - 1 && ahoraMs - actual * FRANJA_REGISTRO_MS < GRACIA_REGISTRO_MS;
 }
 
+/**
+ * Los últimos 3 dígitos del número del carnet, sin el complemento (`-1B`) ni la extensión (`LP`),
+ * para mostrarlo enmascarado (`•••890`).
+ */
+export function getCiUltimos(ci: string): string | null {
+  const digitos = (ci.split('-')[0] ?? '').replace(/\D/g, '');
+  return digitos.length > 0 ? digitos.slice(-3) : null;
+}
+
+/** `•••567`, o `null` si no hay carnet. */
+export function maskCi(ultimos: string | null): string | null {
+  return ultimos ? `•••${ultimos}` : null;
+}
+
+/** Cómo marca presente un QR según quién lo muestra (HU-301 §3). */
+export function getMetodoAutoregistro(
+  muestra: MuestraQrRegistro,
+): 'autoregistro_equipo' | 'autoregistro_tablet' | 'autoregistro_impreso' {
+  if (muestra === 'miembro') return 'autoregistro_equipo';
+  return muestra === 'pantalla' ? 'autoregistro_tablet' : 'autoregistro_impreso';
+}
+
 export const NOMBRES_ESTADO_QR_REGISTRO: Readonly<Record<EstadoQrRegistro, string>> = {
   activo: 'Activo',
   invalidado: 'Invalidado',

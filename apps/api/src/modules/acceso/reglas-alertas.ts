@@ -1,13 +1,14 @@
 import { and, count, desc, eq, gte, isNotNull, ne } from 'drizzle-orm';
 import {
   asistentes,
+  dispositivos,
   escaneos,
   pantallas,
   registrosTecnicos,
   vinculaciones,
   type Tx,
 } from '@pasitos/db';
-import { getVentana, isA3, isA4, isA5, isA7, UMBRALES_ALERTAS } from '@pasitos/dominio';
+import { getVentana, isA3, isA4, isA5, isA7, isA9, UMBRALES_ALERTAS } from '@pasitos/dominio';
 import { raiseAlerta } from './registro-tecnico';
 
 /**
@@ -161,5 +162,47 @@ export async function checkA7(
     dispositivoId: datos.dispositivoId,
     datos: { intentos: intentos?.total ?? 0 },
     clave: `A7:${datos.dispositivoId}`,
+  });
+}
+
+/**
+ * A9 (HU-320): 3 o más cuentas creadas desde el mismo QR de registro en 10 minutos con la misma
+ * huella de dispositivo. Una alerta por QR y ventana; en `datos`, los ids (nunca la huella).
+ */
+export async function checkA9(
+  tx: Tx,
+  datos: {
+    organizacionId: string;
+    eventoId: string;
+    qrRegistroId: string;
+    asistenteId: string;
+    dispositivoId: string;
+    huella: Buffer | null;
+    ahora: Date;
+  },
+): Promise<void> {
+  if (!datos.huella) return;
+  const desde = new Date(datos.ahora.getTime() - UMBRALES_ALERTAS.a9VentanaMs);
+  const filas = await tx
+    .select({ id: asistentes.id })
+    .from(asistentes)
+    .innerJoin(vinculaciones, eq(vinculaciones.asistenteId, asistentes.id))
+    .innerJoin(dispositivos, eq(dispositivos.id, vinculaciones.dispositivoId))
+    .where(
+      and(
+        eq(asistentes.qrRegistroId, datos.qrRegistroId),
+        gte(asistentes.createdAt, desde),
+        eq(dispositivos.huella, datos.huella),
+      ),
+    );
+  const cuentas = new Set(filas.map((f) => f.id)).size;
+  if (!isA9(cuentas)) return;
+  await raiseAlerta(tx, datos.organizacionId, {
+    eventoId: datos.eventoId,
+    tipo: 'A9',
+    asistenteId: datos.asistenteId,
+    dispositivoId: datos.dispositivoId,
+    datos: { qrRegistroId: datos.qrRegistroId, cuentas },
+    clave: `A9:${datos.qrRegistroId}:${getVentana(datos.ahora, UMBRALES_ALERTAS.a9VentanaMs)}`,
   });
 }

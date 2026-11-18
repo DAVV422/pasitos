@@ -12,14 +12,22 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
+type RequestConCuerpo = FastifyRequest & { rawBody?: Buffer };
 import {
+  esquemaAutoregistro,
   esquemaCrearQrRegistro,
+  esquemaMisDatos,
   esquemaEditarQrRegistro,
   esquemaImprimibleQrRegistro,
   esquemaInvalidarQrRegistro,
 } from '@pasitos/dominio/esquemas';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Publica } from '../../common/sesion/sesion';
+import { Asistente, AsistenteActual, type ContextoAsistente } from '../../common/sesion/asistente';
+import { getPedidoIdempotente } from '../acceso/idempotencia';
+import { COOKIE_ASISTENTE } from '../acceso/sesiones-asistente';
+import { AutoregistroService } from './autoregistro.service';
+import { MisDatosService } from './mis-datos.service';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
@@ -138,8 +146,39 @@ export class SalaRegistroController {
 export class RegistroAppController {
   constructor(
     private readonly registro: RegistroAppService,
+    private readonly autoregistro: AutoregistroService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
+
+  /**
+   * HU-320: crea la cuenta con el permiso `px_registro`. Pide `Idempotency-Key`; un reintento del
+   * mismo navegador entra a la cuenta que ya creó (`200`, `yaRegistrado`), sin crear otra.
+   */
+  @Post()
+  async register(
+    @Body() cuerpo: unknown,
+    @Req() request: RequestConCuerpo,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    getPedidoIdempotente(request);
+    const { sesion, expiraAt, estado, yaRegistrado } = await this.autoregistro.register(
+      esquemaAutoregistro.parse(cuerpo),
+      request.cookies[COOKIE_REGISTRO],
+      { ip: request.ip, userAgent: request.headers['user-agent'] ?? '' },
+    );
+    const segura = this.config.PUBLIC_URL.startsWith('https://');
+    void reply
+      .status(yaRegistrado ? 200 : 201)
+      .setCookie(COOKIE_ASISTENTE, sesion, {
+        httpOnly: true,
+        secure: segura,
+        sameSite: 'lax',
+        path: '/api',
+        expires: expiraAt,
+      })
+      .clearCookie(COOKIE_REGISTRO, { path: '/api/v1/app/registro' });
+    return { ...estado, yaRegistrado };
+  }
 
   @Get(':tipo/:codigo')
   async open(
@@ -160,5 +199,23 @@ export class RegistroAppController {
       expires: expira,
     });
     return apertura;
+  }
+}
+
+/** *Mis datos* (HU-320 §4): la persona ve y edita su nombre, su correo y su carnet. */
+@Controller('app')
+export class MisDatosController {
+  constructor(private readonly misDatos: MisDatosService) {}
+
+  @Get('yo')
+  @Asistente()
+  get(@AsistenteActual() asistente: ContextoAsistente) {
+    return this.misDatos.get(asistente);
+  }
+
+  @Patch('yo')
+  @Asistente({ firmado: true })
+  update(@AsistenteActual() asistente: ContextoAsistente, @Body() cuerpo: unknown) {
+    return this.misDatos.update(asistente, esquemaMisDatos.parse(cuerpo));
   }
 }

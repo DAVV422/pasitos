@@ -81,6 +81,8 @@ export function describeAlerta(
       return `El celular anulado de ${quien}${celular} sigue intentando entrar`;
     case 'A8':
       return `El celular de ${quien}${celular} parece automatizado`;
+    case 'A9':
+      return `${String(ctx.datos['cuentas'] ?? 'Varias')} cuentas con el mismo celular salieron del mismo QR de registro en 10 minutos`;
     case 'no_fui_yo':
       return `${quien} dice «No fui yo»`;
     default:

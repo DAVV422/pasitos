@@ -81,6 +81,6 @@ import { SesionesAsistenteService } from './sesiones-asistente';
         new RegistroTecnicoInterceptor(reflector, registro, reloj),
     },
   ],
-  exports: [SesionesAsistenteService, RegistroTecnicoService],
+  exports: [SesionesAsistenteService, RegistroTecnicoService, AccesoService],
 })
 export class AccesoModule {}

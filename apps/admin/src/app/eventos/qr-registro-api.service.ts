@@ -20,6 +20,7 @@ export interface QrRegistroPanel {
   readonly hasta: string | null;
   readonly estado: EstadoQrRegistro;
   readonly registros: number;
+  readonly ultimaHora: number;
   readonly invalidadoAt: string | null;
   readonly motivoInvalidacion: string | null;
   readonly createdAt: string;
@@ -36,6 +37,7 @@ export interface FranjaQrRegistro {
   readonly horaServidor: number;
   readonly registros: number;
   readonly tope: number | null;
+  readonly ultimas: readonly { readonly nombre: string; readonly at: string }[];
 }
 
 /** El API de los QR de registro (HU-319): ningún componente usa HttpClient directo. */

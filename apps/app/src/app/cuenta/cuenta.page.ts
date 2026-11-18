@@ -117,6 +117,12 @@ export class CuentaPage {
   protected readonly opciones: readonly Opcion[] = [
     { ruta: '/mi-entrada', icono: 'ticket', texto: 'Mi entrada', detalle: 'Tu QR para la puerta' },
     {
+      ruta: '/cuenta/datos',
+      icono: 'user',
+      texto: 'Mis datos',
+      detalle: 'Tu nombre, correo y carnet',
+    },
+    {
       ruta: '/historial',
       icono: 'history',
       texto: 'Historial',

@@ -1,6 +1,14 @@
 import { and, asc, count, eq, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
-import { asistentes, eventos, usuarios, withOrganizacion, type Db, type Tx } from '@pasitos/db';
-import { AppError } from '@pasitos/dominio';
+import {
+  asistentes,
+  qrRegistro,
+  eventos,
+  usuarios,
+  withOrganizacion,
+  type Db,
+  type Tx,
+} from '@pasitos/db';
+import { maskCi, AppError } from '@pasitos/dominio';
 import {
   isCodigoAsistente,
   maskEmail,
@@ -29,7 +37,8 @@ export interface FiltrosAsistentes {
   readonly q?: string | undefined;
   readonly estado?: (typeof ESTADOS_ASISTENTE)[number] | undefined;
   readonly emailEstado?: (typeof ESTADOS_EMAIL)[number] | undefined;
-  readonly origen?: 'lista' | 'csv' | 'puerta' | undefined;
+  readonly origen?: 'lista' | 'csv' | 'puerta' | 'autoregistro' | undefined;
+  readonly qrRegistroId?: string | undefined;
   readonly cursor?: string | undefined;
   readonly limit: number;
 }
@@ -60,6 +69,7 @@ export class AsistentesService {
       if (filtros.estado) condiciones.push(eq(asistentes.estado, filtros.estado));
       if (filtros.emailEstado) condiciones.push(eq(asistentes.emailEstado, filtros.emailEstado));
       if (filtros.origen) condiciones.push(eq(asistentes.origen, filtros.origen));
+      if (filtros.qrRegistroId) condiciones.push(eq(asistentes.qrRegistroId, filtros.qrRegistroId));
       const q = filtros.q?.trim() ?? '';
       let orden: SQL[] = [
         sql`length(${asistentes.codigoAsistente})`,
@@ -352,9 +362,22 @@ export class AsistentesService {
               .where(inArray(usuarios.id, ids))
           ).map((u) => [u.id, getNombreCorto(u.nombre)] as const),
     );
+    // HU-320: de qué QR de registro salió cada cuenta.
+    const idsQr = [...new Set(filas.flatMap((a) => (a.qrRegistroId ? [a.qrRegistroId] : [])))];
+    const qrs = new Map(
+      idsQr.length === 0
+        ? []
+        : (
+            await tx
+              .select({ id: qrRegistro.id, nombre: qrRegistro.nombre })
+              .from(qrRegistro)
+              .where(inArray(qrRegistro.id, idsQr))
+          ).map((q) => [q.id, q.nombre] as const),
+    );
     return filas.map((a) => ({
       ...this.toFila(a, contexto, invitaciones.get(a.id) ?? null),
       registradoPor: a.registradoPor ? (registradores.get(a.registradoPor) ?? null) : null,
+      qrRegistro: a.qrRegistroId ? (qrs.get(a.qrRegistroId) ?? null) : null,
     }));
   }
 
@@ -373,6 +396,8 @@ export class AsistentesService {
       estado: a.estado,
       emailEstado: a.emailEstado,
       origen: a.origen,
+      // HU-320: el carnet, siempre enmascarado en la lista (el completo, en la verificación).
+      ci: maskCi(a.ciUltimos),
       // HU-211: la invitación vigente y, si su correo está en cola, cuándo sale.
       invitacion,
     };

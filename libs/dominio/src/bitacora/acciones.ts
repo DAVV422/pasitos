@@ -75,6 +75,8 @@ export const ACCIONES_BITACORA = {
   'acceso.create': 'Generó un QR de asistente',
   'asistente.revincular': 'Cambió el celular de un invitado',
   'asistente.registrar_puerta': 'Registró a alguien en la puerta',
+  'asistente.autoregistro': 'Se registró con un QR',
+  'asistente.editar_datos': 'Editó sus datos',
   'qr_registro.create': 'Creó un QR de registro',
   'qr_registro.update': 'Editó un QR de registro',
   'qr_registro.invalidate': 'Invalidó un QR de registro',

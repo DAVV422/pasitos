@@ -97,6 +97,7 @@ describe('InicioPage', () => {
     evento: signal<EventoApp | null>(EVENTO),
     sinConexion: signal(false),
     aviso: signal<string | null>(null),
+    bienvenida: signal<string | null>(null),
   };
 
   beforeEach(async () => {

@@ -1,4 +1,4 @@
-import { HttpClient, HttpContext } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type { EstadoRetoAsistente, TipoAcceso } from '@pasitos/dominio';
 import type { LlavePublicaEc } from '@pasitos/firmas';
@@ -235,6 +235,35 @@ export interface DatosVincular {
   readonly terminos: { readonly version: string; readonly privacidad: string };
 }
 
+/** Lo que ve la persona al abrir un QR de registro (HU-319 §4). */
+export interface RegistroVisto {
+  readonly evento: { readonly nombre: string; readonly logoUrl: string | null };
+  readonly qr: { readonly nombre: string };
+  readonly terminos: { readonly version: string; readonly privacidad: string };
+  readonly permisoHasta: string;
+  /** HU-321: si el evento pide el carnet (opcional). */
+  readonly pideCarnet: boolean;
+}
+
+/** Lo que manda el formulario del autorregistro (HU-320 §2). */
+export interface DatosRegistro {
+  readonly nombre: string;
+  readonly email: string | null;
+  readonly ci: string | null;
+  readonly deviceId: string;
+  readonly llavePublica: LlavePublicaEc;
+  readonly senales?: Record<string, string | number | boolean | null>;
+  readonly terminos: { readonly version: string; readonly privacidad: string };
+}
+
+/** *Mis datos* (HU-320 §4). */
+export interface MisDatos {
+  readonly nombre: string;
+  readonly email: string | null;
+  readonly ci: string | null;
+  readonly ciVerificado: boolean;
+}
+
 /** El API del asistente: ningún componente usa HttpClient directo (AGENTS.md). */
 @Injectable({ providedIn: 'root' })
 export class AsistenteApi {
@@ -250,6 +279,36 @@ export class AsistenteApi {
 
   vincular(datos: DatosVincular): Promise<EstadoApp> {
     return firstValueFrom(this.http.post<EstadoApp>(`${BASE}/acceso/vincular`, datos));
+  }
+
+  /** HU-319: abrir el QR de registro (deja el permiso en la cookie `px_registro`). */
+  openRegistro(tipo: string, codigo: string): Promise<RegistroVisto> {
+    return firstValueFrom(
+      this.http.get<RegistroVisto>(
+        `${BASE}/app/registro/${encodeURIComponent(tipo)}/${encodeURIComponent(codigo)}`,
+      ),
+    );
+  }
+
+  /** HU-320: crear la cuenta. La misma clave en los reintentos. */
+  register(datos: DatosRegistro, clave: string): Promise<EstadoApp & { yaRegistrado: boolean }> {
+    return firstValueFrom(
+      this.http.post<EstadoApp & { yaRegistrado: boolean }>(`${BASE}/app/registro`, datos, {
+        headers: new HttpHeaders({ 'Idempotency-Key': clave }),
+      }),
+    );
+  }
+
+  getMisDatos(): Promise<MisDatos> {
+    return firstValueFrom(this.http.get<MisDatos>(`${BASE}/app/yo`));
+  }
+
+  updateMisDatos(cambios: Partial<Pick<MisDatos, 'nombre' | 'email' | 'ci'>>): Promise<MisDatos> {
+    return firstValueFrom(
+      this.http.patch<MisDatos>(`${BASE}/app/yo`, cambios, {
+        context: new HttpContext().set(FIRMAR, true),
+      }),
+    );
   }
 
   /** El navegador revalida solo con `If-None-Match` (`Cache-Control: no-cache`) y usa el 304. */

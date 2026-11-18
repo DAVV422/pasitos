@@ -94,3 +94,13 @@ export function createEmailPrueba(prefijo: string): string {
 export function createIpPrueba(): string {
   return `198.51.100.${1 + Math.floor(Math.random() * 250)}`;
 }
+
+/**
+ * Cambia el estado del evento directo en la base: publicarlo de verdad pide el contrato en
+ * Stellar, que las pruebas de punta a punta no tienen.
+ */
+export function setEstadoEvento(eventoId: string, estado: 'publicado' | 'en_curso'): Promise<void> {
+  return withCliente(async (cliente) => {
+    await cliente.query('update eventos set estado = $1 where id = $2', [estado, eventoId]);
+  });
+}

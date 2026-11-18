@@ -55,6 +55,11 @@ export const asistentes = pgTable(
     registradoPor: uuid('registrado_por').references(() => usuarios.id),
     usuarioId: uuid('usuario_id').references(() => usuarios.id),
     createdBy: uuid('created_by').references(() => usuarios.id),
+    // HU-320: de qué QR de registro salió (FK en la migración 0035: `qr_registro` está en
+    // acceso.ts) y el carnet que escribió, cifrado, con sus últimos 3 dígitos para mostrar.
+    qrRegistroId: uuid('qr_registro_id'),
+    ciCifrado: bytea('ci_cifrado'),
+    ciUltimos: text('ci_ultimos'),
     // Lo reemplaza siempre el trigger `asignar_id_anonimo` (0002_libro.sql).
     idAnonimo: bytea('id_anonimo')
       .notNull()
@@ -73,11 +78,14 @@ export const asistentes = pgTable(
       'asistentes_email_estado',
       sql`${t.emailEstado} in ('sin_correo', 'pendiente', 'en_cola', 'enviado', 'rebotado')`,
     ),
-    check('asistentes_origen', sql`${t.origen} in ('lista', 'csv', 'puerta')`),
+    check('asistentes_origen', sql`${t.origen} in ('lista', 'csv', 'puerta', 'autoregistro')`),
+    check('asistentes_ci_ultimos', sql`${t.ciUltimos} is null or char_length(${t.ciUltimos}) <= 3`),
     check('asistentes_nombre', sql`char_length(${t.nombre}) between 2 and 120`),
+    // Ajuste 7: en el autorregistro el correo se repite sin problema (D60).
     uniqueIndex('asistentes_email')
       .on(t.eventoId, t.email)
-      .where(sql`${t.email} is not null`),
+      .where(sql`${t.email} is not null and ${t.origen} <> 'autoregistro'`),
+    index('asistentes_qr_registro').on(t.qrRegistroId, t.createdAt),
     uniqueIndex('asistentes_codigo_externo')
       .on(t.eventoId, t.codigoExterno)
       .where(sql`${t.codigoExterno} is not null`),

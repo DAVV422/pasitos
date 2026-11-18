@@ -34,6 +34,10 @@ import { SesionAsistente } from '../sesion-asistente';
     @if (sesion.estado(); as e) {
       @let zona = e.evento.zonaHoraria;
       <section class="flex flex-col gap-4">
+        @if (sesion.bienvenida(); as texto) {
+          <!-- HU-320: recién registrada con un QR. -->
+          <px-aviso variante="ok" role="status">{{ texto }}</px-aviso>
+        }
         @if (e.evento.estado === 'publicado') {
           <!-- A19: el evento todavía no empezó -->
           <div class="border-line bg-surface flex flex-col gap-3 rounded-xl border p-5">
@@ -194,6 +198,9 @@ export class InicioPage {
   protected readonly diaYHora = formatDiaYHora;
 
   constructor() {
+    // La bienvenida del autorregistro se muestra una sola vez.
+    inject(DestroyRef).onDestroy(() => this.sesion.bienvenida.set(null));
+
     const reloj = setInterval(() => this.ahora.set(Date.now()), 30_000);
     inject(DestroyRef).onDestroy(() => clearInterval(reloj));
 
