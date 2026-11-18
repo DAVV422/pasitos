@@ -162,6 +162,20 @@
       "when": 1794764177850,
       "tag": "0022_invitaciones",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794974216094,
+      "tag": "0023_en_vivo",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794974939582,
+      "tag": "0024_acceso_asistente",
+      "breakpoints": true
     }
   ]
 }

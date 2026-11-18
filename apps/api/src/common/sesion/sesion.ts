@@ -12,6 +12,7 @@ import {
   type ContextoSesion,
   type SesionesService,
 } from '../../modules/auth/sesiones.service';
+import { META_ASISTENTE } from './asistente';
 
 export const META_PUBLICA = 'pasitos:publica';
 export const META_SEGUNDO_FACTOR = 'pasitos:segundo-factor';
@@ -52,7 +53,11 @@ export class SessionGuard implements CanActivate {
 
   async canActivate(contexto: ExecutionContext): Promise<boolean> {
     const objetivos = [contexto.getHandler(), contexto.getClass()];
-    if (this.reflector.getAllAndOverride<boolean>(META_PUBLICA, objetivos)) {
+    // Las rutas públicas y las del asistente (su sesión la revisa AsistenteGuard, HU-306).
+    if (
+      this.reflector.getAllAndOverride<boolean>(META_PUBLICA, objetivos) ||
+      this.reflector.getAllAndOverride<object>(META_ASISTENTE, objetivos)
+    ) {
       return true;
     }
     const request = contexto.switchToHttp().getRequest<RequestConSesion>();

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { devices, expect, test, type Page } from '@playwright/test';
 import { createEmailPrueba, createIpPrueba, createPersona, getEnlaceCorreo } from './apoyo/base';
 
 /**
@@ -196,6 +196,35 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await page.getByRole('button', { name: 'Enviar invitaciones (1 pendientes)' }).click();
   await expect(page.getByText('Pusimos 1 invitaciones en la cola.')).toBeVisible();
   await expect(page.getByText(/En cola \(sale el/)).toBeVisible();
+
+  // HU-306: Valeria abre su enlace en el celular, toca Entrar y queda vinculada. El enlace sale de
+  // *Descargar enlaces* (el del correo lo arma el trabajador al enviarlo).
+  const eventoId = /eventos\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? '';
+  const csv = await (
+    await page.request.get(`/api/v1/eventos/${eventoId}/invitaciones/enlaces`)
+  ).text();
+  const enlaceValeria = /\/app\/acceso\/invitacion\/[A-Za-z0-9_-]+/.exec(csv)?.[0] ?? '';
+  expect(enlaceValeria).not.toBe('');
+  const celularValeria = await browser.newContext({ ...devices['Pixel 7'] });
+  const celular = await celularValeria.newPage();
+  await celular.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
+  await celular.goto(new URL(enlaceValeria, page.url()).href);
+  await expect(celular.getByRole('heading', { level: 1 })).toHaveText('Hola, Valeria');
+  await celular.getByRole('button', { name: 'Entrar' }).click();
+  await expect(celular).toHaveURL(/\/app\/inicio$/);
+  await expect(celular.getByText('Pasa por la puerta para empezar a ganar puntos.')).toBeVisible();
+  await expect(celular.getByText('A-0001')).toBeVisible();
+  // Al volver a abrir la app, entra directo (la sesión vive en la cookie).
+  await celular.goto(new URL('/app/', page.url()).href);
+  await expect(celular).toHaveURL(/\/app\/inicio$/);
+  // El mismo enlace en otro celular ya no sirve.
+  const otroCelular = await browser.newContext({ ...devices['Pixel 7'] });
+  const ajeno = await otroCelular.newPage();
+  await ajeno.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
+  await ajeno.goto(new URL(enlaceValeria, page.url()).href);
+  await expect(ajeno.getByText('Este enlace ya se usó en otro celular')).toBeVisible();
+  await otroCelular.close();
+  await celularValeria.close();
 
   // HU-203: invita a un registrador, que acepta desde otro navegador y ve solo lo suyo.
   await page.getByRole('link', { name: 'Equipo', exact: true }).click();

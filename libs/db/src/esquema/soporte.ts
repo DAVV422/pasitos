@@ -29,6 +29,8 @@ export const outbox = pgTable(
     index('outbox_pendientes')
       .on(t.createdAt)
       .where(sql`${t.procesadoAt} is null`),
+    // Reenviar los avisos en vivo de un evento al reconectar (T-301 §2): ids UUID v7, ordenados.
+    index('outbox_evento').on(t.eventoId, t.id),
   ],
 );
 

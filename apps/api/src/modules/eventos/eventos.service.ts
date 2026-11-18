@@ -49,6 +49,8 @@ const ACCION_POR_TRANSICION = {
 /** Lo que el trabajador hace con cada transición (HU-205 §4): `outbox` en la misma transacción. */
 const OUTBOX_POR_TRANSICION: Partial<Record<TransicionEvento, string>> = {
   publicar: 'evento.publicado',
+  // El aviso en vivo (T-301): la app pasa a "en curso" sin recargar.
+  abrir: 'evento.abierto',
   pausar: 'evento.pausado',
   reanudar: 'evento.reanudado',
 };

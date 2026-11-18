@@ -14,6 +14,8 @@ const PERMITIDOS = [
   'common/permisos/',
   // Conectar una terminal y su latido: llegan sin sesión del equipo, con un token global.
   'modules/terminales/conexion.service.ts',
+  // El acceso del asistente: de qué organización es un token (HU-306). El resto va con RLS.
+  'modules/acceso/acceso-sistema.ts',
   'pruebas/',
   // Los comandos de soporte (pnpm plataforma): actúan como la consola.
   'cli/',

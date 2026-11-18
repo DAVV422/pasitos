@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { bitacora, eventos, outbox, type Db } from '@pasitos/db';
+import { and, asc, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm';
+import { bitacora, eventos, idempotencia, outbox, type Db } from '@pasitos/db';
 import { uuidv7 } from 'uuidv7';
 import type { NombreTrabajoStellar, TrabajoStellar } from '../colas/colas';
 import type { AlertasOperacionPort } from '../comun/alertas-operacion';
@@ -28,6 +28,33 @@ export class OutboxService {
     private readonly db: Db,
     private readonly encolar: EncolarTrabajo,
   ) {}
+
+  /**
+   * Los avisos que son solo de los canales en vivo (no los procesa este trabajador) se borran a las
+   * 24 h (T-301 §4). Los de Stellar quedan, con su `procesado_at`.
+   */
+  async purgeAvisos(): Promise<number> {
+    const borrados = await this.db
+      .delete(outbox)
+      .where(
+        and(
+          isNull(outbox.procesadoAt),
+          notInArray(outbox.tipo, Object.keys(TRABAJO_POR_OUTBOX)),
+          sql`${outbox.createdAt} < now() - interval '24 hours'`,
+        ),
+      )
+      .returning({ id: outbox.id });
+    return borrados.length;
+  }
+
+  /** Las respuestas guardadas por `Idempotency-Key` se borran a las 24 h (HU-306 §1). */
+  async purgeIdempotencia(): Promise<number> {
+    const borradas = await this.db
+      .delete(idempotencia)
+      .where(sql`${idempotencia.createdAt} < now() - interval '24 hours'`)
+      .returning({ clave: idempotencia.clave });
+    return borradas.length;
+  }
 
   async processOutbox(limite = 20): Promise<{ procesadas: number; fallidas: number }> {
     const resultado = { procesadas: 0, fallidas: 0 };
@@ -146,6 +173,13 @@ export class AperturaEventosService {
           objetoNombre: evento.nombre,
           antes: { estado: 'publicado' },
           despues: { estado: 'en_curso' },
+        });
+        // El aviso en vivo (T-301): la app y el panel pasan a "en curso" sin recargar.
+        await tx.insert(outbox).values({
+          id: uuidv7(),
+          tipo: 'evento.abierto',
+          eventoId: evento.id,
+          payload: { eventoId: evento.id },
         });
         return true;
       });

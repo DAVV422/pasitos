@@ -132,6 +132,32 @@ export const CATALOGO_ERRORES = {
     title: 'Invitación ya usada',
     mensaje: 'Esta persona ya abrió su invitación. Si cambió de celular, se hace en la puerta.',
   },
+  // Acceso del asistente (HU-306, API §2.1 y §12)
+  DISPOSITIVO_YA_VINCULADO: {
+    status: 409,
+    title: 'Navegador con otra entrada',
+    mensaje: 'Este navegador ya tiene otra entrada en este evento.',
+  },
+  DISPOSITIVO_NO_VINCULADO: {
+    status: 403,
+    title: 'Entrada abierta en otro celular',
+    mensaje: 'Este celular no tiene tu acceso. Pídelo en la puerta.',
+  },
+  NAVEGADOR_NO_SOPORTADO: {
+    status: 422,
+    title: 'Navegador no soportado',
+    mensaje: 'Abre el enlace en Chrome o Safari, no dentro de otra app.',
+  },
+  QR_ASISTENTE_VENCIDO: {
+    status: 422,
+    title: 'Acceso vencido',
+    mensaje: 'El código venció. Pide al registrador que lo genere de nuevo.',
+  },
+  FIRMA_INVALIDA: {
+    status: 403,
+    title: 'Firma inválida',
+    mensaje: 'No pudimos verificar tu celular. Pide ayuda en la puerta.',
+  },
   IMPORTACION_INVALIDA: {
     status: 422,
     title: 'Archivo no válido',

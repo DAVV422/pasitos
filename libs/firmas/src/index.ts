@@ -9,3 +9,4 @@ export * from './bytes';
 export * from './jcs';
 export * from './huellas';
 export * from './llaves';
+export * from './firma-dispositivo';

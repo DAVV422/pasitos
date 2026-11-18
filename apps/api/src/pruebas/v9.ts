@@ -89,25 +89,69 @@ export async function runV9(
   for (const ruta of rutas) {
     for (const actor of actores) {
       const url = await buildUrlParaActor(ruta, fixtures);
-      const respuesta = await app.inject({
-        method: ruta.metodo as 'GET',
-        url,
-        headers: { cookie: actor.cookie },
-        ...(ruta.metodo === 'GET' || ruta.metodo === 'DELETE' ? {} : { payload: {} }),
-      });
-      let cuerpo: { code?: string } | undefined;
-      try {
-        cuerpo = respuesta.json<{ code?: string }>();
-      } catch {
-        cuerpo = undefined;
-      }
+      const { status, cuerpo } = ruta.ruta.endsWith('/en-vivo')
+        ? await injectEnVivo(app, url, actor.cookie)
+        : await injectComun(app, ruta, url, actor.cookie);
       resultados.push({
         ruta: `${ruta.metodo} ${ruta.ruta}`,
         actor: actor.nombre,
         esperado: getEsperado(ruta, actor),
-        obtenido: toObtenido(respuesta.statusCode, cuerpo),
+        obtenido: toObtenido(status, cuerpo),
       });
     }
   }
   return { resultados, rutas: rutas.length };
+}
+
+interface Respuesta {
+  readonly status: number;
+  readonly cuerpo: { code?: string } | undefined;
+}
+
+async function injectComun(
+  app: NestFastifyApplication,
+  ruta: RutaRegistrada,
+  url: string,
+  cookie: string,
+): Promise<Respuesta> {
+  const respuesta = await app.inject({
+    method: ruta.metodo as 'GET',
+    url,
+    headers: { cookie },
+    ...(ruta.metodo === 'GET' || ruta.metodo === 'DELETE' ? {} : { payload: {} }),
+  });
+  try {
+    return { status: respuesta.statusCode, cuerpo: respuesta.json<{ code?: string }>() };
+  } catch {
+    return { status: respuesta.statusCode, cuerpo: undefined };
+  }
+}
+
+/**
+ * Los canales en vivo (T-301) no terminan nunca: se piden como stream, que resuelve al mandar los
+ * headers. Un error del guard llega como JSON y se lee entero; el canal abierto se corta.
+ */
+async function injectEnVivo(
+  app: NestFastifyApplication,
+  url: string,
+  cookie: string,
+): Promise<Respuesta> {
+  const respuesta = await app.inject({
+    method: 'GET',
+    url,
+    headers: { cookie },
+    payloadAsStream: true,
+  });
+  const flujo = respuesta.stream();
+  if (String(respuesta.headers['content-type'] ?? '').includes('text/event-stream')) {
+    flujo.destroy();
+    return { status: respuesta.statusCode, cuerpo: undefined };
+  }
+  let texto = '';
+  for await (const parte of flujo) texto += String(parte);
+  try {
+    return { status: respuesta.statusCode, cuerpo: JSON.parse(texto) as { code?: string } };
+  } catch {
+    return { status: respuesta.statusCode, cuerpo: undefined };
+  }
 }

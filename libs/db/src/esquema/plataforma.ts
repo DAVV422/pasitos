@@ -114,6 +114,9 @@ export const sessions = pgTable(
     tipo: text('tipo').notNull(),
     usuarioId: uuid('usuario_id').references(() => usuarios.id),
     vinculacionId: uuid('vinculacion_id'),
+    // Sesión del asistente (HU-306): de qué organización es, para abrir withOrganizacion sin la
+    // conexión de sistema. Otro nombre que `organizacion_id`: esta tabla es global, sin RLS.
+    asistenteOrganizacionId: uuid('asistente_organizacion_id'),
     segundoFactorAt: timestamp('segundo_factor_at', { withTimezone: true }),
     ultimoUsoAt: timestamp('ultimo_uso_at', { withTimezone: true }).notNull().defaultNow(),
     expiraAt: timestamp('expira_at', { withTimezone: true }).notNull(),
@@ -126,9 +129,10 @@ export const sessions = pgTable(
     check('sessions_tipo', sql`${t.tipo} in ('usuario', 'asistente')`),
     check(
       'sessions_dueno',
-      sql`(${t.tipo} = 'usuario' and ${t.usuarioId} is not null) or (${t.tipo} = 'asistente' and ${t.vinculacionId} is not null)`,
+      sql`(${t.tipo} = 'usuario' and ${t.usuarioId} is not null) or (${t.tipo} = 'asistente' and ${t.vinculacionId} is not null and ${t.asistenteOrganizacionId} is not null)`,
     ),
     index('sessions_usuario').on(t.usuarioId),
+    index('sessions_vinculacion').on(t.vinculacionId),
   ],
 );
 

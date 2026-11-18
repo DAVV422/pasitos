@@ -104,7 +104,5 @@ export class TerminalService {
   }
 }
 
-/** Gmail, WhatsApp, Instagram… abren los enlaces en su propio navegador, que pierde la llave (D42). */
-export function isNavegadorDeOtraApp(agente: string): boolean {
-  return /FBAN|FBAV|Instagram|WhatsApp|Line\/|GSA\/|; wv\)/.test(agente);
-}
+/** La regla vive en `libs/dominio` (la usa también el API al vincular, HU-306). */
+export { isNavegadorDeOtraApp } from '@pasitos/dominio';

@@ -16,6 +16,8 @@ import { RetosModule } from './modules/retos/retos.module';
 import { TerminalesModule } from './modules/terminales/terminales.module';
 import { InvitadosModule } from './modules/invitados/invitados.module';
 import { EquipoModule } from './modules/equipo/equipo.module';
+import { EnVivoModule } from './modules/en-vivo/en-vivo.module';
+import { AccesoModule } from './modules/acceso/acceso.module';
 import { EventosModule } from './modules/eventos/eventos.module';
 import { PlataformaModule } from './modules/plataforma/plataforma.module';
 import { MovimientosModule } from './modules/movimientos/movimientos.module';
@@ -47,6 +49,8 @@ export class AppModule {
         InvitadosModule,
         SaludModule,
         MovimientosModule,
+        EnVivoModule,
+        AccesoModule,
       ],
       providers: [{ provide: APP_FILTER, useClass: ProblemDetailsFilter }],
     };

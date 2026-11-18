@@ -17,6 +17,7 @@ export const COLA_SALDO = 'check-saldo-operador';
 export const COLA_CORREOS = 'send-correos';
 export const COLA_APERTURA = 'open-eventos';
 export const COLA_PURGA_ARCHIVOS = 'purge-archivos';
+export const COLA_PURGA_OUTBOX = 'purge-outbox';
 /** El procesador de outbox corre cada 5 s (pg-boss programa por minuto: va con un intervalo). */
 export const OUTBOX_CADA_MS = 5_000;
 /** Importar y exportar invitados (HU-210): la vista previa tiene que llegar en segundos. */
@@ -119,6 +120,7 @@ export async function startColas({
   await boss.createQueue(COLA_CORREOS);
   await boss.createQueue(COLA_APERTURA);
   await boss.createQueue(COLA_PURGA_ARCHIVOS);
+  await boss.createQueue(COLA_PURGA_OUTBOX);
 
   // HU-214 §7: cada día a las 04:00 de Bolivia (08:00 UTC; Bolivia no tiene horario de verano).
   await boss.schedule(COLA_PURGA_ARCHIVOS, '0 8 * * *');
@@ -137,6 +139,19 @@ export async function startColas({
 
   // HU-205 §4: del outbox a los trabajos de Stellar. Un solo proceso a la vez (candado).
   const procesador = new OutboxService(db, (t) => sendTrabajoStellar(boss, t));
+
+  // T-301 §4 y HU-306: los avisos en vivo y las claves de idempotencia de más de 24 h, cada día
+  // a las 04:15 de Bolivia.
+  await boss.schedule(COLA_PURGA_OUTBOX, '15 8 * * *');
+  await boss.work(COLA_PURGA_OUTBOX, { localConcurrency: 1 }, async () => {
+    logger.log(
+      {
+        avisos: await procesador.purgeAvisos(),
+        idempotencia: await procesador.purgeIdempotencia(),
+      },
+      'Avisos en vivo y claves de idempotencia de más de 24 h borrados',
+    );
+  });
   let ocupado = false;
   const intervalo = setInterval(() => {
     if (ocupado) return;

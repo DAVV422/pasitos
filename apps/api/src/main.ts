@@ -29,6 +29,9 @@ async function bootstrap(): Promise<void> {
     adapter,
     {
       bufferLogs: true,
+      // HU-306: el cuerpo tal como llegó (`request.rawBody`), para verificar la firma del
+      // dispositivo: volver a serializar el objeto podría cambiar el orden o los espacios.
+      rawBody: true,
     },
   );
   app.useLogger(app.get(Logger));

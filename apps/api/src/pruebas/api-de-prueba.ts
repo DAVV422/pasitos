@@ -86,6 +86,7 @@ export async function startApiDePrueba(
     .useValue(opciones.traerMapa ?? (() => Promise.resolve(null)))
     .compile();
   const app = modulo.createNestApplication<NestFastifyApplication>(new FastifyAdapter(), {
+    rawBody: true,
     logger: false,
   });
   if (opciones.destinoLogs) {

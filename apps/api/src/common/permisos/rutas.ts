@@ -3,6 +3,7 @@ import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { ACCIONES_ESCRITURA } from '@pasitos/dominio';
 import { META_ACCION_BITACORA } from '../../modules/bitacora/bitacora.service';
+import { META_ASISTENTE } from '../sesion/asistente';
 import { META_PUBLICA } from '../sesion/sesion';
 import { META_PERMISO, META_PLATAFORMA, META_SOLO_SESION, type DefinicionPermiso } from './marcas';
 
@@ -52,7 +53,7 @@ export function listRutas(app: INestApplication): RutaRegistrada[] {
       const objetivos = [handler, clase];
       // La marca del método reemplaza a la de la clase (`@SoloSesion` en la clase y `@Publica`
       // en `login`).
-      const todas = [META_PUBLICA, META_SOLO_SESION, META_PERMISO, META_PLATAFORMA];
+      const todas = [META_PUBLICA, META_SOLO_SESION, META_PERMISO, META_PLATAFORMA, META_ASISTENTE];
       const delMetodo = todas.filter((m) => Reflect.getMetadata(m, handler) !== undefined);
       const marcas =
         delMetodo.length > 0
@@ -80,8 +81,8 @@ export function listRutas(app: INestApplication): RutaRegistrada[] {
 }
 
 /**
- * **Toda ruta tiene una marca de acceso**: `@Publica`, `@SoloSesion`, `@Permiso` o `@Plataforma`
- * (HU-204 §2). Se corre al arrancar en desarrollo y en los tests: una ruta sin marca no arranca.
+ * **Toda ruta tiene una marca de acceso**: `@Publica`, `@SoloSesion`, `@Permiso`, `@Plataforma` o
+ * `@Asistente` (HU-204 §2, HU-306). Se corre al arrancar en desarrollo y en los tests: una ruta sin marca no arranca.
  */
 export function checkMarcasDeRutas(app: INestApplication): void {
   const problemas = listRutas(app).flatMap((r) => {
