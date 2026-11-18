@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import { idempotencia, type Tx } from '@pasitos/db';
 import { AppError } from '@pasitos/dominio';
@@ -42,4 +43,33 @@ export async function runIdempotente<T>(
     .set({ estadoHttp, respuesta: sql`${JSON.stringify(resultado ?? null)}::jsonb` })
     .where(and(eq(idempotencia.actor, actor), eq(idempotencia.clave, firma.clave)));
   return resultado;
+}
+
+const UUID_CLAVE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * La clave de una operación del equipo que mueve puntos (check-in, anular): sin firma de
+ * dispositivo, pero con `Idempotency-Key` y el hash del cuerpo tal como llegó.
+ */
+export function getPedidoIdempotente(request: {
+  headers: Record<string, string | string[] | undefined>;
+  url: string;
+  rawBody?: Buffer;
+}): Pick<FirmaVerificada, 'clave' | 'hashCuerpo' | 'ruta'> {
+  const valor = request.headers['idempotency-key'];
+  const clave = Array.isArray(valor) ? valor[0] : valor;
+  if (!clave || !UUID_CLAVE.test(clave)) {
+    throw new AppError('VALIDACION', {
+      errors: [
+        { field: 'Idempotency-Key', code: 'REQUERIDO', message: 'Falta la clave de la operación.' },
+      ],
+    });
+  }
+  return {
+    clave,
+    hashCuerpo: createHash('sha256')
+      .update(request.rawBody ?? Buffer.alloc(0))
+      .digest('base64url'),
+    ruta: request.url.split('?')[0] ?? request.url,
+  };
 }

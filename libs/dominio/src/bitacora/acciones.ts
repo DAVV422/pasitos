@@ -66,6 +66,9 @@ export const ACCIONES_BITACORA = {
   'invitados.export': 'Descargó la lista de invitados',
   // Puerta
   'puerta.config.update': 'Cambió la configuración de la puerta',
+  'asistente.check_in': 'Marcó presente a un invitado',
+  'asistente.check_in_anular': 'Deshizo el check-in de un invitado',
+  'acceso.create': 'Generó un QR de asistente',
   // Plataforma (evento_id nulo, salvo las que tocan un evento)
   'organizacion.create': 'Creó una organización',
   'organizacion.update': 'Editó una organización',

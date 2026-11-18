@@ -12,3 +12,4 @@ export * from './terminales/esquemas';
 export * from './invitados/esquemas';
 export * from './invitados/csv';
 export * from './acceso/esquemas';
+export * from './puerta/esquemas';

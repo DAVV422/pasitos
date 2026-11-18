@@ -61,6 +61,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Catálogo',
         'Pantallas',
         'Mesas',
+        'Puerta',
         'Invitados',
         'Equipo',
       ],
@@ -80,6 +81,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Catálogo',
         'Pantallas',
         'Mesas',
+        'Puerta',
         'Invitados',
         'Equipo',
       ],
@@ -95,6 +97,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Preguntas',
         'Retos',
         'Catálogo',
+        'Puerta',
       ],
     ],
     [

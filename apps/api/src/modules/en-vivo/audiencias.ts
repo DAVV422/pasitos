@@ -167,6 +167,7 @@ export function toAvisoEnVivo(aviso: AvisoOutbox, suscriptor: Suscriptor): Aviso
         : null;
 
     case 'asistencia.registrada':
+    case 'asistencia.anulada':
       return isEquipo(suscriptor, [...PUERTA, 'financiador'])
         ? { evento: aviso.tipo, datos }
         : null;

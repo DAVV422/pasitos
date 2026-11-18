@@ -266,6 +266,17 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await expect(registrador.getByRole('link', { name: 'Equipo', exact: true })).toHaveCount(0);
   await expect(registrador.getByRole('link', { name: 'Bitácora', exact: true })).toHaveCount(0);
   await expect(registrador.getByRole('button', { name: 'Publicar' })).toHaveCount(0);
+  // HU-301: en la Puerta busca a Valeria y ve su ficha, con el correo enmascarado.
+  await registrador.getByRole('link', { name: 'Puerta', exact: true }).click();
+  await expect(registrador.getByRole('heading', { level: 1 })).toHaveText('Puerta');
+  await registrador.getByLabel('Nombre, código o correo').fill('Valer');
+  await registrador.getByRole('button', { name: /Valeria/ }).click();
+  await expect(registrador.getByTestId('nombre')).toContainText('Valeria');
+  await expect(registrador.getByText(/va•••@/)).toBeVisible();
+  // El evento sigue en borrador: la puerta no marca (el resto lo cubren las pruebas del API).
+  await registrador.getByRole('button', { name: 'Marcar presente' }).click();
+  await expect(registrador.getByText('Publica el evento para marcar la asistencia.')).toBeVisible();
+  await expect(registrador.getByTestId('contador')).toContainText('0 presentes de 1');
   await otro.close();
 
   await page.reload();

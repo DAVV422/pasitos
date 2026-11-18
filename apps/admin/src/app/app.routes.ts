@@ -63,6 +63,12 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/contenido.page').then((m) => m.ContenidoPage),
       })),
       {
+        path: 'puerta',
+        canActivate: [canDoActivate('puerta.use')],
+        title: 'Puerta · Pasitos',
+        loadComponent: () => import('./eventos/puerta.page').then((m) => m.PuertaPage),
+      },
+      {
         path: 'invitados',
         canActivate: [canDoActivate('invitados.update')],
         title: 'Invitados · Pasitos',

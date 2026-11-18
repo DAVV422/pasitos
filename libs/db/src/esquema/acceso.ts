@@ -13,7 +13,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { eventos } from './eventos';
-import { asistentes } from './libro';
+import { asistentes, movimientos } from './libro';
 import { organizaciones, tokens, usuarios } from './plataforma';
 import { enviosCorreo } from './soporte';
 import { bytea } from './tipos';
@@ -236,5 +236,47 @@ export const alertas = pgTable(
     ),
     uniqueIndex('alertas_clave').on(t.eventoId, t.clave),
     index('alertas_evento').on(t.eventoId, t.estado, t.createdAt),
+  ],
+);
+
+/**
+ * La llegada de cada invitado (HU-301, Modelo §5). **No se duplica:** un solo check-in activo por
+ * asistente. Deshacerlo lo marca anulado y resta la bienvenida con una anulación en el libro.
+ */
+export const checkIns = pgTable(
+  'check_ins',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+    asistenteId: uuid('asistente_id')
+      .notNull()
+      .references(() => asistentes.id),
+    metodo: text('metodo').notNull(),
+    registradorId: uuid('registrador_id').references(() => usuarios.id),
+    // HU-319: el QR de registro del autorregistro.
+    qrRegistroId: uuid('qr_registro_id'),
+    movimientoId: uuid('movimiento_id')
+      .notNull()
+      .references(() => movimientos.id),
+    anuladoAt: timestamp('anulado_at', { withTimezone: true }),
+    anuladoPor: uuid('anulado_por').references(() => usuarios.id),
+    motivoAnulacion: text('motivo_anulacion'),
+    movimientoAnulacionId: uuid('movimiento_anulacion_id').references(() => movimientos.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      'check_ins_metodo',
+      sql`${t.metodo} in ('escaneo_entrada', 'busqueda', 'registro_puerta', 'vinculacion_puerta', 'autoregistro_equipo', 'autoregistro_tablet', 'autoregistro_impreso')`,
+    ),
+    uniqueIndex('check_ins_activo')
+      .on(t.asistenteId)
+      .where(sql`${t.anuladoAt} is null`),
+    index('check_ins_evento').on(t.eventoId, t.createdAt),
   ],
 );

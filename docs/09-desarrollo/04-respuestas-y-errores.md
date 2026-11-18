@@ -183,6 +183,8 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `ASISTENTE_YA_REGISTRADO` | 409 | Esta persona ya está registrada en el evento. |
 | `ASISTENTE_POSIBLE_DUPLICADO` | 409 | Ya hay alguien con un nombre o correo parecido. Revisa antes de continuar. |
 | `CHECK_IN_YA_HECHO` | 409 | Esta persona ya está presente. |
+| `ASISTENTE_CANCELADO` | 422 | Esta persona ya no está en la lista del evento. |
+| `MOTIVO_REQUERIDO` | 422 | Esta persona ya tiene un celular vinculado. Indica el motivo para cambiarlo. |
 | `ALERTA_YA_ATENDIDA` | 409 | Otra persona ya está atendiendo este aviso. |
 | **Archivos** ([Subida de archivos §6](../04-tecnico/10-subida-de-archivos.md#6-errores)) | | |
 | `ARCHIVO_MUY_GRANDE` | 413 | El archivo supera el tamaño máximo. |

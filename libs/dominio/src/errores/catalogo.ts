@@ -148,6 +148,22 @@ export const CATALOGO_ERRORES = {
     title: 'Navegador no soportado',
     mensaje: 'Abre el enlace en Chrome o Safari, no dentro de otra app.',
   },
+  // Puerta (HU-301, HU-302)
+  CHECK_IN_YA_HECHO: {
+    status: 409,
+    title: 'Ya está presente',
+    mensaje: 'Esta persona ya está presente.',
+  },
+  ASISTENTE_CANCELADO: {
+    status: 422,
+    title: 'Fuera de la lista',
+    mensaje: 'Esta persona ya no está en la lista del evento.',
+  },
+  MOTIVO_REQUERIDO: {
+    status: 422,
+    title: 'Falta el motivo',
+    mensaje: 'Esta persona ya tiene un celular vinculado. Indica el motivo para cambiarlo.',
+  },
   QR_ASISTENTE_VENCIDO: {
     status: 422,
     title: 'Acceso vencido',
@@ -195,12 +211,22 @@ export const CATALOGO_ERRORES = {
     title: 'Cambio de estado no permitido',
     mensaje: 'El evento no está en un estado que permita este cambio. Recarga la página.',
   },
+  EVENTO_NO_ACTIVO: {
+    status: 422,
+    title: 'Evento no activo',
+    mensaje: 'El evento no está en curso.',
+  },
   EVENTO_CERRADO: {
     status: 422,
     title: 'Evento cerrado',
     mensaje: 'El evento ya cerró. Los puntos vencieron.',
   },
   // Retos y puntos
+  QR_INVALIDO: {
+    status: 422,
+    title: 'QR no válido',
+    mensaje: 'Este QR no es de Pasitos o no es de este evento.',
+  },
   RETO_YA_COMPLETADO: {
     status: 409,
     title: 'Reto ya completado',
