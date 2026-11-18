@@ -120,12 +120,18 @@ export class EnVivoService {
     }
   }
 
+  /** Los avisos por repartir, uno detrás de otro (`load` nunca rechaza). */
+  private cola: Promise<void> = Promise.resolve();
+
   private async listen(): Promise<void> {
     if (this.detenido) return;
     const cliente = new Client({ connectionString: this.urlBase });
     cliente.on('notification', (mensaje) => {
       if (mensaje.channel === 'outbox' && mensaje.payload) {
-        void this.load(mensaje.payload);
+        // En el orden en que llegan: si cada lectura corriera sola, una rápida pasaría a una
+        // lenta y el cliente recibiría los avisos desordenados (y Last-Event-ID saltaría uno).
+        const id = mensaje.payload;
+        this.cola = this.cola.then(() => this.load(id));
       }
     });
     cliente.on('error', (error) => {
