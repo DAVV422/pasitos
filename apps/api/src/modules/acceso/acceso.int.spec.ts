@@ -167,12 +167,13 @@ describe('Vincular el celular (HU-306)', () => {
   async function firmado(
     navegador: Navegador,
     cuerpo: object,
-    opciones: { clave?: string; timestamp?: number; firmarCon?: CryptoKey } = {},
+    opciones: { clave?: string; timestamp?: number; firmarCon?: CryptoKey; ruta?: string } = {},
   ) {
     const texto = JSON.stringify(cuerpo);
+    const ruta = opciones.ruta ?? '/api/v1/prueba-firma';
     const pedido = {
       metodo: 'POST',
-      ruta: '/api/v1/prueba-firma',
+      ruta,
       clave: opciones.clave ?? uuidv7(),
       timestamp: opciones.timestamp ?? api.reloj.now().getTime(),
       hashCuerpo: await hashCuerpo(texto),
@@ -180,7 +181,7 @@ describe('Vincular el celular (HU-306)', () => {
     const firma = await signPedido(opciones.firmarCon ?? navegador.par.privateKey, pedido);
     return api.app.inject({
       method: 'POST',
-      url: '/api/v1/prueba-firma',
+      url: ruta,
       headers: {
         cookie: navegador.cookie ?? '',
         'content-type': 'application/json',
@@ -520,6 +521,114 @@ describe('Vincular el celular (HU-306)', () => {
       expect(reclamos[0]?.diferenciaRelojMs).toBe(1_500);
       expect(reclamos[0]?.latenciaMs).toBeGreaterThanOrEqual(0);
       expect(reclamos[1]?.latenciaMs).toBeNull();
+    });
+  });
+
+  describe('Mi dispositivo y No fui yo (HU-312)', () => {
+    function getApp(url: string, navegador: Navegador) {
+      return api.app.inject({
+        method: 'GET',
+        url: `/api/v1/app/${url}`,
+        headers: { cookie: navegador.cookie ?? '' },
+      });
+    }
+
+    function noFuiYo(
+      navegador: Navegador,
+      cuerpo: object = { sobre: 'dispositivo' },
+      firmarCon?: CryptoKey,
+    ) {
+      return firmado(navegador, cuerpo, {
+        ruta: '/api/v1/app/no-fui-yo',
+        ...(firmarCon ? { firmarCon } : {}),
+      });
+    }
+
+    it('el actual, el historial y los intentos de otro dispositivo, sin IP ni huella', async () => {
+      const { asistenteId, token } = await newInvitado('Nora Historial');
+      const viejo = await newNavegador();
+      expect((await vincular(token, viejo)).statusCode).toBe(201);
+      // Un enlace nuevo (como al cambiar de celular) abre la entrada en otro.
+      const nuevoToken = await newInvitacion(asistenteId);
+      const nuevo = await newNavegador();
+      expect((await vincular(nuevoToken, nuevo)).statusCode).toBe(201);
+      // Alguien más intenta abrir el mismo enlace.
+      expect((await vincular(nuevoToken, await newNavegador())).json().code).toBe(
+        'INVITACION_YA_USADA',
+      );
+
+      const respuesta = await getApp('dispositivo', nuevo);
+      expect(respuesta.statusCode).toBe(200);
+      expect(respuesta.body).not.toMatch(/huella|"ip"|10\.8\./);
+      expect(respuesta.json()).toMatchObject({
+        actual: { modelo: 'Chrome en Android', metodo: 'enlace', puesto: 'Enlace de invitación' },
+        historial: [{ modelo: 'Chrome en Android', motivo: 'nueva_vinculacion' }],
+        intentos: [{ modelo: 'Chrome en Android', que: 'abrir_enlace' }],
+        avisos: [],
+      });
+    });
+
+    it('el celular anulado ve cuándo se anuló y queda registrado si sigue intentando', async () => {
+      const { asistenteId, token } = await newInvitado('Olga Anulada');
+      const viejo = await newNavegador();
+      await vincular(token, viejo);
+      await vincular(await newInvitacion(asistenteId), await newNavegador());
+      const rechazo = await getApp('estado', viejo);
+      expect(rechazo.json()).toMatchObject({
+        code: 'DISPOSITIVO_NO_VINCULADO',
+        meta: { metodo: 'enlace' },
+      });
+      const registros = await base.sistema.db
+        .select({ momento: registrosTecnicos.momento, motivo: registrosTecnicos.motivo })
+        .from(registrosTecnicos)
+        .where(eq(registrosTecnicos.asistenteId, asistenteId));
+      expect(registros).toContainEqual({
+        momento: 'intento_fallido',
+        motivo: 'DISPOSITIVO_NO_VINCULADO',
+      });
+      // Ninguna otra ruta del celular anulado responde.
+      expect((await firmado(viejo, { qr: 'x' })).json().code).toBe('DISPOSITIVO_NO_VINCULADO');
+    });
+
+    it('No fui yo desde el celular anulado y desde el actual: un solo aviso abierto', async () => {
+      const { asistenteId, token } = await newInvitado('Paula Aviso');
+      const viejo = await newNavegador();
+      await vincular(token, viejo);
+      const nuevo = await newNavegador();
+      await vincular(await newInvitacion(asistenteId), nuevo);
+
+      const desdeAnulado = await noFuiYo(viejo);
+      expect(desdeAnulado.statusCode).toBe(201);
+      expect(desdeAnulado.json()).toMatchObject({
+        estado: 'abierta',
+        yaExistia: false,
+        mensaje: 'Avisamos a la puerta. Acércate con este celular.',
+      });
+      const desdeActual = await noFuiYo(nuevo);
+      expect(desdeActual.json()).toMatchObject({
+        alertaId: desdeAnulado.json().alertaId,
+        yaExistia: true,
+      });
+      const filas = await base.sistema.db
+        .select()
+        .from(alertas)
+        .where(and(eq(alertas.asistenteId, asistenteId), eq(alertas.tipo, 'no_fui_yo')));
+      expect(filas).toHaveLength(1);
+      expect(filas[0]).toMatchObject({
+        prioridad: 'alta',
+        datos: { desde: 'anulado', sobre: 'dispositivo' },
+      });
+      expect((await getApp('dispositivo', nuevo)).json().avisos).toHaveLength(1);
+    });
+
+    it('No fui yo no se firma con la llave de otro celular', async () => {
+      const { token } = await newInvitado('Rita Firma');
+      const celular = await newNavegador();
+      await vincular(token, celular);
+      const ajeno = await newNavegador();
+      expect(
+        (await noFuiYo(celular, { sobre: 'dispositivo' }, ajeno.par.privateKey)).json().code,
+      ).toBe('FIRMA_INVALIDA');
     });
   });
 

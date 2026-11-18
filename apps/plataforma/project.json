@@ -11,6 +11,7 @@
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
+        "allowedCommonJsDependencies": ["jsqr"],
         "outputPath": "dist/apps/plataforma",
         "browser": "apps/plataforma/src/main.ts",
         "tsConfig": "apps/plataforma/tsconfig.app.json",

@@ -38,9 +38,14 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./historial/historial.page').then((m) => m.HistorialPage),
       },
       {
-        path: 'mas',
-        loadComponent: () => import('./mas/mas.page').then((m) => m.MasPage),
+        path: 'cuenta',
+        loadComponent: () => import('./cuenta/cuenta.page').then((m) => m.CuentaPage),
       },
+      {
+        path: 'cuenta/dispositivo',
+        loadComponent: () => import('./cuenta/dispositivo.page').then((m) => m.DispositivoPage),
+      },
+      { path: 'mas', pathMatch: 'full', redirectTo: 'cuenta' },
       { path: '', pathMatch: 'full', redirectTo: 'inicio' },
     ],
   },

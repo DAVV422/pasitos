@@ -10,6 +10,7 @@ import { AccesoSistema, PROVEEDOR_ACCESO_SISTEMA } from './acceso-sistema';
 import { AccesoController, AppAsistenteController } from './acceso.controller';
 import { AccesoService } from './acceso.service';
 import { AsistenteGuard } from './asistente.guard';
+import { DispositivoAppService } from './dispositivo-app';
 import { RegistroTecnicoService } from './registro-tecnico';
 import { RegistroTecnicoInterceptor } from './registro-tecnico.interceptor';
 import { SesionesAsistenteService } from './sesiones-asistente';
@@ -29,6 +30,12 @@ import { SesionesAsistenteService } from './sesiones-asistente';
       provide: RegistroTecnicoService,
       inject: [DbService],
       useFactory: (db: DbService) => new RegistroTecnicoService(db.db),
+    },
+    {
+      provide: DispositivoAppService,
+      inject: [DbService, RegistroTecnicoService, RELOJ],
+      useFactory: (db: DbService, registro: RegistroTecnicoService, reloj: Reloj) =>
+        new DispositivoAppService(db.db, registro, reloj),
     },
     {
       provide: AccesoService,

@@ -13,6 +13,8 @@ import { clearCopias, loadCopia, saveCopia } from './copia-local';
 export interface Anulacion {
   readonly anuladaAt: string | null;
   readonly metodo: string | null;
+  /** La zona del evento, para mostrar la hora sin conexión. */
+  readonly zonaHoraria: string;
 }
 
 const SIN_EN_VIVO_MS = 60_000;
@@ -68,21 +70,34 @@ export class SesionAsistente {
       return 'ok';
     } catch (error) {
       if (error instanceof ErrorApi && error.code === 'DISPOSITIVO_NO_VINCULADO') {
-        this.anulacion.set({
+        const copia = await loadCopia<EstadoApp>('estado');
+        const anulacion: Anulacion = {
           anuladaAt: typeof error.meta['anuladaAt'] === 'string' ? error.meta['anuladaAt'] : null,
           metodo: typeof error.meta['metodo'] === 'string' ? error.meta['metodo'] : null,
-        });
-        this.forget();
+          zonaHoraria:
+            this.estado()?.evento.zonaHoraria ??
+            copia?.valor.evento.zonaHoraria ??
+            'America/La_Paz',
+        };
+        this.anulacion.set(anulacion);
+        // HU-312 §2: se recuerda, para mostrarlo aunque abra sin conexión.
+        await this.forget();
+        await saveCopia('anulacion', anulacion);
         return 'anulado';
       }
       if (
         error instanceof ErrorApi &&
         (error.code === 'NO_AUTENTICADO' || error.code === 'SESION_VENCIDA')
       ) {
-        this.forget();
+        await this.forget();
         return 'sin_sesion';
       }
       if (error instanceof ErrorApi && error.code === 'SIN_CONEXION') {
+        const anulada = await loadCopia<Anulacion>('anulacion');
+        if (anulada) {
+          this.anulacion.set(anulada.valor);
+          return 'anulado';
+        }
         const copia = await loadCopia<EstadoApp>('estado');
         if (copia) {
           this.estado.set(copia.valor);
@@ -165,7 +180,7 @@ export class SesionAsistente {
   }
 
   /** Cierra el canal y borra lo guardado: este celular ya no tiene la entrada. */
-  private forget(): void {
+  private async forget(): Promise<void> {
     this.conexion?.close();
     this.conexion = null;
     if (this.sondeo) clearInterval(this.sondeo);
@@ -174,7 +189,7 @@ export class SesionAsistente {
     removeEventListener('online', this.alVolver);
     this.estado.set(null);
     this.evento.set(null);
-    void clearCopias();
+    await clearCopias();
   }
 }
 

@@ -15,6 +15,10 @@ export interface OpcionesAsistente {
    * con la diferencia de reloj y la latencia.
    */
   readonly momento?: 'reclamo' | 'canje' | 'foto';
+  /**
+   * HU-312 §3: el celular anulado por una vinculación nueva también llega (solo *No fui yo*).
+   */
+  readonly permiteAnulado?: boolean;
 }
 
 /** Ruta del asistente vinculado (`/app/*`): sesión `px_asistente`, no la del equipo. */
@@ -29,6 +33,8 @@ export interface ContextoAsistente {
   readonly asistenteId: string;
   readonly vinculacionId: string;
   readonly dispositivoId: string;
+  /** Este celular ya no tiene la entrada: solo llega a las rutas con `permiteAnulado`. */
+  readonly anulada: boolean;
 }
 
 /** En las rutas firmadas: lo que se firmó, para la idempotencia y el libro. */

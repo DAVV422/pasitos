@@ -5,6 +5,7 @@ import { AvisoComponent, EncabezadoComponent } from '@pasitos/ui';
 import { filter, map } from 'rxjs';
 import { formatHace } from './formato';
 import { NavegacionComponent } from './navegacion.component';
+import { PreferenciasService } from './preferencias';
 import { SesionAsistente } from './sesion-asistente';
 
 /** Las pantallas sin barra: antes de tener la entrada o al perderla. */
@@ -49,6 +50,8 @@ const SIN_BARRA = /^\/(acceso|sin-acceso|anulado|sin-conexion)(\/|$)/;
 export class AppComponent {
   protected readonly sesion = inject(SesionAsistente);
   private readonly router = inject(Router);
+  /** Aplica el tema y el tamaño de texto guardados al abrir. */
+  private readonly preferencias = inject(PreferenciasService);
   private readonly ruta = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),

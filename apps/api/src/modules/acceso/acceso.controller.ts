@@ -12,9 +12,15 @@ import {
 } from '@nestjs/common';
 import { withOrganizacion } from '@pasitos/db';
 import { AppError, TIPOS_ACCESO, type TipoAcceso } from '@pasitos/dominio';
-import { esquemaVincular } from '@pasitos/dominio/esquemas';
+import { esquemaNoFuiYo, esquemaVincular } from '@pasitos/dominio/esquemas';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { Asistente, AsistenteActual, type ContextoAsistente } from '../../common/sesion/asistente';
+import {
+  Asistente,
+  AsistenteActual,
+  Firma,
+  type ContextoAsistente,
+  type FirmaVerificada,
+} from '../../common/sesion/asistente';
 import { Publica } from '../../common/sesion/sesion';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { DbService } from '../../infra/db/db.module';
@@ -22,6 +28,7 @@ import { EnVivoService } from '../en-vivo/en-vivo.service';
 import { AccesoService } from './acceso.service';
 import { RELOJ, type Reloj } from '../auth/sesiones.service';
 import { getEstadoApp, getEtag } from './estado-app';
+import { DispositivoAppService } from './dispositivo-app';
 import { getEventoApp } from './evento-app';
 import { getMiEntrada, listMovimientosApp } from './movimientos-app';
 import { COOKIE_ASISTENTE, COOKIE_DISPOSITIVO } from './sesiones-asistente';
@@ -101,7 +108,27 @@ export class AppAsistenteController {
     private readonly enVivo: EnVivoService,
     @Inject(RELOJ) private readonly reloj: Reloj,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly dispositivo: DispositivoAppService,
   ) {}
+
+  /** HU-312 §1: este celular, el historial y los intentos de otros dispositivos. */
+  @Get('dispositivo')
+  @Asistente()
+  getDispositivo(@AsistenteActual() asistente: ContextoAsistente) {
+    return this.dispositivo.get(asistente);
+  }
+
+  /** HU-312 §3: también desde el celular anulado, firmado con su llave. */
+  @Post('no-fui-yo')
+  @Asistente({ firmado: true, permiteAnulado: true })
+  @HttpCode(201)
+  createNoFuiYo(
+    @AsistenteActual() asistente: ContextoAsistente,
+    @Firma() firma: FirmaVerificada,
+    @Body() cuerpo: unknown,
+  ) {
+    return this.dispositivo.create(asistente, esquemaNoFuiYo.parse(cuerpo), firma);
+  }
 
   /** HU-311 §1: el QR que cambia cada 30 s y el código para dictar. Nunca se guarda en caché. */
   @Get('mi-entrada')

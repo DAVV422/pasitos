@@ -71,8 +71,19 @@ export class SesionesAsistenteService {
   /**
    * La sesión de la cookie. Si su vinculación se anuló (otro celular abrió la entrada), responde
    * `DISPOSITIVO_NO_VINCULADO` con cuándo y cómo, para la pantalla de *anulado* (HU-312).
+   *
+   * - `permitirAnulada`: solo para *No fui yo* (HU-312 §3). El celular anulado por una
+   *   vinculación nueva todavía puede avisar; el contexto sale con `anulada: true`.
+   * - `alAnulada`: lo que pasa antes de rechazar a un celular anulado que sigue intentando (el
+   *   registro técnico de HU-307).
    */
-  async authenticate(token: string | undefined): Promise<SesionAsistente> {
+  async authenticate(
+    token: string | undefined,
+    opciones: {
+      readonly permitirAnulada?: boolean;
+      readonly alAnulada?: (contexto: ContextoAsistente) => Promise<void>;
+    } = {},
+  ): Promise<SesionAsistente> {
     if (!token) {
       throw new AppError('NO_AUTENTICADO');
     }
@@ -92,12 +103,16 @@ export class SesionesAsistenteService {
           asistenteId: vinculaciones.asistenteId,
           dispositivoId: vinculaciones.dispositivoId,
           anuladaAt: vinculaciones.anuladaAt,
+          motivoAnulacion: vinculaciones.motivoAnulacion,
           llavePublica: dispositivos.llavePublica,
         })
         .from(vinculaciones)
         .innerJoin(dispositivos, eq(dispositivos.id, vinculaciones.dispositivoId))
         .where(eq(vinculaciones.id, vinculacionId));
       if (!fila?.anuladaAt) {
+        return fila;
+      }
+      if (opciones.permitirAnulada && fila.motivoAnulacion === 'nueva_vinculacion') {
         return fila;
       }
       // Cómo se vinculó el celular nuevo: "Tu entrada se abrió en otro celular el 21/11 a las 10:42".
@@ -107,11 +122,29 @@ export class SesionesAsistenteService {
         .where(
           and(eq(vinculaciones.asistenteId, fila.asistenteId), isNull(vinculaciones.anuladaAt)),
         );
-      throw new AppError('DISPOSITIVO_NO_VINCULADO', {
-        meta: { anuladaAt: fila.anuladaAt.toISOString(), metodo: nueva?.metodo ?? null },
-      });
+      return { ...fila, metodoNuevo: nueva?.metodo ?? null };
     });
-    if (!vinculacion || sesion.revocadaAt !== null) {
+    if (!vinculacion) {
+      throw new AppError('NO_AUTENTICADO');
+    }
+    const contexto: ContextoAsistente = {
+      sessionId: sesion.id,
+      organizacionId,
+      eventoId: vinculacion.eventoId,
+      asistenteId: vinculacion.asistenteId,
+      vinculacionId: vinculacion.id,
+      dispositivoId: vinculacion.dispositivoId,
+      anulada: vinculacion.anuladaAt !== null,
+    };
+    if (vinculacion.anuladaAt && 'metodoNuevo' in vinculacion) {
+      await opciones.alAnulada?.(contexto);
+      throw new AppError('DISPOSITIVO_NO_VINCULADO', {
+        meta: { anuladaAt: vinculacion.anuladaAt.toISOString(), metodo: vinculacion.metodoNuevo },
+      });
+    }
+    // Una sesión revocada sin anular la vinculación (cerrar sesión) ya no entra. La del celular
+    // anulado sí, solo para *No fui yo*.
+    if (sesion.revocadaAt !== null && !contexto.anulada) {
       throw new AppError('NO_AUTENTICADO');
     }
     const ahora = this.reloj.now();
@@ -121,14 +154,6 @@ export class SesionesAsistenteService {
     if (ahora.getTime() - sesion.ultimoUsoAt.getTime() >= TOQUE_CADA_MS) {
       await this.db.update(sessions).set({ ultimoUsoAt: ahora }).where(eq(sessions.id, sesion.id));
     }
-    return {
-      sessionId: sesion.id,
-      organizacionId,
-      eventoId: vinculacion.eventoId,
-      asistenteId: vinculacion.asistenteId,
-      vinculacionId: vinculacion.id,
-      dispositivoId: vinculacion.dispositivoId,
-      llavePublica: vinculacion.llavePublica,
-    };
+    return { ...contexto, llavePublica: vinculacion.llavePublica };
   }
 }

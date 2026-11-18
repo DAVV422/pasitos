@@ -20,3 +20,9 @@ export const esquemaVincular = z.object({
 });
 
 export type DatosVincular = z.infer<typeof esquemaVincular>;
+
+/** *No fui yo* (HU-312 §3): sobre qué no reconoce la persona. */
+export const esquemaNoFuiYo = z.object({
+  sobre: z.enum(['dispositivo', 'intento', 'canje']),
+  refId: z.uuid().optional(),
+});

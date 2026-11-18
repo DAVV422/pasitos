@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type { EstadoRetoAsistente, TipoAcceso } from '@pasitos/dominio';
 import type { LlavePublicaEc } from '@pasitos/firmas';
+import { CLAVE_IDEMPOTENCIA, FIRMAR } from '@pasitos/web-core';
 import { firstValueFrom } from 'rxjs';
 
 const BASE = '/api/v1';
@@ -128,6 +129,29 @@ export interface PaginaHistorial {
   readonly pagination: { readonly limit: number; readonly nextCursor: string | null };
 }
 
+/** `GET /app/dispositivo` (HU-312 §1): sin IP ni huella. */
+export interface DispositivoApp {
+  readonly actual: {
+    readonly modelo: string;
+    readonly desde: string;
+    readonly metodo: string;
+    readonly puesto: string;
+  } | null;
+  readonly historial: readonly {
+    readonly modelo: string;
+    readonly desde: string;
+    readonly anuladaAt: string;
+    readonly motivo: string | null;
+    readonly por: string;
+  }[];
+  readonly intentos: readonly {
+    readonly modelo: string;
+    readonly at: string;
+    readonly que: string;
+  }[];
+  readonly avisos: readonly { readonly id: string; readonly estado: string; readonly at: string }[];
+}
+
 export interface DatosVincular {
   readonly tipo: TipoAcceso;
   readonly token: string;
@@ -166,6 +190,24 @@ export class AsistenteApi {
   listMovimientos(cursor?: string): Promise<PaginaHistorial> {
     const consulta = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
     return firstValueFrom(this.http.get<PaginaHistorial>(`${BASE}/app/movimientos${consulta}`));
+  }
+
+  getDispositivo(): Promise<DispositivoApp> {
+    return firstValueFrom(this.http.get<DispositivoApp>(`${BASE}/app/dispositivo`));
+  }
+
+  /** Firmado con la llave del navegador e idempotente (HU-312 §3). */
+  noFuiYo(
+    datos: { readonly sobre: 'dispositivo' | 'intento' | 'canje'; readonly refId?: string },
+    clave: string,
+  ): Promise<{ alertaId: string; estado: string; yaExistia: boolean; mensaje: string }> {
+    return firstValueFrom(
+      this.http.post<{ alertaId: string; estado: string; yaExistia: boolean; mensaje: string }>(
+        `${BASE}/app/no-fui-yo`,
+        datos,
+        { context: new HttpContext().set(FIRMAR, true).set(CLAVE_IDEMPOTENCIA, clave) },
+      ),
+    );
   }
 
   getEvento(): Promise<EventoApp> {

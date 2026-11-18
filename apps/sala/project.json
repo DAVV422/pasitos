@@ -11,6 +11,7 @@
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
+        "allowedCommonJsDependencies": ["jsqr"],
         "outputPath": "dist/apps/sala",
         "browser": "apps/sala/src/main.ts",
         "tsConfig": "apps/sala/tsconfig.app.json",

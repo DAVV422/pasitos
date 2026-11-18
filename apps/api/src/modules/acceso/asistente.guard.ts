@@ -67,7 +67,17 @@ export class AsistenteGuard implements CanActivate {
     }
     const request = ejecucion.switchToHttp().getRequest<RequestConAsistente>();
     request.llegadaMs = this.reloj.now().getTime();
-    const sesion = await this.sesiones.authenticate(request.cookies[COOKIE_ASISTENTE]);
+    const sesion = await this.sesiones.authenticate(request.cookies[COOKIE_ASISTENTE], {
+      permitirAnulada: opciones.permiteAnulado === true,
+      // HU-307 §4: el celular anulado que sigue intentando queda registrado.
+      alAnulada: (contexto) =>
+        this.registro.recordAparte(contexto.organizacionId, {
+          ...getTecnicoDelPedido(request, contexto),
+          momento: 'intento_fallido',
+          resultado: 'rechazado',
+          motivo: 'DISPOSITIVO_NO_VINCULADO',
+        }),
+    });
     const { llavePublica, ...contexto } = sesion;
     request.asistente = contexto;
     if (opciones.firmado) {

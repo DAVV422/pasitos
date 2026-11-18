@@ -74,6 +74,6 @@ export class NavegacionComponent {
     { ruta: '/retos', icono: 'trophy', texto: 'Retos' },
     { ruta: '/escanear', icono: 'scan', texto: 'Escanear' },
     { ruta: '/canjear', icono: 'gift', texto: 'Canjear' },
-    { ruta: '/mas', icono: 'menu', texto: 'Más' },
+    { ruta: '/cuenta', icono: 'menu', texto: 'Más' },
   ];
 }
