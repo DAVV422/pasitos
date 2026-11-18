@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { AvisoComponent, LectorQrComponent } from '@pasitos/ui';
 import { SesionAsistente } from '../sesion-asistente';
-import { isQrReto, ReclamoService } from './reclamo.service';
+import { Router } from '@angular/router';
+import { getTokenCobro, isQrReto, ReclamoService } from './reclamo.service';
 import { ResultadoReclamoComponent } from './resultado-reclamo.component';
 
 /**
@@ -34,6 +35,7 @@ import { ResultadoReclamoComponent } from './resultado-reclamo.component';
 export class EscanearPage {
   protected readonly reclamos = inject(ReclamoService);
   private readonly sesion = inject(SesionAsistente);
+  private readonly router = inject(Router);
   protected readonly ajeno = signal(false);
   private quitarAjeno: ReturnType<typeof setTimeout> | undefined;
 
@@ -53,6 +55,12 @@ export class EscanearPage {
   }
 
   protected onLeido(texto: string): void {
+    // El QR de cobro de la mesa (HU-313): a la pantalla del cobro.
+    const cobro = getTokenCobro(texto);
+    if (cobro) {
+      void this.router.navigate(['/cobro', cobro]);
+      return;
+    }
     if (!isQrReto(texto)) {
       this.ajeno.set(true);
       clearTimeout(this.quitarAjeno);

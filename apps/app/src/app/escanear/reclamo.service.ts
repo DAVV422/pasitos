@@ -21,6 +21,11 @@ const REPETIDO_MS = 3_000;
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** El token de un QR de cobro de la mesa (`…/app/cobro/<token>`), o `null`. */
+export function getTokenCobro(texto: string): string | null {
+  return /\/app\/cobro\/([\w-]{20,64})(?:[?#].*)?$/.exec(texto.trim())?.[1] ?? null;
+}
+
 /** Si el texto leído es un QR de reto de Pasitos (`PX1…` o el enlace `…/r/PX1…`). */
 export function isQrReto(texto: string): boolean {
   return /(^|\/r\/)PX1\.[\w-]+\.[\w-]+/.test(texto.trim());

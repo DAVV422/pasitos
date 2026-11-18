@@ -37,6 +37,7 @@ async function bootstrap(): Promise<void> {
     purga: composicion.purga,
     borrado: composicion.borrado,
     alertasDiferidas: composicion.alertasDiferidas,
+    vencerCobros: composicion.vencerCobros,
     operaciones: composicion.operaciones,
   });
   logger.log(

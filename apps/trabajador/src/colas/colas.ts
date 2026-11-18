@@ -5,6 +5,7 @@ import type { Db } from '@pasitos/db';
 import type { ContratoService } from '../contrato/contrato.service';
 import type { PurgaArchivosService } from '../archivos/purga.service';
 import type { AlertasDiferidasService } from '../acceso/alertas-diferidas.service';
+import { VENCER_COBROS_CADA_MS, type VencerCobrosService } from '../canjes/vencer-cobros.service';
 import type { BorradoDispositivosService } from '../acceso/borrado-dispositivos.service';
 import type { EnviosCorreoService } from '../correos/envios.service';
 import { OutboxService, type AperturaEventosService } from '../eventos/outbox.service';
@@ -104,6 +105,7 @@ export interface DependenciasColas {
   readonly purga: PurgaArchivosService;
   readonly borrado: BorradoDispositivosService;
   readonly alertasDiferidas: AlertasDiferidasService;
+  readonly vencerCobros: VencerCobrosService;
   readonly operaciones: OperacionesTrabajoService;
 }
 
@@ -119,6 +121,7 @@ export async function startColas({
   purga,
   borrado,
   alertasDiferidas,
+  vencerCobros,
   operaciones,
 }: DependenciasColas): Promise<() => void> {
   const logger = new Logger('Colas');
@@ -208,6 +211,23 @@ export async function startColas({
       });
   }, OPERACIONES_CADA_MS);
 
+  // HU-316 §2: vencer-cobros, cada 15 s y de a un proceso (candado): libera el stock reservado.
+  let venciendo = false;
+  const intervaloCobros = setInterval(() => {
+    if (venciendo) return;
+    venciendo = true;
+    void withCandado(pool, 'vencer-cobros', () => vencerCobros.expire())
+      .catch((error: unknown) =>
+        logger.error(
+          { err: error instanceof Error ? error.message : String(error) },
+          'Error en vencer-cobros',
+        ),
+      )
+      .finally(() => {
+        venciendo = false;
+      });
+  }, VENCER_COBROS_CADA_MS);
+
   // T-007 §3: cada minuto, hasta llenar el cupo del día.
   await boss.schedule(COLA_CORREOS, '* * * * *');
   await boss.work(COLA_CORREOS, { localConcurrency: 1 }, async () => {
@@ -259,6 +279,7 @@ export async function startColas({
   return () => {
     clearInterval(intervalo);
     clearInterval(intervaloOperaciones);
+    clearInterval(intervaloCobros);
   };
 }
 

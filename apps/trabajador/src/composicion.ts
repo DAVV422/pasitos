@@ -1,5 +1,6 @@
 import { RegistroPuertaCorreoGancho } from './invitados/registro-puerta-correo';
 import { AlertasDiferidasService } from './acceso/alertas-diferidas.service';
+import { VencerCobrosService } from './canjes/vencer-cobros.service';
 import { BorradoDispositivosService } from './acceso/borrado-dispositivos.service';
 import { buildCifrador, createConexion, type ConexionDb } from '@pasitos/db';
 import { RpcStellar, TransaccionesStellarRepository, type StellarPort } from '@pasitos/stellar';
@@ -32,6 +33,7 @@ export interface Composicion {
   readonly purga: PurgaArchivosService;
   readonly borrado: BorradoDispositivosService;
   readonly alertasDiferidas: AlertasDiferidasService;
+  readonly vencerCobros: VencerCobrosService;
   readonly operaciones: OperacionesTrabajoService;
 }
 
@@ -127,6 +129,7 @@ export function buildComposicion(
     apertura,
     borrado: new BorradoDispositivosService(conexion.db, reloj),
     alertasDiferidas: new AlertasDiferidasService(conexion.db, reloj),
+    vencerCobros: new VencerCobrosService(conexion.db, reloj),
     purga: new PurgaArchivosService(conexion.db, config.ARCHIVOS_DIR, reloj),
     operaciones: new OperacionesTrabajoService(conexion.db, config.ARCHIVOS_DIR, reloj),
   };

@@ -218,6 +218,13 @@
       "when": 1795018362831,
       "tag": "0030_escaneos",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795021238230,
+      "tag": "0031_canjes",
+      "breakpoints": true
     }
   ]
 }

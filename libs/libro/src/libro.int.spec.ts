@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
-import { uuidv7 } from 'uuidv7';
 import {
   asistentes,
   eventos,
@@ -18,6 +17,7 @@ import { LibroService, type NuevoMovimiento } from './libro.service';
 import {
   createAsistente,
   createAsistentes,
+  createCanje,
   createOrganizacionYEvento,
   createReto,
 } from './pruebas/datos';
@@ -142,7 +142,7 @@ describe('libro de movimientos', () => {
           asistenteId: asistenteId,
           tipo: 'canje',
           origen: 'asistente',
-          canjeId: uuidv7(),
+          canjeId: await createCanje(base.sistema.db, organizacionId, eventoId),
           puntos: -10,
         }),
       ).rejects.toMatchObject({ code: 'SALDO_INSUFICIENTE' });
@@ -272,17 +272,21 @@ describe('libro de movimientos', () => {
         puntos: 30,
       });
 
-      const canje = (): NuevoMovimiento => ({
+      const canjeIds = [
+        await createCanje(base.sistema.db, organizacionId, eventoId),
+        await createCanje(base.sistema.db, organizacionId, eventoId),
+      ];
+      const canje = (canjeId: string): NuevoMovimiento => ({
         eventoId,
         asistenteId: asistenteId,
         tipo: 'canje',
         origen: 'asistente',
-        canjeId: uuidv7(),
+        canjeId,
         puntos: -30,
       });
       const resultados = await Promise.allSettled([
-        mover(organizacionId, canje()),
-        mover(organizacionId, canje()),
+        mover(organizacionId, canje(canjeIds[0] ?? '')),
+        mover(organizacionId, canje(canjeIds[1] ?? '')),
       ]);
 
       expect(resultados.map(codigoDe).sort()).toEqual(['SALDO_INSUFICIENTE', 'fulfilled']);
@@ -310,7 +314,7 @@ describe('libro de movimientos', () => {
           asistenteId: asistenteId,
           tipo: 'canje',
           origen: 'asistente',
-          canjeId: uuidv7(),
+          canjeId: await createCanje(base.sistema.db, organizacionId, eventoId),
           puntos: -20,
         },
         {

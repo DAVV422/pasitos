@@ -160,6 +160,33 @@ export interface ReclamoAceptado {
   readonly saldo: number;
 }
 
+/** HU-313: el cobro de la mesa, antes de pagarlo. */
+export interface ItemCobro {
+  readonly premioId: string;
+  readonly nombre: string;
+  readonly cantidad: number;
+  readonly puntos: number;
+}
+
+export interface VistaCobro {
+  readonly id: string;
+  readonly mesa: string;
+  readonly items: readonly ItemCobro[];
+  readonly total: number;
+  readonly saldo: number;
+  readonly saldoDespues: number;
+  readonly expiraAt: string;
+  readonly estado: 'pendiente';
+  readonly requiereCi: boolean;
+}
+
+export interface CanjeConfirmado {
+  readonly comprobante: string;
+  readonly items: readonly ItemCobro[];
+  readonly total: number;
+  readonly saldo: number;
+}
+
 export interface DatosVincular {
   readonly tipo: TipoAcceso;
   readonly token: string;
@@ -206,6 +233,23 @@ export class AsistenteApi {
       this.http.post<ReclamoAceptado>(
         `${BASE}/app/reclamos`,
         { qr },
+        { context: new HttpContext().set(FIRMAR, true).set(CLAVE_IDEMPOTENCIA, clave) },
+      ),
+    );
+  }
+
+  getCobro(token: string): Promise<VistaCobro> {
+    return firstValueFrom(
+      this.http.get<VistaCobro>(`${BASE}/app/cobros/${encodeURIComponent(token)}`),
+    );
+  }
+
+  /** Firmado e idempotente: un doble toque cobra una sola vez (V8). */
+  confirmCobro(token: string, clave: string): Promise<CanjeConfirmado> {
+    return firstValueFrom(
+      this.http.post<CanjeConfirmado>(
+        `${BASE}/app/cobros/${encodeURIComponent(token)}/confirmar`,
+        null,
         { context: new HttpContext().set(FIRMAR, true).set(CLAVE_IDEMPOTENCIA, clave) },
       ),
     );

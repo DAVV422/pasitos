@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,44 +10,10 @@ import { Router } from '@angular/router';
 import { buildQrReto, getFranjaQr, toBase64Url } from '@pasitos/firmas';
 import { AvisoComponent, IconoComponent, QrComponent } from '@pasitos/ui';
 import { EnVivoService, ErrorApi } from '@pasitos/web-core';
-import { firstValueFrom } from 'rxjs';
 import { getParLlaves } from '../conectar/llave-local';
+import { SalaApi, type EstadoSala, type QrEmitido } from '../sala-api.service';
 
-/** `GET /sala/estado` (HU-314 §2). */
-interface EstadoSala {
-  readonly pantalla: {
-    readonly id: string;
-    readonly numero: number;
-    readonly nombre: string;
-    readonly lugar: string | null;
-  };
-  readonly estado: 'activa' | 'pausada' | 'agotado' | 'espera' | 'evento_no_activo';
-  readonly reto: {
-    readonly id: string;
-    readonly numero: number;
-    readonly nombre: string;
-    readonly puntos: number;
-    readonly modo: 'por_tiempo' | 'un_uso';
-    readonly rotacionSegundos: number;
-    readonly entregados: number;
-    readonly tope: number;
-  } | null;
-  readonly proximo: { readonly nombre: string; readonly desde: string } | null;
-  readonly epoca: number;
-  readonly horaServidor: number;
-  readonly evento: { readonly estado: string };
-}
-
-interface Emitido {
-  reto: string;
-  modo: 'por_tiempo' | 'un_uso';
-  epoca: number;
-  franja?: number;
-  nonce?: string;
-  inicioAt: string;
-  finAt?: string;
-  finMotivo?: 'vencio' | 'usado' | 'invalidado' | 'pausa';
-}
+type Emitido = QrEmitido;
 
 const TICK_MS = 250;
 const ESTADO_CADA_MS = 60_000;
@@ -160,7 +125,7 @@ function newNonce(): string {
   `,
 })
 export class PantallaPage {
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(SalaApi);
   private readonly router = inject(Router);
 
   protected readonly estado = signal<EstadoSala | null>(null);
@@ -298,7 +263,7 @@ export class PantallaPage {
   private async loadEstado(): Promise<void> {
     try {
       const antes = Date.now();
-      const estado = await firstValueFrom(this.http.get<EstadoSala>('/api/v1/sala/estado'));
+      const estado = await this.api.getEstado();
       // La mitad del viaje: la hora del servidor llegó un poco después de calcularse.
       this.desfase = estado.horaServidor + (Date.now() - antes) / 2 - Date.now();
       const anterior = this.estado();
@@ -379,7 +344,7 @@ export class PantallaPage {
     if (this.pendientes.length === 0) return;
     const tanda = this.pendientes.slice(0, 100);
     try {
-      await firstValueFrom(this.http.post('/api/v1/sala/qr-emitidos', { items: tanda }));
+      await this.api.recordEmitidos(tanda);
       this.pendientes = this.pendientes.slice(tanda.length);
     } catch {
       // Se reintenta en la próxima vuelta; sin crecer sin límite.

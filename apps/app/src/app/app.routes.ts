@@ -25,8 +25,11 @@ export const appRoutes: Route[] = [
       },
       {
         path: 'canjear',
-        data: { titulo: 'Canjear' },
-        loadComponent: () => import('./pendiente.page').then((m) => m.PendientePage),
+        loadComponent: () => import('./canjear/canjear.page').then((m) => m.CanjearPage),
+      },
+      {
+        path: 'cobro/:token',
+        loadComponent: () => import('./canjear/cobro.page').then((m) => m.CobroPage),
       },
       {
         path: 'mi-entrada',

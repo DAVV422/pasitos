@@ -293,6 +293,26 @@ export const CATALOGO_ERRORES = {
     title: 'Saldo insuficiente',
     mensaje: 'Te faltan puntos para este canje.',
   },
+  PREMIO_AGOTADO: {
+    status: 409,
+    title: 'Premio agotado',
+    mensaje: 'Este premio se agotó.',
+  },
+  CANJE_VENCIDO: {
+    status: 422,
+    title: 'Cobro vencido',
+    mensaje: 'El cobro venció. Pide que generen uno nuevo.',
+  },
+  CANJE_YA_CONFIRMADO: {
+    status: 409,
+    title: 'Cobro pagado',
+    mensaje: 'Este canje ya se confirmó.',
+  },
+  MAXIMO_POR_PERSONA: {
+    status: 422,
+    title: 'Máximo por persona',
+    mensaje: 'Ya canjeaste el máximo de este premio.',
+  },
 } as const satisfies Record<string, DefinicionError>;
 
 export interface DefinicionError {

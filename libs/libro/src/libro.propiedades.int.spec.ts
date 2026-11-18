@@ -1,10 +1,14 @@
 import { eq } from 'drizzle-orm';
 import fc from 'fast-check';
-import { uuidv7 } from 'uuidv7';
 import { retos, saldos, withOrganizacion } from '@pasitos/db';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import { LibroService, type NuevoMovimiento } from './libro.service';
-import { createAsistentes, createOrganizacionYEvento, createReto } from './pruebas/datos';
+import {
+  createAsistentes,
+  createCanje,
+  createOrganizacionYEvento,
+  createReto,
+} from './pruebas/datos';
 
 /**
  * Propiedades del libro (HU-101): para secuencias aleatorias de movimientos válidos e inválidos,
@@ -43,8 +47,11 @@ describe('propiedades del libro', () => {
           });
 
           for (const tanda of tandas) {
+            const canjeIds = await Promise.all(
+              tanda.map(() => createCanje(base.sistema.db, organizacionId, eventoId)),
+            );
             await Promise.allSettled(
-              tanda.map((op) => {
+              tanda.map((op, i) => {
                 const asistenteId = ids[op.asistente] ?? '';
                 const nuevo: NuevoMovimiento =
                   op.tipo === 'reto'
@@ -55,7 +62,7 @@ describe('propiedades del libro', () => {
                           asistenteId,
                           tipo: 'canje',
                           origen: 'asistente',
-                          canjeId: uuidv7(),
+                          canjeId: canjeIds[i] ?? '',
                           puntos: -op.puntos,
                         }
                       : op.tipo === 'vencimiento'

@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, input, type OnInit } from '@angular/core';
-import { AvisoComponent, EstadoComponent } from '@pasitos/ui';
+import { Router } from '@angular/router';
+import { AvisoComponent, BotonDirective, EstadoComponent } from '@pasitos/ui';
 import { isNavegadorDeOtraApp, TerminalService } from '@pasitos/web-core';
 
-/** Conectar la mesa de canje (HU-209 §4). El cobro llega en la fase 3. */
+/** Conectar la mesa de canje (HU-209 §4); después, *Nuevo canje* (HU-316). */
 @Component({
   selector: 'mesa-conectar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AvisoComponent, EstadoComponent],
+  imports: [AvisoComponent, BotonDirective, EstadoComponent],
   template: `
     <h1 class="text-3xl font-extrabold">Mesa de canje</h1>
     @if (otraApp) {
@@ -38,6 +39,7 @@ import { isNavegadorDeOtraApp, TerminalService } from '@pasitos/web-core';
               }
             </p>
             <p class="text-muted">{{ t.evento.nombre }}</p>
+            <button pxBoton type="button" (click)="start()">Empezar a cobrar</button>
           </section>
         }
       }
@@ -48,6 +50,7 @@ export class ConectarPage implements OnInit {
   readonly token = input<string>();
   protected readonly terminal = inject(TerminalService);
   protected readonly otraApp = isNavegadorDeOtraApp(navigator.userAgent);
+  private readonly router = inject(Router);
 
   ngOnInit(): void {
     const token = this.token();
@@ -57,7 +60,14 @@ export class ConectarPage implements OnInit {
         history.replaceState(null, '', document.baseURI);
       });
     } else {
-      void this.terminal.check();
+      // Ya estaba conectada: directo a *Nuevo canje*.
+      void this.terminal.check().then(() => {
+        if (this.terminal.estado() === 'conectada') void this.router.navigate(['/canje']);
+      });
     }
+  }
+
+  protected start(): void {
+    void this.router.navigate(['/canje']);
   }
 }

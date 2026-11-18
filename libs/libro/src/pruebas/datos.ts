@@ -1,5 +1,15 @@
+import { randomBytes } from 'node:crypto';
 import { uuidv7 } from 'uuidv7';
-import { asistentes, eventos, organizaciones, retos, withOrganizacion, type Db } from '@pasitos/db';
+import {
+  asistentes,
+  canjes,
+  eventos,
+  mesas,
+  organizaciones,
+  retos,
+  withOrganizacion,
+  type Db,
+} from '@pasitos/db';
 
 /** Datos inventados para los tests del libro. */
 export async function createOrganizacionYEvento(
@@ -82,5 +92,40 @@ export async function createAsistente(
   if (!id) {
     throw new Error('No se creó el asistente');
   }
+  return id;
+}
+
+/**
+ * Un cobro de mesa de verdad, para los movimientos de canje (`movimientos.canje_id` tiene clave
+ * foránea desde HU-316). Crea la mesa la primera vez.
+ */
+const mesasDePrueba = new Map<string, string>();
+let comprobante = 0;
+
+export async function createCanje(
+  sistema: Db,
+  organizacionId: string,
+  eventoId: string,
+): Promise<string> {
+  let mesaId = mesasDePrueba.get(eventoId);
+  if (!mesaId) {
+    mesaId = uuidv7();
+    await sistema
+      .insert(mesas)
+      .values({ id: mesaId, organizacionId, eventoId, nombre: 'Mesa de prueba' });
+    mesasDePrueba.set(eventoId, mesaId);
+  }
+  const id = uuidv7();
+  comprobante = (comprobante + 1) % 10_000;
+  await sistema.insert(canjes).values({
+    id,
+    organizacionId,
+    eventoId,
+    mesaId,
+    tokenHash: randomBytes(32),
+    comprobante: `C-${String(comprobante).padStart(4, '0')}`,
+    totalPuntos: 1,
+    expiraAt: new Date(Date.now() + 120_000),
+  });
   return id;
 }

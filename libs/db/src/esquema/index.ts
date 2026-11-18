@@ -6,3 +6,4 @@ export * from './equipo';
 export * from './archivos';
 export * from './contenido';
 export * from './acceso';
+export * from './canjes';

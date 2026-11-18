@@ -165,6 +165,10 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await mesa.setExtraHTTPHeaders({ 'X-Forwarded-For': createIpPrueba() });
   await mesa.goto(new URL(enlaceMesa).pathname);
   await expect(mesa.getByText('Conectada')).toBeVisible();
+  // HU-316: la mesa ya conectada abre directo *Nuevo canje*, con el catálogo.
+  await mesa.goto('/mesa/');
+  await expect(mesa).toHaveURL(/\/mesa\/canje$/);
+  await expect(mesa.getByRole('heading', { level: 1 })).toHaveText('Nuevo canje');
   await page.getByRole('button', { name: 'Listo' }).click();
   await expect(page.getByText('En línea')).toBeVisible();
   await tablet.close();

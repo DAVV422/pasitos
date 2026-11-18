@@ -22,3 +22,14 @@ export type DatosPremio = z.infer<typeof esquemaPremio>;
 export function isPocosDisponibles(disponible: number, total: number): boolean {
   return disponible > 0 && (disponible < 5 || disponible < total * 0.1);
 }
+
+/** HU-316: el cobro que arma la mesa. */
+export const esquemaCobro = z.object({
+  items: z
+    .array(z.object({ premioId: z.uuid(), cantidad: z.number().int().min(1).max(20) }))
+    .min(1)
+    .max(20)
+    .refine((items) => new Set(items.map((i) => i.premioId)).size === items.length, {
+      error: 'Cada premio va una sola vez.',
+    }),
+});
