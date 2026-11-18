@@ -232,6 +232,10 @@ export const movimientos = pgTable(
     ),
     index('movimientos_evento').on(t.eventoId, t.id),
     index('movimientos_asistente').on(t.asistenteId, t.id),
+    // HU-317: un movimiento se anula una sola vez.
+    uniqueIndex('movimientos_anula_unica')
+      .on(t.anulaMovimientoId)
+      .where(sql`${t.anulaMovimientoId} is not null`),
   ],
 );
 

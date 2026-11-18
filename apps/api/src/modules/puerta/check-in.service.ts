@@ -4,6 +4,7 @@ import { AppError } from '@pasitos/dominio';
 import type { LibroService } from '@pasitos/libro';
 import { uuidv7 } from 'uuidv7';
 import { BitacoraService, type ActorBitacora } from '../bitacora/bitacora.service';
+import type { AnulacionesService } from '../movimientos/anulaciones.service';
 
 export const METODOS_CHECK_IN = [
   'escaneo_entrada',
@@ -48,7 +49,10 @@ export interface CheckInHecho {
 export class CheckInService {
   private readonly bitacora = new BitacoraService();
 
-  constructor(private readonly libro: LibroService) {}
+  constructor(
+    private readonly libro: LibroService,
+    private readonly anulaciones: AnulacionesService,
+  ) {}
 
   async register(tx: Tx, datos: DatosCheckIn): Promise<CheckInHecho> {
     // La fila del asistente bloqueada: dos registradores a la vez no duplican.
@@ -159,13 +163,9 @@ export class CheckInService {
     let anulacionId: string | null = null;
     if (activo.puntos > 0) {
       try {
-        const anulacion = await this.libro.addMovimiento(tx, {
-          eventoId: datos.eventoId,
-          asistenteId: datos.asistenteId,
-          tipo: 'anulacion',
-          origen: 'equipo',
-          puntos: -activo.puntos,
-          anulaMovimientoId: activo.movimientoId,
+        // HU-317: la única forma de anular un movimiento.
+        const anulacion = await this.anulaciones.cancelMovimiento(tx, {
+          movimientoId: activo.movimientoId,
           autorId: datos.autorId,
           motivo: datos.motivo,
         });

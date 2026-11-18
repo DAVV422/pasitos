@@ -27,6 +27,7 @@ export const TABLAS_RECURSO = {
   // HU-302: el id del acceso es el del token del QR.
   accesos: 'tokens',
   alertas: 'alertas',
+  canjes: 'canjes',
 } as const;
 export type RecursoEvento = keyof typeof TABLAS_RECURSO;
 

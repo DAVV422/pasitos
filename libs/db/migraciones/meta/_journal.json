@@ -232,6 +232,13 @@
       "when": 1795022832008,
       "tag": "0032_controles_pantalla",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795024243079,
+      "tag": "0033_ajustes",
+      "breakpoints": true
     }
   ]
 }

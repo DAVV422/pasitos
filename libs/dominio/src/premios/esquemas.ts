@@ -33,3 +33,34 @@ export const esquemaCobro = z.object({
       error: 'Cada premio va una sola vez.',
     }),
 });
+
+/** HU-317: ajustar puntos, otorgar un reto y anular un canje. */
+export const esquemaAjuste = z.object({
+  puntos: z
+    .number()
+    .int()
+    .refine((p) => p !== 0, { error: 'Los puntos no pueden ser 0.' }),
+  motivo: z
+    .object({
+      tipo: z.enum(['falla_qr', 'compensacion', 'correccion', 'otro']),
+      texto: z.string().trim().max(300).optional(),
+    })
+    .refine((m) => m.tipo !== 'otro' || (m.texto?.length ?? 0) >= 5, {
+      error: 'Cuenta el motivo (al menos 5 letras).',
+      path: ['texto'],
+    }),
+});
+
+export const esquemaOtorgamiento = z.object({
+  asistentes: z.array(z.string().trim().min(1).max(20)).min(1).max(200),
+  motivo: z.string().trim().max(300).optional(),
+});
+
+export const esquemaAnularCanje = z.object({
+  motivo: z.string().trim().min(5, { error: 'Escribe el motivo (al menos 5 letras).' }).max(300),
+});
+
+export const esquemaListarAjustes = z.object({
+  tipo: z.enum(['ajuste', 'otorgado', 'anulacion']).optional(),
+  autor: z.uuid().optional(),
+});

@@ -242,6 +242,16 @@ export const CATALOGO_ERRORES = {
     title: 'QR no válido',
     mensaje: 'Este QR no es de Pasitos o no es de este evento.',
   },
+  AJUSTE_PROPIO: {
+    status: 403,
+    title: 'Ajuste propio',
+    mensaje: 'No puedes ajustar tus propios puntos.',
+  },
+  YA_ANULADO: {
+    status: 409,
+    title: 'Ya anulado',
+    mensaje: 'Esto ya se anuló.',
+  },
   PIN_INVALIDO: {
     status: 403,
     title: 'PIN incorrecto',

@@ -95,3 +95,21 @@ export const canjeItems = pgTable(
     index('canje_items_premio_idx').on(t.premioId),
   ],
 );
+
+/**
+ * El texto libre de un ajuste (*Otro: …*, HU-317). El libro guarda solo la categoría, que es lo que
+ * se publica en el lote; el texto queda aquí, para el equipo.
+ */
+export const notasMovimiento = pgTable('notas_movimiento', {
+  movimientoId: uuid('movimiento_id')
+    .primaryKey()
+    .references(() => movimientos.id),
+  organizacionId: uuid('organizacion_id')
+    .notNull()
+    .references(() => organizaciones.id),
+  eventoId: uuid('evento_id')
+    .notNull()
+    .references(() => eventos.id),
+  texto: text('texto').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

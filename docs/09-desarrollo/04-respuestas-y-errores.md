@@ -207,6 +207,7 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `PREMIO_AGOTADO` | 409 | Este premio se agotó. |
 | `CANJE_VENCIDO` | 422 | El cobro venció. Pide que generen uno nuevo. |
 | `CANJE_YA_CONFIRMADO` | 409 | Este canje ya se confirmó. |
+| `YA_ANULADO` | 409 | Esto ya se anuló. |
 | `MAXIMO_POR_PERSONA` | 422 | Ya canjeaste el máximo de este premio. |
 | **Evento** | | |
 | `EVENTO_CERRADO` | 422 | El evento ya cerró. Los puntos vencieron. |

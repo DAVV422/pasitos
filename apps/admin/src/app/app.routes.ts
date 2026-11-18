@@ -63,6 +63,12 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/contenido.page').then((m) => m.ContenidoPage),
       })),
       {
+        path: 'ajustes',
+        canActivate: [canDoActivate('puntos.ajustar')],
+        title: 'Ajustes · Pasitos',
+        loadComponent: () => import('./eventos/ajustes.page').then((m) => m.AjustesPage),
+      },
+      {
         path: 'mis-pantallas',
         canActivate: [canDoActivate('pantallas.control')],
         title: 'Mis pantallas · Pasitos',

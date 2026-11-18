@@ -4,6 +4,7 @@ import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { DbService } from '../../infra/db/db.module';
 import { AuthModule } from '../auth/auth.module';
 import { RELOJ, type Reloj } from '../auth/sesiones.service';
+import { AnulacionesService } from '../movimientos/anulaciones.service';
 import { MovimientosModule } from '../movimientos/movimientos.module';
 import { AccesosPuertaService } from './accesos-puerta';
 import { AlertasPuertaService } from './alertas-puerta';
@@ -20,8 +21,9 @@ import { RegistroPuertaService } from './registro-puerta';
   providers: [
     {
       provide: CheckInService,
-      inject: [LibroService],
-      useFactory: (libro: LibroService) => new CheckInService(libro),
+      inject: [LibroService, AnulacionesService],
+      useFactory: (libro: LibroService, anulaciones: AnulacionesService) =>
+        new CheckInService(libro, anulaciones),
     },
     {
       provide: PuertaService,

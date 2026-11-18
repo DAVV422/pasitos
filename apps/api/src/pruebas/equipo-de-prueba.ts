@@ -2,6 +2,7 @@ import {
   actividades,
   alertas,
   asistentes,
+  canjes,
   operaciones,
   eventos,
   lugares,
@@ -49,6 +50,7 @@ export interface EventoDePrueba {
     readonly importaciones: string;
     readonly accesos: string;
     readonly alertas: string;
+    readonly canjes: string;
   };
 }
 
@@ -161,6 +163,18 @@ export async function createEventoDePrueba(
     grupo: accesoId,
     expiraAt: new Date('2026-01-01T00:00:00Z'),
   });
+  // HU-316: un cobro de la mesa.
+  const canjeId = uuidv7();
+  await base.sistema.db.insert(canjes).values({
+    id: canjeId,
+    organizacionId,
+    eventoId,
+    mesaId,
+    tokenHash: createTokenAleatorio().hash,
+    comprobante: 'C-0001',
+    totalPuntos: 50,
+    expiraAt: new Date('2026-01-01T00:00:00Z'),
+  });
   // HU-305: un aviso No fui yo.
   const alertaId = uuidv7();
   await base.sistema.db.insert(alertas).values({
@@ -190,6 +204,7 @@ export async function createEventoDePrueba(
       importaciones: importacionId,
       accesos: accesoId,
       alertas: alertaId,
+      canjes: canjeId,
     },
   };
 }

@@ -188,6 +188,7 @@ const RESTRICCIONES: Readonly<Record<string, CodigoError>> = {
   participaciones_unica: 'RETO_YA_COMPLETADO',
   saldos_no_negativo: 'SALDO_INSUFICIENTE',
   retos_entregados: 'TOPE_ALCANZADO',
+  movimientos_anula_unica: 'YA_ANULADO',
 };
 
 function translateErrorDeBase(error: unknown): AppError | null {
