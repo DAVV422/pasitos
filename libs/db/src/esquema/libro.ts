@@ -152,6 +152,9 @@ export const pantallas = pgTable(
     lugarId: uuid('lugar_id'),
     pinHash: text('pin_hash'),
     epoca: integer('epoca').notNull().default(0),
+    // HU-315: 5 PIN incorrectos bloquean los controles de la tablet 5 minutos.
+    pinFallos: integer('pin_fallos').notNull().default(0),
+    controlesBloqueadosHasta: timestamp('controles_bloqueados_hasta', { withTimezone: true }),
     estado: text('estado').notNull().default('desconectada'),
     retoActualId: uuid('reto_actual_id').references((): AnyPgColumn => retos.id),
     sessionTokenHash: bytea('session_token_hash').unique(),

@@ -242,6 +242,11 @@ export const CATALOGO_ERRORES = {
     title: 'QR no válido',
     mensaje: 'Este QR no es de Pasitos o no es de este evento.',
   },
+  PIN_INVALIDO: {
+    status: 403,
+    title: 'PIN incorrecto',
+    mensaje: 'El PIN no es correcto.',
+  },
   QR_VENCIDO: {
     status: 422,
     title: 'QR vencido',

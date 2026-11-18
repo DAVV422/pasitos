@@ -63,6 +63,12 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/contenido.page').then((m) => m.ContenidoPage),
       })),
       {
+        path: 'mis-pantallas',
+        canActivate: [canDoActivate('pantallas.control')],
+        title: 'Mis pantallas · Pasitos',
+        loadComponent: () => import('./eventos/mis-pantallas.page').then((m) => m.MisPantallasPage),
+      },
+      {
         path: 'puerta',
         canActivate: [canDoActivate('puerta.use')],
         title: 'Puerta · Pasitos',

@@ -225,6 +225,13 @@
       "when": 1795021238230,
       "tag": "0031_canjes",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795022832008,
+      "tag": "0032_controles_pantalla",
+      "breakpoints": true
     }
   ]
 }

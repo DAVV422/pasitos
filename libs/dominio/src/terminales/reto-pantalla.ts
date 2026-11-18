@@ -51,6 +51,17 @@ function isEnHorario(reto: RetoDeSala, ahora: Date): boolean {
   );
 }
 
+/** Los que se pueden elegir con *Cambiar de reto* (HU-315): con QR, del lugar y en horario. */
+export function listRetosElegibles<T extends RetoDeSala>(
+  retos: readonly T[],
+  lugarId: string | null,
+  ahora: Date,
+): T[] {
+  return retos.filter(
+    (r) => lugarId !== null && r.lugarId === lugarId && isMostrable(r) && isEnHorario(r, ahora),
+  );
+}
+
 export function pickRetoDePantalla<T extends RetoDeSala>(
   pantalla: PantallaParaReto,
   retos: readonly T[],

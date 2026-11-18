@@ -70,3 +70,17 @@ export const esquemaQrEmitidos = z.object({
     )
     .max(100),
 });
+
+/** HU-315: los controles de la pantalla. */
+export const ACCIONES_PANTALLA = ['generar_otro', 'pausar', 'reanudar', 'cambiar_reto'] as const;
+export type AccionPantalla = (typeof ACCIONES_PANTALLA)[number];
+
+export const esquemaControlPanel = z.object({
+  accion: z.enum(ACCIONES_PANTALLA),
+  /** En *cambiar_reto*: el reto elegido, o `null` para volver a la agenda. */
+  retoId: z.uuid().nullable().optional(),
+});
+
+export const esquemaControlTablet = esquemaControlPanel.extend({ pin: esquemaPin });
+
+export const esquemaHistorialPantalla = z.object({ desde: z.iso.datetime().optional() });

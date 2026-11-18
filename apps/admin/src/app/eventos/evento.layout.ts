@@ -57,6 +57,12 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: 'catalogo', texto: 'Catálogo', grupo: 'Juego', accion: 'contenido.read' },
   { ruta: 'pantallas', texto: 'Pantallas', grupo: 'Dispositivos', accion: 'terminales.read' },
   { ruta: 'mesas', texto: 'Mesas', grupo: 'Dispositivos', accion: 'terminales.read' },
+  {
+    ruta: 'mis-pantallas',
+    texto: 'Mis pantallas',
+    grupo: 'Dispositivos',
+    accion: 'pantallas.control',
+  },
   { ruta: 'puerta', texto: 'Puerta', grupo: 'Personas', accion: 'puerta.use' },
   { ruta: 'invitados', texto: 'Invitados', grupo: 'Personas', accion: 'invitados.update' },
   { ruta: 'equipo', texto: 'Equipo', grupo: 'Personas', accion: 'equipo.read' },

@@ -25,7 +25,12 @@ export interface EstadoSala {
   readonly epoca: number;
   readonly horaServidor: number;
   readonly evento: { readonly estado: string };
+  readonly opciones: readonly { readonly id: string; readonly nombre: string }[];
+  readonly fijado: boolean;
 }
+
+/** HU-315: los controles de la pantalla. */
+export type AccionPantalla = 'generar_otro' | 'pausar' | 'reanudar' | 'cambiar_reto';
 
 /** Un QR que mostró la pantalla (HU-314 §3.6). */
 export interface QrEmitido {
@@ -46,6 +51,16 @@ export class SalaApi {
 
   getEstado(): Promise<EstadoSala> {
     return firstValueFrom(this.http.get<EstadoSala>('/api/v1/sala/estado'));
+  }
+
+  control(accion: AccionPantalla, pin: string, retoId?: string | null): Promise<unknown> {
+    return firstValueFrom(
+      this.http.post('/api/v1/sala/controles', {
+        accion,
+        pin,
+        ...(retoId !== undefined ? { retoId } : {}),
+      }),
+    );
   }
 
   recordEmitidos(items: readonly QrEmitido[]): Promise<unknown> {

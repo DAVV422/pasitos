@@ -51,6 +51,7 @@ export const ACCIONES_BITACORA = {
   'pantalla.connect': 'Conectó una pantalla',
   'pantalla.disconnect': 'Desconectó una pantalla',
   'pantalla.replace': 'Reemplazó la tablet de una pantalla',
+  'pantalla.control': 'Usó los controles de una pantalla',
   'mesa.create': 'Creó una mesa',
   'mesa.update': 'Editó una mesa',
   'mesa.connect': 'Conectó una mesa',

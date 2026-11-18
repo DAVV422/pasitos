@@ -8,7 +8,12 @@ import {
   withOrganizacion,
   type Db,
 } from '@pasitos/db';
-import { AppError, pickRetoDePantalla, type EstadoSala } from '@pasitos/dominio';
+import {
+  AppError,
+  listRetosElegibles,
+  pickRetoDePantalla,
+  type EstadoSala,
+} from '@pasitos/dominio';
 import { uuidv7 } from 'uuidv7';
 import type { Reloj } from '../auth/sesiones.service';
 import type { TerminalConectada } from '../terminales/conexion.service';
@@ -37,6 +42,10 @@ export interface EstadoSalaApi {
   /** Para que la tablet calcule la franja con la hora del servidor. */
   readonly horaServidor: number;
   readonly evento: { readonly estado: string };
+  /** HU-315: los retos que se pueden elegir con *Cambiar de reto*. */
+  readonly opciones: readonly { readonly id: string; readonly nombre: string }[];
+  /** Si el operador fijó un reto (si no, sigue la agenda). */
+  readonly fijado: boolean;
 }
 
 export interface QrEmitido {
@@ -127,6 +136,11 @@ export class SalaService {
         epoca: pantalla.epoca,
         horaServidor: ahora.getTime(),
         evento: { estado: pantalla.eventoEstado },
+        opciones: listRetosElegibles(filas, pantalla.lugarId, ahora).map((r) => ({
+          id: r.id,
+          nombre: r.nombre,
+        })),
+        fijado: pantalla.retoFijadoId !== null,
       };
     });
   }

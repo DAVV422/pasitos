@@ -12,6 +12,7 @@ import { AvisoComponent, IconoComponent, QrComponent } from '@pasitos/ui';
 import { EnVivoService, ErrorApi } from '@pasitos/web-core';
 import { getParLlaves } from '../conectar/llave-local';
 import { SalaApi, type EstadoSala, type QrEmitido } from '../sala-api.service';
+import { ControlesComponent } from './controles.component';
 
 type Emitido = QrEmitido;
 
@@ -32,7 +33,7 @@ function newNonce(): string {
 @Component({
   selector: 'sala-pantalla-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AvisoComponent, IconoComponent, QrComponent],
+  imports: [AvisoComponent, ControlesComponent, IconoComponent, QrComponent],
   host: { class: 'bg-bg fixed inset-0 z-20 flex flex-col', '(click)': 'onToque()' },
   template: `
     @if (sinRed()) {
@@ -122,6 +123,16 @@ function newNonce(): string {
         <p class="text-2xl">Cargando…</p>
       </section>
     }
+    @if (estado(); as e) {
+      <sala-controles
+        [pausada]="e.estado === 'pausada'"
+        [fijado]="e.fijado"
+        [retoActual]="e.reto?.id ?? null"
+        [opciones]="e.opciones"
+        (optimista)="onOptimista($event)"
+        (cambio)="loadEstado()"
+      />
+    }
   `,
 })
 export class PantallaPage {
@@ -142,6 +153,7 @@ export class PantallaPage {
   private nonce: string | null = null;
   private candado: WakeLockSentinel | null = null;
   private firmando = false;
+  private anterior: EstadoSala | null = null;
 
   protected readonly tamanoQr = signal(Math.round(Math.min(innerHeight * 0.62, innerWidth * 0.7)));
   protected readonly avance = computed(() => {
@@ -237,6 +249,21 @@ export class PantallaPage {
     canal.on('terminal.desconectada', () => void this.router.navigate(['/']));
   }
 
+  /** HU-315 §3: la pausa esconde el QR antes de que el servidor confirme; si falla, vuelve. */
+  protected onOptimista(estado: 'pausada' | 'activa' | null): void {
+    const actual = this.estado();
+    if (!actual) return;
+    if (estado === 'pausada') {
+      this.anterior = actual;
+      this.qr.set(null);
+      this.estado.set({ ...actual, estado: 'pausada' });
+    } else if (estado === null && this.anterior) {
+      this.estado.set(this.anterior);
+      this.anterior = null;
+      void this.refreshQr();
+    }
+  }
+
   /** Un toque: pantalla completa (el navegador lo pide con un gesto). */
   protected onToque(): void {
     if (!document.fullscreenElement) {
@@ -260,7 +287,7 @@ export class PantallaPage {
     void this.keepEncendida();
   }
 
-  private async loadEstado(): Promise<void> {
+  protected async loadEstado(): Promise<void> {
     try {
       const antes = Date.now();
       const estado = await this.api.getEstado();

@@ -6,6 +6,7 @@ import {
   invitaciones,
   lugares,
   outbox,
+  bitacora,
   pantallas,
   qrEmitidos,
   retos,
@@ -23,7 +24,13 @@ import {
 } from '@pasitos/firmas';
 import { uuidv7 } from 'uuidv7';
 import { startApiDePrueba, type ApiDePrueba } from '../../pruebas/api-de-prueba';
-import { createEventoDePrueba, type EventoDePrueba } from '../../pruebas/equipo-de-prueba';
+import {
+  addRol,
+  createEventoDePrueba,
+  createPersonaConSesion,
+  type EventoDePrueba,
+} from '../../pruebas/equipo-de-prueba';
+import { hashPassword } from '../auth/password';
 import { createTokenAleatorio } from '../auth/auth.repository';
 
 const CHROME_ANDROID =
@@ -75,6 +82,7 @@ describe('Pantalla de sala y reclamos (HU-314, HU-310)', () => {
       estado: 'activa',
       llavePublica: Buffer.from(toLlaveCruda(await exportLlavePublica(tablet))),
       sessionTokenHash: hash,
+      pinHash: await hashPassword('4821'),
     });
     cookieTablet = `px_terminal=${token}`;
     const [fila] = await base.sistema.db
@@ -420,6 +428,150 @@ describe('Pantalla de sala y reclamos (HU-314, HU-310)', () => {
           ),
         );
       expect(filas).toHaveLength(1);
+    });
+  });
+  describe('controles de la pantalla (HU-315)', () => {
+    function controlar(cuerpo: object) {
+      return api.app.inject({
+        method: 'POST',
+        url: '/api/v1/sala/controles',
+        headers: { cookie: cookieTablet },
+        payload: cuerpo,
+      });
+    }
+
+    async function getEpoca() {
+      const [fila] = await base.sistema.db
+        .select({ epoca: pantallas.epoca, estado: pantallas.estado })
+        .from(pantallas)
+        .where(eq(pantallas.id, pantallaId));
+      return fila;
+    }
+
+    it('Generar otro invalida el QR al instante, aun dentro de la gracia', async () => {
+      const reto = await newReto();
+      const celular = await newCelular();
+      const antes = await getEpoca();
+      const qr = await qrPorTiempo(reto.numero, { epoca: antes?.epoca ?? 0 });
+      const respuesta = await controlar({ accion: 'generar_otro', pin: '4821' });
+      expect(respuesta.statusCode).toBe(200);
+      expect(respuesta.json().epoca).toBe((antes?.epoca ?? 0) + 1);
+      expect((await reclamar(celular, qr)).json().code).toBe('QR_VENCIDO');
+      const avisos = await base.sistema.db
+        .select({ payload: outbox.payload })
+        .from(outbox)
+        .where(eq(outbox.tipo, 'pantalla.epoca'));
+      expect(avisos.map((a) => (a.payload as { pantallaId: string }).pantallaId)).toContain(
+        pantallaId,
+      );
+      const [fila] = await base.sistema.db
+        .select({ actor: bitacora.actorNombre, despues: bitacora.despues })
+        .from(bitacora)
+        .where(and(eq(bitacora.objetoId, pantallaId), eq(bitacora.accion, 'pantalla.control')));
+      expect(fila).toMatchObject({
+        actor: 'PIN en la tablet',
+        despues: { accion: 'generar_otro' },
+      });
+    });
+
+    it('pausar y reanudar cambian el estado y la época; la pantalla dice En pausa', async () => {
+      expect((await controlar({ accion: 'pausar', pin: '4821' })).json()).toMatchObject({
+        estado: 'pausada',
+      });
+      const estado = await api.app.inject({
+        method: 'GET',
+        url: '/api/v1/sala/estado',
+        headers: { cookie: cookieTablet },
+      });
+      expect(estado.json().estado).toBe('pausada');
+      expect((await controlar({ accion: 'reanudar', pin: '4821' })).json()).toMatchObject({
+        estado: 'activa',
+      });
+    });
+
+    it('cambiar de reto: solo los del lugar en horario; sin elegir, vuelve a la agenda', async () => {
+      const otroLugar = await newReto({ lugarId: null });
+      const malo = await controlar({ accion: 'cambiar_reto', pin: '4821', retoId: otroLugar.id });
+      expect(malo.json().code).toBe('VALIDACION');
+      const ahora = api.reloj.now().getTime();
+      const delLugar = await newReto({
+        lugarId,
+        nombre: 'Taller del lugar',
+        disponibleDesde: new Date(ahora - 60_000),
+        disponibleHasta: new Date(ahora + 3_600_000),
+      });
+      const estadoAntes = (
+        await api.app.inject({
+          method: 'GET',
+          url: '/api/v1/sala/estado',
+          headers: { cookie: cookieTablet },
+        })
+      ).json();
+      expect(estadoAntes.opciones).toContainEqual({ id: delLugar.id, nombre: 'Taller del lugar' });
+      expect(
+        (await controlar({ accion: 'cambiar_reto', pin: '4821', retoId: delLugar.id })).statusCode,
+      ).toBe(200);
+      const fijado = (
+        await api.app.inject({
+          method: 'GET',
+          url: '/api/v1/sala/estado',
+          headers: { cookie: cookieTablet },
+        })
+      ).json();
+      expect(fijado).toMatchObject({ reto: { id: delLugar.id }, fijado: true });
+      expect(
+        (await controlar({ accion: 'cambiar_reto', pin: '4821', retoId: null })).statusCode,
+      ).toBe(200);
+    });
+
+    it('cinco PIN incorrectos bloquean los controles 5 minutos', async () => {
+      for (let i = 0; i < 5; i++) {
+        expect((await controlar({ accion: 'generar_otro', pin: '0000' })).json().code).toBe(
+          'PIN_INVALIDO',
+        );
+      }
+      const bloqueado = await controlar({ accion: 'generar_otro', pin: '4821' });
+      expect(bloqueado.statusCode).toBe(429);
+      api.reloj.advance(5 * 60_000 + 1_000);
+      expect((await controlar({ accion: 'generar_otro', pin: '4821' })).statusCode).toBe(200);
+    });
+
+    it('el operador controla sus pantallas desde el panel y no las de otros; el historial', async () => {
+      const operador = await createPersonaConSesion(base, 'Olga Stand', api.reloj.now());
+      const otraPantalla = evento.pantallaId;
+      await addRol(base, evento, operador, 'operador_stand', { pantallas: [pantallaId] });
+      const suya = await api.app.inject({
+        method: 'POST',
+        url: `/api/v1/pantallas/${pantallaId}/controles`,
+        headers: { cookie: operador.cookie },
+        payload: { accion: 'generar_otro' },
+      });
+      expect(suya.statusCode).toBe(200);
+      const ajena = await api.app.inject({
+        method: 'POST',
+        url: `/api/v1/pantallas/${otraPantalla}/controles`,
+        headers: { cookie: operador.cookie },
+        payload: { accion: 'generar_otro' },
+      });
+      expect(ajena.statusCode).toBe(404);
+
+      const mias = await api.app.inject({
+        method: 'GET',
+        url: `/api/v1/eventos/${evento.eventoId}/mis-pantallas`,
+        headers: { cookie: operador.cookie },
+      });
+      expect((mias.json().items as { id: string }[]).map((p) => p.id)).toEqual([pantallaId]);
+
+      const historial = await api.app.inject({
+        method: 'GET',
+        url: `/api/v1/pantallas/${pantallaId}/historial`,
+        headers: { cookie: operador.cookie },
+      });
+      expect(historial.statusCode).toBe(200);
+      const cuerpo = historial.json();
+      expect(cuerpo.aceptados).toBeGreaterThan(0);
+      expect(cuerpo.rechazos).toContainEqual(expect.objectContaining({ resultado: 'vencido' }));
+      expect(cuerpo.qr.length).toBeGreaterThan(0);
     });
   });
 });
