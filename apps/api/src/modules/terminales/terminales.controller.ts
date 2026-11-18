@@ -25,7 +25,7 @@ import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/ma
 import { Publica } from '../../common/sesion/sesion';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
-import { COOKIE_TERMINAL, ConexionService } from './conexion.service';
+import { COOKIE_TERMINAL, ConexionService, type TerminalConectada } from './conexion.service';
 import { TerminalesService } from './terminales.service';
 
 function pick<T extends object>(datos: T, cuerpo: unknown): Partial<T> {
@@ -143,6 +143,12 @@ export class TerminalesController {
 }
 
 /** Las terminales: conectarse con el token y avisar que siguen en línea (HU-209 §2). */
+/** Lo que ve la tablet: sin la organización (es para el servidor). */
+function toTerminalPublica(terminal: TerminalConectada) {
+  const { tipo, id, nombre, lugar, evento } = terminal;
+  return { tipo, id, nombre, lugar, evento };
+}
+
 @Controller('terminales')
 @Publica()
 export class ConexionController {
@@ -172,12 +178,12 @@ export class ConexionController {
       // La tablet queda conectada hasta que la desconecten (o se borren los datos del navegador).
       maxAge: 60 * 60 * 24 * 30,
     });
-    return terminal;
+    return toTerminalPublica(terminal);
   }
 
   @Post('latido')
   @HttpCode(200)
-  beat(@Req() request: FastifyRequest) {
-    return this.conexion.beat(request.cookies[COOKIE_TERMINAL]);
+  async beat(@Req() request: FastifyRequest) {
+    return toTerminalPublica(await this.conexion.beat(request.cookies[COOKIE_TERMINAL]));
   }
 }

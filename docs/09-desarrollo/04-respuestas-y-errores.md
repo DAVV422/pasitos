@@ -196,6 +196,7 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `QR_VENCIDO` | 422 | Este QR ya venció. Escanea el que se ve ahora en la pantalla. |
 | `QR_INVALIDO` | 422 | Este QR no es de Pasitos o no es de este evento. |
 | `RETO_YA_COMPLETADO` | 409 | Ya completaste este reto. |
+| `QR_YA_USADO` | 409 | Este código ya fue usado. |
 | `RETO_NO_DISPONIBLE` | 422 | Este reto no está activo ahora. |
 | `TOPE_ALCANZADO` | 422 | Este reto ya entregó todos sus premios. |
 | `RETO_CON_PARTICIPACIONES` | 409 | Este reto ya tiene participaciones. Puedes desactivarlo. |

@@ -211,6 +211,13 @@
       "when": 1795013368228,
       "tag": "0029_alertas_derivadas",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795018362831,
+      "tag": "0030_escaneos",
+      "breakpoints": true
     }
   ]
 }

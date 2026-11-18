@@ -49,3 +49,24 @@ export const esquemaConectar = z.object({
 });
 
 export * from './conexion';
+
+/** HU-314 §3.6: lo que la pantalla mostró, en tandas de hasta 100. */
+export const esquemaQrEmitidos = z.object({
+  items: z
+    .array(
+      z.object({
+        reto: z.uuid(),
+        modo: z.enum(['por_tiempo', 'un_uso']),
+        epoca: z.number().int().min(0),
+        franja: z.number().int().min(0).optional(),
+        nonce: z
+          .string()
+          .regex(/^[\w-]{16,43}$/)
+          .optional(),
+        inicioAt: z.iso.datetime(),
+        finAt: z.iso.datetime().optional(),
+        finMotivo: z.enum(['vencio', 'usado', 'invalidado', 'pausa']).optional(),
+      }),
+    )
+    .max(100),
+});

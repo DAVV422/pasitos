@@ -21,8 +21,7 @@ export const appRoutes: Route[] = [
       },
       {
         path: 'escanear',
-        data: { titulo: 'Escanear' },
-        loadComponent: () => import('./pendiente.page').then((m) => m.PendientePage),
+        loadComponent: () => import('./escanear/escanear.page').then((m) => m.EscanearPage),
       },
       {
         path: 'canjear',
@@ -48,6 +47,11 @@ export const appRoutes: Route[] = [
       { path: 'mas', pathMatch: 'full', redirectTo: 'cuenta' },
       { path: '', pathMatch: 'full', redirectTo: 'inicio' },
     ],
+  },
+  {
+    // HU-310 §3: el QR de reto abierto con la cámara del sistema (revisa la sesión adentro).
+    path: 'r/:qr',
+    loadComponent: () => import('./escanear/qr-directo.page').then((m) => m.QrDirectoPage),
   },
   {
     path: 'sin-acceso',

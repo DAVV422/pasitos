@@ -30,11 +30,16 @@ async function run<T>(
  * Volver a conectar la misma tablet manda la misma llave, así conserva su número en Stellar.
  */
 export async function getLlavePublica(): Promise<LlavePublicaEc> {
+  return exportLlavePublica(await getParLlaves());
+}
+
+/** El par de llaves: con la privada, la tablet firma cada QR (HU-314 §3). */
+export async function getParLlaves(): Promise<CryptoKeyPair> {
   let par = await run<CryptoKeyPair | undefined>('readonly', (a) => a.get(CLAVE));
   if (!par) {
     const nuevo = await createParLlaves();
     await run('readwrite', (a) => a.put(nuevo, CLAVE));
     par = nuevo;
   }
-  return exportLlavePublica(par);
+  return par;
 }

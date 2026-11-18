@@ -10,3 +10,4 @@ export * from './jcs';
 export * from './huellas';
 export * from './llaves';
 export * from './firma-dispositivo';
+export * from './qr-reto';

@@ -37,6 +37,8 @@ export interface TerminalConectada {
   readonly nombre: string;
   readonly lugar: string | null;
   readonly evento: { readonly id: string; readonly nombre: string };
+  /** Para abrir `withOrganizacion` en lo que pide la tablet (HU-314). */
+  readonly organizacionId: string;
 }
 
 /**
@@ -148,6 +150,7 @@ export class ConexionService {
         lugar: lugares.nombre,
         eventoId: eventos.id,
         evento: eventos.nombre,
+        organizacionId: eventos.organizacionId,
       })
       .from(pantallas)
       .innerJoin(eventos, eq(eventos.id, pantallas.eventoId))
@@ -166,6 +169,7 @@ export class ConexionService {
         nombre: pantalla.nombre,
         lugar: pantalla.lugar,
         evento: { id: pantalla.eventoId, nombre: pantalla.evento },
+        organizacionId: pantalla.organizacionId,
       };
     }
     const [mesa] = await this.db
@@ -176,6 +180,7 @@ export class ConexionService {
         lugar: lugares.nombre,
         eventoId: eventos.id,
         evento: eventos.nombre,
+        organizacionId: eventos.organizacionId,
       })
       .from(mesas)
       .innerJoin(eventos, eq(eventos.id, mesas.eventoId))
@@ -193,6 +198,7 @@ export class ConexionService {
       nombre: mesa.nombre,
       lugar: mesa.lugar,
       evento: { id: mesa.eventoId, nombre: mesa.evento },
+      organizacionId: mesa.organizacionId,
     };
   }
 
@@ -316,6 +322,7 @@ export class ConexionService {
       nombre: pantalla.nombre,
       lugar: await this.getNombreLugar(tx, pantalla.lugarId),
       evento: { id: evento.id, nombre: evento.nombre },
+      organizacionId: evento.organizacionId,
     };
   }
 
@@ -356,6 +363,7 @@ export class ConexionService {
       nombre: mesa.nombre,
       lugar: await this.getNombreLugar(tx, mesa.lugarId),
       evento: { id: evento.id, nombre: evento.nombre },
+      organizacionId: evento.organizacionId,
     };
   }
 

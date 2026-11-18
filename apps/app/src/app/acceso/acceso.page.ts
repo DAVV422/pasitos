@@ -24,6 +24,7 @@ import {
   requestPersistencia,
 } from '@pasitos/web-core';
 import { AsistenteApi, type AccesoVisto } from '../asistente-api.service';
+import { CLAVE_QR_PENDIENTE } from '../escanear/qr-pendiente';
 import { SesionAsistente } from '../sesion-asistente';
 
 type Paso = 'revisando' | 'otra_app' | 'computadora' | 'viejo' | 'bienvenida' | 'error';
@@ -200,7 +201,7 @@ export class AccesoPage implements OnInit {
         terminos: acceso.terminos,
       });
       this.sesion.set(estado);
-      await this.router.navigate(['/inicio'], { replaceUrl: true });
+      await this.router.navigateByUrl(this.getDestino(), { replaceUrl: true });
     } catch (error) {
       const codigo = error instanceof ErrorApi ? error.code : null;
       if (codigo === 'NAVEGADOR_NO_SOPORTADO') {
@@ -211,6 +212,18 @@ export class AccesoPage implements OnInit {
     } finally {
       this.entrando.set(false);
     }
+  }
+
+  /** Si escaneó un QR de reto antes de tener la entrada, se reclama al entrar (HU-310 §3). */
+  private getDestino(): string {
+    try {
+      const qr = sessionStorage.getItem(CLAVE_QR_PENDIENTE);
+      sessionStorage.removeItem(CLAVE_QR_PENDIENTE);
+      if (qr) return `/r/${encodeURIComponent(qr)}`;
+    } catch {
+      // Sin almacenamiento: a Inicio.
+    }
+    return '/inicio';
   }
 
   protected async copy(): Promise<void> {

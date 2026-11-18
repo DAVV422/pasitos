@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/@angular/service-worker/config/schema.json",
+  "index": "/sala/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "resources": {
+        "files": [
+          "/sala/favicon.ico",
+          "/sala/favicon.svg",
+          "/sala/index.html",
+          "/sala/*.css",
+          "/sala/*.js"
+        ]
+      }
+    }
+  ]
+}

@@ -148,6 +148,10 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   await expect(
     sala.getByText('Este enlace ya se usó. Pide uno nuevo al organizador.'),
   ).toBeVisible();
+  // HU-314: la tablet ya conectada abre directo su pantalla; con el evento sin empezar, lo dice.
+  await sala.goto('/sala/');
+  await expect(sala).toHaveURL(/\/sala\/pantalla$/);
+  await expect(sala.getByText('El evento no está en curso.')).toBeVisible();
   await page.getByRole('button', { name: 'Listo' }).click();
   await expect(page.getByText('En línea')).toBeVisible();
 

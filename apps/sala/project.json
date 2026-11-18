@@ -38,7 +38,8 @@
               "maximumError": "6kb"
             }
           ],
-          "outputHashing": "all"
+          "outputHashing": "all",
+          "serviceWorker": "apps/sala/ngsw-config.json"
         },
         "development": {
           "optimization": false,

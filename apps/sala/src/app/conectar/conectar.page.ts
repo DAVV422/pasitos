@@ -1,16 +1,10 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-  type OnInit,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, type OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { AvisoComponent, BotonDirective, EstadoComponent } from '@pasitos/ui';
 import { isNavegadorDeOtraApp, TerminalService } from '@pasitos/web-core';
 import { getLlavePublica } from './llave-local';
 
-/** Conectar la pantalla de sala (HU-209 §4, mockup M2). El QR del reto llega en la fase 3. */
+/** Conectar la pantalla de sala (HU-209 §4, mockup M2); después, el QR del reto (HU-314). */
 @Component({
   selector: 'sala-conectar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,13 +42,9 @@ import { getLlavePublica } from './llave-local';
               }
             </p>
             <p class="text-muted">{{ t.evento.nombre }}</p>
-            @if (!completa()) {
-              <button type="button" pxBoton (click)="setPantallaCompleta()">
-                Pantalla completa y mantener encendida
-              </button>
-            } @else {
-              <px-aviso variante="ok">Pantalla completa y encendida.</px-aviso>
-            }
+            <button type="button" pxBoton (click)="start()">
+              Empezar: pantalla completa y encendida
+            </button>
           </section>
         }
       }
@@ -65,8 +55,7 @@ export class ConectarPage implements OnInit {
   readonly token = input<string>();
   protected readonly terminal = inject(TerminalService);
   protected readonly otraApp = isNavegadorDeOtraApp(navigator.userAgent);
-  protected readonly completa = signal(false);
-  private candado: WakeLockSentinel | null = null;
+  private readonly router = inject(Router);
 
   ngOnInit(): void {
     const token = this.token();
@@ -78,18 +67,16 @@ export class ConectarPage implements OnInit {
           history.replaceState(null, '', document.baseURI);
         });
     } else {
-      void this.terminal.check();
+      // Ya estaba conectada (se recargó o se volvió a abrir): directo al QR.
+      void this.terminal.check().then(() => {
+        if (this.terminal.estado() === 'conectada') void this.router.navigate(['/pantalla']);
+      });
     }
   }
 
-  /** Un toque: pantalla completa y *Mantener la pantalla encendida* (el QR llega en la fase 3). */
-  protected async setPantallaCompleta(): Promise<void> {
-    try {
-      await document.documentElement.requestFullscreen();
-      this.candado = await navigator.wakeLock.request('screen');
-    } catch {
-      // Sin permiso para alguna de las dos: la pantalla sigue funcionando igual.
-    }
-    this.completa.set(this.candado !== null || document.fullscreenElement !== null);
+  /** Un toque: pantalla completa (necesita el gesto) y el QR del reto (HU-314). */
+  protected async start(): Promise<void> {
+    await document.documentElement.requestFullscreen().catch(() => undefined);
+    await this.router.navigate(['/pantalla']);
   }
 }

@@ -13,7 +13,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { eventos } from './eventos';
-import { asistentes, movimientos } from './libro';
+import { asistentes, movimientos, pantallas, retos } from './libro';
 import { organizaciones, tokens, usuarios } from './plataforma';
 import { enviosCorreo } from './soporte';
 import { bytea } from './tipos';
@@ -278,5 +278,87 @@ export const checkIns = pgTable(
       .on(t.asistenteId)
       .where(sql`${t.anuladoAt} is null`),
     index('check_ins_evento').on(t.eventoId, t.createdAt),
+  ],
+);
+
+/**
+ * Cada QR que mostró una pantalla (HU-314 §1), informado en tandas por la tablet. Sirve para el
+ * historial de la pantalla (HU-315) y la alerta A6.
+ */
+export const qrEmitidos = pgTable(
+  'qr_emitidos',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+    pantallaId: uuid('pantalla_id')
+      .notNull()
+      .references(() => pantallas.id),
+    retoId: uuid('reto_id')
+      .notNull()
+      .references(() => retos.id),
+    modo: text('modo').notNull(),
+    epoca: integer('epoca').notNull(),
+    franja: integer('franja'),
+    nonce: text('nonce'),
+    inicioAt: timestamp('inicio_at', { withTimezone: true }).notNull(),
+    finAt: timestamp('fin_at', { withTimezone: true }),
+    finMotivo: text('fin_motivo'),
+    invalidadoPor: uuid('invalidado_por').references(() => usuarios.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check('qr_emitidos_modo', sql`${t.modo} in ('por_tiempo', 'un_uso')`),
+    check(
+      'qr_emitidos_fin_motivo',
+      sql`${t.finMotivo} is null or ${t.finMotivo} in ('vencio', 'usado', 'invalidado', 'pausa')`,
+    ),
+    check('qr_emitidos_franja_o_nonce', sql`(${t.franja} is null) <> (${t.nonce} is null)`),
+    index('qr_emitidos_pantalla').on(t.pantallaId, t.inicioAt),
+  ],
+);
+
+/**
+ * Cada intento de reclamar un QR de reto (HU-310), aceptado o rechazado, con su latencia. Un nonce
+ * de un solo uso se acepta **una sola vez** por pantalla (índice único parcial).
+ */
+export const escaneos = pgTable(
+  'escaneos',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+    pantallaId: uuid('pantalla_id').references(() => pantallas.id),
+    retoId: uuid('reto_id').references(() => retos.id),
+    asistenteId: uuid('asistente_id').references(() => asistentes.id),
+    dispositivoId: uuid('dispositivo_id').references(() => dispositivos.id),
+    qrEpoca: integer('qr_epoca'),
+    qrFranja: integer('qr_franja'),
+    qrNonce: text('qr_nonce'),
+    metodo: text('metodo').notNull().default('qr'),
+    resultado: text('resultado').notNull(),
+    movimientoId: uuid('movimiento_id').references(() => movimientos.id),
+    latenciaMs: integer('latencia_ms'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check('escaneos_metodo', sql`${t.metodo} in ('qr')`),
+    check(
+      'escaneos_resultado',
+      sql`${t.resultado} in ('aceptado', 'firma_invalida', 'evento_no_activo', 'vencido', 'ya_usado', 'fuera_de_horario', 'solo_para_grupo', 'sin_check_in', 'ya_completado', 'agotado', 'dispositivo_anulado', 'error')`,
+    ),
+    uniqueIndex('escaneos_nonce_aceptado')
+      .on(t.pantallaId, t.qrNonce)
+      .where(sql`${t.resultado} = 'aceptado' and ${t.qrNonce} is not null`),
+    index('escaneos_evento').on(t.eventoId, t.createdAt),
+    index('escaneos_asistente').on(t.asistenteId),
   ],
 );

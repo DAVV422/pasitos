@@ -26,3 +26,6 @@ export const esquemaNoFuiYo = z.object({
   sobre: z.enum(['dispositivo', 'intento', 'canje']),
   refId: z.uuid().optional(),
 });
+
+/** HU-310: el QR de reto que leyó la cámara (`PX1…` o el enlace `…/r/PX1…`). */
+export const esquemaReclamo = z.object({ qr: z.string().trim().min(5).max(600) });

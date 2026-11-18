@@ -242,6 +242,21 @@ export const CATALOGO_ERRORES = {
     title: 'QR no válido',
     mensaje: 'Este QR no es de Pasitos o no es de este evento.',
   },
+  QR_VENCIDO: {
+    status: 422,
+    title: 'QR vencido',
+    mensaje: 'Este QR ya venció. Escanea el que se ve ahora en la pantalla.',
+  },
+  QR_YA_USADO: {
+    status: 409,
+    title: 'QR usado',
+    mensaje: 'Este código ya fue usado.',
+  },
+  SIN_CHECK_IN: {
+    status: 422,
+    title: 'Falta el check-in',
+    mensaje: 'Primero marca tu asistencia en la puerta.',
+  },
   RETO_YA_COMPLETADO: {
     status: 409,
     title: 'Reto ya completado',

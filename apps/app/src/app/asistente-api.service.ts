@@ -152,6 +152,14 @@ export interface DispositivoApp {
   readonly avisos: readonly { readonly id: string; readonly estado: string; readonly at: string }[];
 }
 
+/** `POST /app/reclamos` (HU-310): lo ganado y el saldo que confirma el servidor. */
+export interface ReclamoAceptado {
+  readonly movimientoId: string;
+  readonly reto: { readonly id: string; readonly nombre: string };
+  readonly puntos: number;
+  readonly saldo: number;
+}
+
 export interface DatosVincular {
   readonly tipo: TipoAcceso;
   readonly token: string;
@@ -190,6 +198,17 @@ export class AsistenteApi {
   listMovimientos(cursor?: string): Promise<PaginaHistorial> {
     const consulta = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
     return firstValueFrom(this.http.get<PaginaHistorial>(`${BASE}/app/movimientos${consulta}`));
+  }
+
+  /** Firmado e idempotente: los reintentos usan la misma clave. */
+  claim(qr: string, clave: string): Promise<ReclamoAceptado> {
+    return firstValueFrom(
+      this.http.post<ReclamoAceptado>(
+        `${BASE}/app/reclamos`,
+        { qr },
+        { context: new HttpContext().set(FIRMAR, true).set(CLAVE_IDEMPOTENCIA, clave) },
+      ),
+    );
   }
 
   getDispositivo(): Promise<DispositivoApp> {
