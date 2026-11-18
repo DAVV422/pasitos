@@ -7,7 +7,7 @@ import {
   type Db,
   type Tx,
 } from '@pasitos/db';
-import { AppError } from '@pasitos/dominio';
+import { AppError, isAnuladaPorVinculacion } from '@pasitos/dominio';
 import { uuidv7 } from 'uuidv7';
 import type { ContextoAsistente } from '../../common/sesion/asistente';
 import { createTokenAleatorio, hashToken } from '../auth/auth.repository';
@@ -112,7 +112,7 @@ export class SesionesAsistenteService {
       if (!fila?.anuladaAt) {
         return fila;
       }
-      if (opciones.permitirAnulada && fila.motivoAnulacion === 'nueva_vinculacion') {
+      if (opciones.permitirAnulada && isAnuladaPorVinculacion(fila.motivoAnulacion)) {
         return fila;
       }
       // Cómo se vinculó el celular nuevo: "Tu entrada se abrió en otro celular el 21/11 a las 10:42".

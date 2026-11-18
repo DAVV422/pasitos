@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import type { MotivoRevincular } from '@pasitos/dominio';
 import { firstValueFrom } from 'rxjs';
 
 const BASE = '/api/v1';
@@ -20,7 +21,18 @@ export interface FichaPuerta {
   readonly email: string | null;
   readonly estado: 'invitado' | 'registrado' | 'presente' | 'cancelado';
   readonly saldo: number;
-  readonly dispositivo: { readonly modelo: string; readonly desde: string } | null;
+  readonly dispositivo: {
+    readonly modelo: string;
+    readonly desde: string;
+    readonly metodo: string;
+  } | null;
+  readonly historial: readonly {
+    readonly modelo: string;
+    readonly metodo: string;
+    readonly desde: string;
+    readonly anuladaAt: string;
+    readonly motivo: string | null;
+  }[];
   readonly checkIn: { readonly at: string; readonly por: string | null } | null;
   readonly grupos: readonly string[];
   readonly carnet: null;
@@ -100,7 +112,7 @@ export class PuertaApi {
     );
   }
 
-  createAcceso(asistenteId: string, motivo?: string): Promise<AccesoGenerado> {
+  createAcceso(asistenteId: string, motivo?: MotivoRevincular): Promise<AccesoGenerado> {
     return firstValueFrom(
       this.http.post<AccesoGenerado>(
         `${BASE}/asistentes/${asistenteId}/accesos`,

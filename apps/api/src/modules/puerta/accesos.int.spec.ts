@@ -1,5 +1,14 @@
-import { and, eq } from 'drizzle-orm';
-import { asistentes, checkIns, outbox, tokens, vinculaciones } from '@pasitos/db';
+import { and, eq, isNotNull } from 'drizzle-orm';
+import {
+  asistentes,
+  bitacora,
+  checkIns,
+  outbox,
+  saldos,
+  sessions,
+  tokens,
+  vinculaciones,
+} from '@pasitos/db';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import { VERSION_TERMINOS } from '@pasitos/dominio';
 import { createParLlaves, exportLlavePublica } from '@pasitos/firmas';
@@ -168,7 +177,90 @@ describe('QR de asistente (HU-302)', () => {
     const acceso = (await generate(asistenteId)).json();
     expect((await vincular('qr', tokenDeQr(acceso.qr))).statusCode).toBe(201);
     expect((await generate(asistenteId)).json().code).toBe('MOTIVO_REQUERIDO');
-    expect((await generate(asistenteId, { motivo: 'Cambió de celular' })).statusCode).toBe(201);
+    expect((await generate(asistenteId, { motivo: { tipo: 'cambio_celular' } })).statusCode).toBe(
+      201,
+    );
+  });
+
+  describe('revincular (HU-304)', () => {
+    function getComoAsistente(url: string, cookie: string) {
+      return api.app.inject({ method: 'GET', url: `/api/v1/app/${url}`, headers: { cookie } });
+    }
+
+    const cookieDe = (respuesta: Awaited<ReturnType<typeof vincular>>) =>
+      `px_asistente=${respuesta.cookies.find((c) => c.name === 'px_asistente')?.value ?? ''}`;
+
+    for (const motivo of [
+      { tipo: 'cambio_celular' },
+      { tipo: 'borro_datos' },
+      { tipo: 'se_vinculo_otra_persona' },
+      { tipo: 'otro', texto: 'Se le rompió la pantalla' },
+    ]) {
+      it(`con el motivo ${motivo.tipo}: el anterior queda anulado y los puntos siguen`, async () => {
+        const asistenteId = await newAsistente(`Revincula ${motivo.tipo}`);
+        const primero = await vincular('qr', tokenDeQr((await generate(asistenteId)).json().qr));
+        const viejo = cookieDe(primero);
+        await base.sistema.db
+          .update(saldos)
+          .set({ puntos: 40 })
+          .where(eq(saldos.asistenteId, asistenteId));
+
+        const acceso = (await generate(asistenteId, { motivo })).json();
+        const segundo = await vincular('qr', tokenDeQr(acceso.qr));
+        expect(segundo.statusCode).toBe(201);
+        expect(segundo.json()).toMatchObject({ saldo: 40, asistente: { estado: 'presente' } });
+
+        // V18: el celular anterior ya no entra.
+        expect((await getComoAsistente('estado', viejo)).json().code).toBe(
+          'DISPOSITIVO_NO_VINCULADO',
+        );
+        const [anulada] = await base.sistema.db
+          .select()
+          .from(vinculaciones)
+          .where(
+            and(eq(vinculaciones.asistenteId, asistenteId), isNotNull(vinculaciones.anuladaAt)),
+          );
+        expect(anulada).toMatchObject({
+          anuladaPor: registrador.usuarioId,
+          motivoAnulacion: motivo.tipo === 'otro' ? 'otro: Se le rompió la pantalla' : motivo.tipo,
+        });
+        const revocadas = await base.sistema.db
+          .select({ revocadaAt: sessions.revocadaAt })
+          .from(sessions)
+          .where(eq(sessions.vinculacionId, anulada?.id ?? ''));
+        expect(revocadas.every((r) => r.revocadaAt !== null)).toBe(true);
+        const [fila] = await base.sistema.db
+          .select({ antes: bitacora.antes, despues: bitacora.despues, actor: bitacora.actorNombre })
+          .from(bitacora)
+          .where(
+            and(eq(bitacora.objetoId, asistenteId), eq(bitacora.accion, 'asistente.revincular')),
+          );
+        expect(fila).toMatchObject({
+          actor: 'Luis Condori',
+          antes: { dispositivo: 'Chrome en Android' },
+          despues: { dispositivo: 'Chrome en Android', motivo: motivo.tipo },
+        });
+      });
+    }
+
+    it('con otro, el texto es obligatorio; la ficha muestra el historial', async () => {
+      const asistenteId = await newAsistente('Historial Ficha');
+      await vincular('qr', tokenDeQr((await generate(asistenteId)).json().qr));
+      expect((await generate(asistenteId, { motivo: { tipo: 'otro' } })).json().code).toBe(
+        'VALIDACION',
+      );
+      const acceso = (await generate(asistenteId, { motivo: { tipo: 'borro_datos' } })).json();
+      await vincular('qr', tokenDeQr(acceso.qr));
+      const ficha = await api.app.inject({
+        method: 'GET',
+        url: `/api/v1/asistentes/${asistenteId}/ficha`,
+        headers: { cookie: registrador.cookie },
+      });
+      expect(ficha.json()).toMatchObject({
+        dispositivo: { modelo: 'Chrome en Android', metodo: 'qr_puerta' },
+        historial: [{ metodo: 'qr_puerta', motivo: 'Borró los datos del navegador' }],
+      });
+    });
   });
 
   it('un código corto inventado, después de 5 intentos por minuto, responde 429', async () => {

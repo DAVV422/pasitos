@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   effect,
   inject,
@@ -8,6 +9,11 @@ import {
   output,
   signal,
 } from '@angular/core';
+import {
+  NOMBRES_MOTIVO_REVINCULAR,
+  TIPOS_MOTIVO_REVINCULAR,
+  type TipoMotivoRevincular,
+} from '@pasitos/dominio';
 import { getMensajeError } from '@pasitos/panel';
 import {
   AvisoComponent,
@@ -56,24 +62,36 @@ const SONDEO_MS = 3_000;
         }
         @case ('motivo') {
           <p>
-            {{ ficha().nombre }} ya tiene un celular vinculado. Al vincular otro, el anterior deja
-            de funcionar.
+            {{ ficha().nombre }} ya tiene un celular vinculado. Al vincular el nuevo, el anterior
+            deja de funcionar al instante. Sus puntos no cambian.
           </p>
-          <px-campo #campo="pxCampo" etiqueta="Motivo" ayuda="Por ejemplo: cambió de celular.">
-            <input
-              [id]="campo.idControl"
-              [attr.aria-describedby]="campo.idDescripcion"
-              maxlength="300"
-              [value]="motivo()"
-              (input)="motivo.set($any($event.target).value)"
-            />
-          </px-campo>
-          <button
-            pxBoton
-            type="button"
-            [deshabilitado]="motivo().trim().length < 5"
-            (click)="generate()"
-          >
+          <fieldset class="flex w-full flex-col gap-2">
+            <legend class="mb-1 font-semibold">¿Por qué?</legend>
+            @for (tipo of tipos; track tipo) {
+              <label class="border-line flex min-h-12 items-center gap-3 rounded-lg border px-3">
+                <input
+                  type="radio"
+                  name="motivo"
+                  [value]="tipo"
+                  [checked]="tipoMotivo() === tipo"
+                  (change)="tipoMotivo.set(tipo)"
+                />
+                {{ nombres[tipo] }}
+              </label>
+            }
+          </fieldset>
+          @if (tipoMotivo() === 'otro') {
+            <px-campo #campo="pxCampo" etiqueta="Cuéntalo" ayuda="Entre 5 y 300 letras.">
+              <input
+                [id]="campo.idControl"
+                [attr.aria-describedby]="campo.idDescripcion"
+                maxlength="300"
+                [value]="motivo()"
+                (input)="motivo.set($any($event.target).value)"
+              />
+            </px-campo>
+          }
+          <button pxBoton type="button" [deshabilitado]="!motivoListo()" (click)="generate()">
             Generar el QR
           </button>
         }
@@ -132,11 +150,22 @@ export class AccesoPuertaComponent {
   protected readonly acceso = signal<AccesoGenerado | null>(null);
   protected readonly vinculado = signal<{ modelo: string; hora: string } | null>(null);
   protected readonly motivo = signal('');
+  protected readonly tipoMotivo = signal<TipoMotivoRevincular | null>(null);
+  protected readonly tipos = TIPOS_MOTIVO_REVINCULAR;
+  protected readonly nombres = NOMBRES_MOTIVO_REVINCULAR;
+  protected readonly motivoListo = computed(() => {
+    const tipo = this.tipoMotivo();
+    return tipo !== null && (tipo !== 'otro' || this.motivo().trim().length >= 5);
+  });
   protected readonly error = signal('');
   private sondeo: ReturnType<typeof setInterval> | undefined;
 
   constructor() {
-    queueMicrotask(() => void this.generate());
+    // Con un celular activo, primero el motivo (HU-304); si no, el QR directo.
+    queueMicrotask(() => {
+      if (this.ficha().dispositivo) this.paso.set('motivo');
+      else void this.generate();
+    });
     effect(() => {
       const aviso = this.avisoVinculado();
       if (aviso && aviso.accesoId === this.acceso()?.id) {
@@ -162,8 +191,12 @@ export class AccesoPuertaComponent {
     clearInterval(this.sondeo);
     this.paso.set('generando');
     try {
-      const motivo = this.motivo().trim();
-      const acceso = await this.api.createAcceso(this.ficha().id, motivo || undefined);
+      const tipo = this.tipoMotivo();
+      const texto = this.motivo().trim();
+      const acceso = await this.api.createAcceso(
+        this.ficha().id,
+        tipo ? { tipo, ...(tipo === 'otro' ? { texto } : {}) } : undefined,
+      );
       this.acceso.set(acceso);
       this.paso.set('mostrando');
       // Respaldo del aviso en vivo.

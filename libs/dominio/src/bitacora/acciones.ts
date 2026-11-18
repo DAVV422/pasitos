@@ -69,6 +69,7 @@ export const ACCIONES_BITACORA = {
   'asistente.check_in': 'Marcó presente a un invitado',
   'asistente.check_in_anular': 'Deshizo el check-in de un invitado',
   'acceso.create': 'Generó un QR de asistente',
+  'asistente.revincular': 'Cambió el celular de un invitado',
   // Plataforma (evento_id nulo, salvo las que tocan un evento)
   'organizacion.create': 'Creó una organización',
   'organizacion.update': 'Editó una organización',

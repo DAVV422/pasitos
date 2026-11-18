@@ -19,6 +19,8 @@ import {
   describeModelo,
   getMotivosAutomatizado,
   isNavegadorSoportado,
+  toMotivoAnulacion,
+  type MotivoRevincular,
   type SenalesDispositivo,
   VERSION_TERMINOS,
 } from '@pasitos/dominio';
@@ -32,6 +34,7 @@ import { Limitador } from '../auth/limitador';
 import type { Reloj } from '../auth/sesiones.service';
 import { getUrlArchivo } from '../archivos/archivos.service';
 import { normalizeCodigoCorto, PROPOSITO_CORTO, PROPOSITO_QR } from '../puerta/accesos-puerta';
+import { BitacoraService } from '../bitacora/bitacora.service';
 import type { CheckInService } from '../puerta/check-in.service';
 import type { AccesoSistema } from './acceso-sistema';
 import { getEstadoApp, type EstadoApp } from './estado-app';
@@ -78,6 +81,8 @@ interface FuenteAcceso {
   /** En la puerta: el id del acceso (el QR) y quién lo generó. */
   readonly grupo: string | null;
   readonly registradorId: string | null;
+  /** HU-304: por qué se le dio un acceso nuevo (viaja en el token). */
+  readonly motivo: MotivoRevincular | null;
 }
 
 /** Usada en otro celular: la invitación lo dice; el QR de la puerta responde como vencido. */
@@ -99,6 +104,7 @@ export class AccesoService {
   private readonly porToken: Limitador;
   /** S8: 5 códigos cortos fallidos por minuto por IP. */
   private readonly cortosFallidos: Limitador;
+  private readonly bitacora = new BitacoraService();
 
   constructor(
     private readonly db: Db,
@@ -270,11 +276,26 @@ export class AccesoService {
       let vinculacionId = activa?.dispositivoId === dispositivoId ? activa.id : null;
       if (!vinculacionId) {
         if (activa) {
-          // Un dispositivo por invitado (V17): el anterior queda anulado al instante.
+          // Un dispositivo por invitado (V17, V18): el anterior queda anulado al instante, con
+          // el motivo y quién dio el acceso nuevo.
           await tx
             .update(vinculaciones)
-            .set({ anuladaAt: ahora, motivoAnulacion: 'nueva_vinculacion' })
+            .set({
+              anuladaAt: ahora,
+              anuladaPor: fuente.registradorId,
+              motivoAnulacion: toMotivoAnulacion(fuente.motivo),
+            })
             .where(eq(vinculaciones.id, activa.id));
+          if (fuente.registradorId) {
+            await this.recordRevincular(tx, {
+              organizacionId,
+              eventoId: evento.id,
+              asistente,
+              anteriorId: activa.dispositivoId,
+              modeloNuevo: modelo,
+              fuente,
+            });
+          }
           await this.sesiones.revokeDeVinculacion(tx, activa.id);
           await tx.insert(outbox).values({
             id: uuidv7(),
@@ -337,6 +358,48 @@ export class AccesoService {
         dispositivoId,
       };
     }
+  }
+
+  /** HU-304 §1: la bitácora del cambio de celular, con el anterior, el nuevo y el motivo. */
+  private async recordRevincular(
+    tx: Tx,
+    datos: {
+      organizacionId: string;
+      eventoId: string;
+      asistente: { id: string; nombre: string };
+      anteriorId: string;
+      modeloNuevo: string;
+      fuente: FuenteAcceso;
+    },
+  ): Promise<void> {
+    const [anterior] = await tx
+      .select({ modelo: dispositivos.modelo })
+      .from(dispositivos)
+      .where(eq(dispositivos.id, datos.anteriorId));
+    const [registrador] = await tx
+      .select({ nombre: usuarios.nombre })
+      .from(usuarios)
+      .where(eq(usuarios.id, datos.fuente.registradorId ?? ''));
+    await this.bitacora.record(tx, {
+      actor: registrador
+        ? {
+            tipo: 'usuario',
+            id: datos.fuente.registradorId ?? '',
+            nombre: registrador.nombre,
+            rol: null,
+          }
+        : { tipo: 'sistema', nombre: 'QR de asistente' },
+      accion: 'asistente.revincular',
+      organizacionId: datos.organizacionId,
+      eventoId: datos.eventoId,
+      objeto: { tipo: 'asistente', id: datos.asistente.id, nombre: datos.asistente.nombre },
+      antes: { dispositivo: anterior?.modelo ?? null },
+      despues: {
+        dispositivo: datos.modeloNuevo,
+        motivo: datos.fuente.motivo?.tipo ?? null,
+        ...(datos.fuente.motivo?.texto ? { detalle: datos.fuente.motivo.texto } : {}),
+      },
+    });
   }
 
   /** El acceso queda usado. En la puerta, usar el QR anula el enlace corto y al revés. */
@@ -544,6 +607,7 @@ export class AccesoService {
         metodo: 'enlace',
         grupo: null,
         registradorId: null,
+        motivo: null,
       };
     }
     const consulta = tx
@@ -553,6 +617,7 @@ export class AccesoService {
         eventoId: tokens.eventoId,
         grupo: tokens.grupo,
         creadoPor: tokens.creadoPor,
+        motivo: tokens.motivo,
         expiraAt: tokens.expiraAt,
         usadoAt: tokens.usadoAt,
         revocadoAt: tokens.revocadoAt,
@@ -583,6 +648,7 @@ export class AccesoService {
       metodo: tipo === 'qr' ? 'qr_puerta' : 'enlace_corto',
       grupo: fila.grupo,
       registradorId: fila.creadoPor,
+      motivo: parseMotivo(fila.motivo),
     };
   }
 
@@ -680,6 +746,17 @@ export class AccesoService {
       borrarAt: datos.borrarAt,
     });
     return id;
+  }
+}
+
+/** El motivo guardado en el token (JSON); uno ilegible cuenta como sin motivo. */
+function parseMotivo(texto: string | null): MotivoRevincular | null {
+  if (!texto) return null;
+  try {
+    const motivo = JSON.parse(texto) as MotivoRevincular;
+    return typeof motivo.tipo === 'string' ? motivo : null;
+  } catch {
+    return null;
   }
 }
 

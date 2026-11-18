@@ -9,7 +9,7 @@ import {
   withOrganizacion,
   type Db,
 } from '@pasitos/db';
-import { AppError } from '@pasitos/dominio';
+import { AppError, type MotivoRevincular } from '@pasitos/dominio';
 import { uuidv7 } from 'uuidv7';
 import type { ContextoEvento } from '../../common/permisos/marcas';
 import { hashToken } from '../auth/auth.repository';
@@ -70,7 +70,7 @@ export class AccesosPuertaService {
   create(
     contexto: ContextoEvento,
     asistenteId: string,
-    motivo: string | undefined,
+    motivo: MotivoRevincular | undefined,
   ): Promise<AccesoGenerado> {
     return withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
       const [asistente] = await tx
@@ -114,7 +114,8 @@ export class AccesosPuertaService {
         eventoId: contexto.eventoId,
         refId: asistenteId,
         creadoPor: contexto.usuarioId,
-        motivo: motivo ?? null,
+        // El motivo viaja en el token y queda en la vinculación anulada al usarlo (HU-304).
+        motivo: motivo ? JSON.stringify(motivo) : null,
         grupo: id,
         expiraAt,
       };

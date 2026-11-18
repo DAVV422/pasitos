@@ -11,7 +11,7 @@ import {
   type Db,
   type Tx,
 } from '@pasitos/db';
-import { AppError } from '@pasitos/dominio';
+import { AppError, describeMotivoAnulacion } from '@pasitos/dominio';
 import { maskEmail } from '@pasitos/dominio/esquemas';
 import type { ContextoEvento } from '../../common/permisos/marcas';
 import type { FirmaVerificada } from '../../common/sesion/asistente';
@@ -32,7 +32,19 @@ export interface FichaPuerta {
   readonly email: string | null;
   readonly estado: string;
   readonly saldo: number;
-  readonly dispositivo: { readonly modelo: string; readonly desde: string } | null;
+  readonly dispositivo: {
+    readonly modelo: string;
+    readonly desde: string;
+    readonly metodo: string;
+  } | null;
+  /** HU-304: cada celular que tuvo la entrada, con cuándo y por qué se anuló. */
+  readonly historial: readonly {
+    readonly modelo: string;
+    readonly metodo: string;
+    readonly desde: string;
+    readonly anuladaAt: string;
+    readonly motivo: string | null;
+  }[];
   readonly checkIn: { readonly at: string; readonly por: string | null } | null;
   /** HU-325. */
   readonly grupos: readonly string[];
@@ -234,13 +246,20 @@ export class PuertaService {
       .where(and(eq(asistentes.id, asistenteId), eq(asistentes.eventoId, contexto.eventoId)));
     if (!fila) throw new AppError('NO_ENCONTRADO');
     // Solo el modelo: nunca la IP ni la huella (Acceso §6.3).
-    const [dispositivo] = await tx
-      .select({ modelo: dispositivos.modelo, desde: vinculaciones.createdAt })
+    const vinculos = await tx
+      .select({
+        modelo: dispositivos.modelo,
+        desde: vinculaciones.createdAt,
+        metodo: vinculaciones.metodo,
+        anuladaAt: vinculaciones.anuladaAt,
+        motivo: vinculaciones.motivoAnulacion,
+      })
       .from(vinculaciones)
       .innerJoin(dispositivos, eq(dispositivos.id, vinculaciones.dispositivoId))
-      .where(and(eq(vinculaciones.asistenteId, asistenteId), isNull(vinculaciones.anuladaAt)))
+      .where(eq(vinculaciones.asistenteId, asistenteId))
       .orderBy(desc(vinculaciones.createdAt))
-      .limit(1);
+      .limit(20);
+    const dispositivo = vinculos.find((v) => v.anuladaAt === null);
     const activo = await this.checkIn.findActivo(tx, asistenteId);
     return {
       id: fila.id,
@@ -250,8 +269,25 @@ export class PuertaService {
       estado: fila.estado,
       saldo: fila.saldo ?? 0,
       dispositivo: dispositivo
-        ? { modelo: dispositivo.modelo, desde: dispositivo.desde.toISOString() }
+        ? {
+            modelo: dispositivo.modelo,
+            desde: dispositivo.desde.toISOString(),
+            metodo: dispositivo.metodo,
+          }
         : null,
+      historial: vinculos.flatMap((v) =>
+        v.anuladaAt
+          ? [
+              {
+                modelo: v.modelo,
+                metodo: v.metodo,
+                desde: v.desde.toISOString(),
+                anuladaAt: v.anuladaAt.toISOString(),
+                motivo: describeMotivoAnulacion(v.motivo),
+              },
+            ]
+          : [],
+      ),
       checkIn: activo ? { at: activo.at.toISOString(), por: getNombreCorto(activo.por) } : null,
       grupos: [],
       carnet: null,

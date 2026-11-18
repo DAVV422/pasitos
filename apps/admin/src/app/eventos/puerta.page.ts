@@ -104,12 +104,31 @@ const ESPERA_BUSQUEDA_MS = 250;
                 @for (grupo of f.grupos; track grupo) {
                   <px-chip variante="puntos">{{ grupo }}</px-chip>
                 }
-                @if (f.dispositivo) {
-                  <px-chip
-                    ><px-icono nombre="check" [tamano]="14" />{{ f.dispositivo.modelo }}</px-chip
-                  >
-                }
               </div>
+              @if (f.dispositivo; as d) {
+                <p class="text-sm" data-testid="dispositivo">
+                  <b>Dispositivo actual:</b> {{ d.modelo }} · desde el {{ fecha(d.desde) }} ·
+                  {{ describeMetodo(d.metodo) }}
+                </p>
+              }
+              @if (f.historial.length > 0) {
+                <details class="text-sm">
+                  <summary class="cursor-pointer font-semibold">
+                    Historial de vinculaciones ({{ f.historial.length }})
+                  </summary>
+                  <ul class="mt-2 flex flex-col gap-1">
+                    @for (h of f.historial; track h.anuladaAt) {
+                      <li class="text-muted">
+                        {{ h.modelo }} · {{ describeMetodo(h.metodo) }} · anulado el
+                        {{ fecha(h.anuladaAt) }}
+                        @if (h.motivo) {
+                          · {{ h.motivo }}
+                        }
+                      </li>
+                    }
+                  </ul>
+                </details>
+              }
               @if (f.checkIn; as c) {
                 <px-aviso variante="ok"
                   >Presente desde las {{ hora(c.at) }}
@@ -138,7 +157,9 @@ const ESPERA_BUSQUEDA_MS = 250;
               @if (f.estado !== 'cancelado') {
                 <div class="grid grid-cols-2 gap-2">
                   <button pxBoton="secundario" type="button" (click)="setModo('acceso')">
-                    <px-icono nombre="scan" [tamano]="18" />Generar QR de asistente
+                    <px-icono nombre="scan" [tamano]="18" />{{
+                      f.dispositivo ? 'Generar acceso nuevo' : 'Generar QR de asistente'
+                    }}
                   </button>
                   <a
                     pxBoton="secundario"
@@ -428,6 +449,27 @@ export class PuertaPage {
         presente: 'Presente',
         cancelado: 'Quitado',
       }[estado] ?? estado
+    );
+  }
+
+  /** *"21/11 a las 09:15"*. */
+  protected fecha(iso: string): string {
+    const dia = new Intl.DateTimeFormat('es-BO', {
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: this.zona(),
+    }).format(new Date(iso));
+    return `${dia} a las ${this.hora(iso)}`;
+  }
+
+  protected describeMetodo(metodo: string): string {
+    return (
+      {
+        enlace: 'por el enlace del correo',
+        qr_puerta: 'con el QR de la puerta',
+        enlace_corto: 'con el enlace corto',
+        autoregistro: 'por autorregistro',
+      }[metodo] ?? metodo
     );
   }
 
