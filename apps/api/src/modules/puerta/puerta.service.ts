@@ -6,6 +6,7 @@ import {
   eventos,
   miembrosEvento,
   saldos,
+  usuarios,
   vinculaciones,
   withOrganizacion,
   type Db,
@@ -79,11 +80,23 @@ export class PuertaService {
             eq(alertas.estado, 'abierta'),
           ),
         );
+      // HU-303 §3: los registros en la puerta, por registrador (*"Luis C. · 12"*).
+      const porRegistrador = await tx
+        .select({ nombre: usuarios.nombre, total: count() })
+        .from(asistentes)
+        .leftJoin(usuarios, eq(usuarios.id, asistentes.registradoPor))
+        .where(and(eq(asistentes.eventoId, contexto.eventoId), eq(asistentes.origen, 'puerta')))
+        .groupBy(usuarios.nombre)
+        .orderBy(desc(count()));
       return {
         presentes: de('presente'),
         total,
         registrosRestantes: await this.getRegistrosRestantes(tx, contexto),
         avisosNoFuiYo: avisos?.total ?? 0,
+        registrosPorRegistrador: porRegistrador.map((f) => ({
+          nombre: getNombreCorto(f.nombre) ?? 'Sin nombre',
+          total: f.total,
+        })),
       };
     });
   }
@@ -227,11 +240,8 @@ export class PuertaService {
     return restantes.length > 0 ? Math.max(0, Math.min(...restantes)) : null;
   }
 
-  private async buildFicha(
-    tx: Tx,
-    contexto: ContextoEvento,
-    asistenteId: string,
-  ): Promise<FichaPuerta> {
+  /** La ficha, dentro de una transacción ya abierta (la usa también el registro, HU-303). */
+  async buildFicha(tx: Tx, contexto: ContextoEvento, asistenteId: string): Promise<FichaPuerta> {
     const [fila] = await tx
       .select({
         id: asistentes.id,

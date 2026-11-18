@@ -615,7 +615,7 @@ describe('Vincular el celular (HU-306)', () => {
         .where(and(eq(alertas.asistenteId, asistenteId), eq(alertas.tipo, 'no_fui_yo')));
       expect(filas).toHaveLength(1);
       expect(filas[0]).toMatchObject({
-        prioridad: 'alta',
+        prioridad: 'normal',
         datos: { desde: 'anulado', sobre: 'dispositivo' },
       });
       expect((await getApp('dispositivo', nuevo)).json().avisos).toHaveLength(1);

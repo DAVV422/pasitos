@@ -1,3 +1,5 @@
+import { RegistroPuertaCorreoGancho } from './invitados/registro-puerta-correo';
+import { AlertasDiferidasService } from './acceso/alertas-diferidas.service';
 import { BorradoDispositivosService } from './acceso/borrado-dispositivos.service';
 import { buildCifrador, createConexion, type ConexionDb } from '@pasitos/db';
 import { RpcStellar, TransaccionesStellarRepository, type StellarPort } from '@pasitos/stellar';
@@ -29,6 +31,7 @@ export interface Composicion {
   readonly apertura: AperturaEventosService;
   readonly purga: PurgaArchivosService;
   readonly borrado: BorradoDispositivosService;
+  readonly alertasDiferidas: AlertasDiferidasService;
   readonly operaciones: OperacionesTrabajoService;
 }
 
@@ -102,6 +105,7 @@ export function buildComposicion(
       porVuelta: 50,
     },
     {
+      registro_puerta: new RegistroPuertaCorreoGancho(conexion.db),
       invitacion_evento: new InvitacionesCorreoGancho(
         conexion.db,
         config.LLAVE_CIFRADO_DATOS
@@ -122,6 +126,7 @@ export function buildComposicion(
     envios,
     apertura,
     borrado: new BorradoDispositivosService(conexion.db, reloj),
+    alertasDiferidas: new AlertasDiferidasService(conexion.db, reloj),
     purga: new PurgaArchivosService(conexion.db, config.ARCHIVOS_DIR, reloj),
     operaciones: new OperacionesTrabajoService(conexion.db, config.ARCHIVOS_DIR, reloj),
   };

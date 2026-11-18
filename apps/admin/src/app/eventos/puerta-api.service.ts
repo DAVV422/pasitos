@@ -11,6 +11,7 @@ export interface ResumenPuerta {
   readonly total: number;
   readonly registrosRestantes: number | null;
   readonly avisosNoFuiYo: number;
+  readonly registrosPorRegistrador: readonly { readonly nombre: string; readonly total: number }[];
 }
 
 /** La ficha de la puerta (PU2). Sin IP ni huella: solo el modelo del celular. */
@@ -68,6 +69,24 @@ export interface TarjetaImpresa {
   readonly qr: string;
 }
 
+/** HU-305: un aviso *No fui yo* en la puerta. */
+export interface AlertaPuerta {
+  readonly id: string;
+  readonly tipo: string;
+  readonly estado: 'abierta' | 'atendiendo' | 'derivada' | 'resuelta' | 'descartada';
+  readonly prioridad: 'normal' | 'alta';
+  readonly at: string;
+  readonly asistente: {
+    readonly id: string;
+    readonly nombre: string;
+    readonly codigo: string;
+  } | null;
+  readonly queNoReconoce: string | null;
+  readonly desde: string | null;
+  readonly atendidaPor: string | null;
+  readonly resolucion: string | null;
+}
+
 /** Lo que mueve puntos va con `Idempotency-Key`: un doble toque no da dos bienvenidas. */
 function conClave(clave: string = crypto.randomUUID()): { headers: HttpHeaders } {
   return { headers: new HttpHeaders({ 'Idempotency-Key': clave }) };
@@ -112,12 +131,53 @@ export class PuertaApi {
     );
   }
 
+  /** HU-303: la misma clave en el reintento ("Es otra persona") es el mismo intento. */
+  registerNuevo(
+    eventoId: string,
+    datos: { nombre: string; email?: string; confirmarDuplicado?: boolean },
+    clave: string,
+  ): Promise<FichaPuerta> {
+    return firstValueFrom(
+      this.http.post<FichaPuerta>(
+        `${BASE}/eventos/${eventoId}/puerta/registros`,
+        datos,
+        conClave(clave),
+      ),
+    );
+  }
+
   createAcceso(asistenteId: string, motivo?: MotivoRevincular): Promise<AccesoGenerado> {
     return firstValueFrom(
       this.http.post<AccesoGenerado>(
         `${BASE}/asistentes/${asistenteId}/accesos`,
         motivo ? { motivo } : {},
       ),
+    );
+  }
+
+  async listAlertas(eventoId: string): Promise<readonly AlertaPuerta[]> {
+    const params = new HttpParams().set('tipo', 'no_fui_yo');
+    const pagina = await firstValueFrom(
+      this.http.get<{ items: AlertaPuerta[] }>(`${BASE}/eventos/${eventoId}/alertas`, { params }),
+    );
+    return pagina.items;
+  }
+
+  attendAlerta(id: string): Promise<{ id: string; estado: string; asistenteId: string | null }> {
+    return firstValueFrom(
+      this.http.post<{ id: string; estado: string; asistenteId: string | null }>(
+        `${BASE}/alertas/${id}/atender`,
+        {},
+      ),
+    );
+  }
+
+  resolveAlerta(
+    id: string,
+    datos: { resolucion: 'revincular' | 'descartar' | 'derivar'; nota?: string },
+  ): Promise<{ id: string; estado: string }> {
+    return firstValueFrom(
+      this.http.post<{ id: string; estado: string }>(`${BASE}/alertas/${id}/resolver`, datos),
     );
   }
 

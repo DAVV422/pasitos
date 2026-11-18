@@ -20,6 +20,8 @@ export const NOMBRES_MOTIVO_REVINCULAR: Readonly<Record<TipoMotivoRevincular, st
 export interface MotivoRevincular {
   readonly tipo: TipoMotivoRevincular;
   readonly texto?: string | undefined;
+  /** HU-305: el aviso *No fui yo* que se cierra al vincular. */
+  readonly alertaId?: string | undefined;
 }
 
 /** Cuando el celular nuevo se abrió con el enlace de la invitación (sin pasar por la puerta). */

@@ -202,7 +202,7 @@ interface Candidato {
       }
     </div>
 
-    <pnl-filtros [activos]="filtroEmail() ? 1 : 0">
+    <pnl-filtros [activos]="(filtroEmail() ? 1 : 0) + (filtroOrigen() ? 1 : 0)">
       <input
         pnlBuscador
         type="search"
@@ -216,6 +216,12 @@ interface Candidato {
         @for (e of estadosEmail; track e) {
           <option [value]="e">Correo: {{ nombreEstadoEmail(e) }}</option>
         }
+      </select>
+      <select aria-label="Origen" (change)="setFiltro('origen', valorDe($event))">
+        <option value="">Origen: todos</option>
+        <option value="lista">Origen: lista</option>
+        <option value="csv">Origen: importados</option>
+        <option value="puerta">Origen: puerta</option>
       </select>
     </pnl-filtros>
 
@@ -255,7 +261,12 @@ interface Candidato {
                   <span class="text-muted">{{ a.codigo }}</span> · <b>{{ a.nombre }}</b>
                 </span>
                 <span class="text-muted block truncate text-sm">
-                  {{ a.email ?? 'Sin correo' }}{{ a.codigoExterno ? ' · ' + a.codigoExterno : '' }}
+                  {{ a.email ?? 'Sin correo' }}{{ a.codigoExterno ? ' · ' + a.codigoExterno : ''
+                  }}{{
+                    a.origen === 'puerta'
+                      ? ' · Puerta' + (a.registradoPor ? ' · ' + a.registradoPor : '')
+                      : ''
+                  }}
                 </span>
               </span>
               <span
@@ -308,9 +319,10 @@ export class InvitadosPage implements OnInit {
   protected readonly filas = signal<readonly AsistentePanel[]>([]);
   protected readonly contadores = signal<ContadoresInvitados | null>(null);
   protected readonly q = signal('');
-  private readonly filtros = signal<{ estado?: string; emailEstado?: string }>({});
+  private readonly filtros = signal<{ estado?: string; emailEstado?: string; origen?: string }>({});
   protected readonly filtroEstado = computed(() => this.filtros().estado);
   protected readonly filtroEmail = computed(() => this.filtros().emailEstado);
+  protected readonly filtroOrigen = computed(() => this.filtros().origen);
   /** Los contadores, como chips que filtran la lista (Fase 4 de UI). */
   protected readonly filtrosEstado = computed(() => {
     const c = this.contadores();
@@ -380,7 +392,7 @@ export class InvitadosPage implements OnInit {
     this.espera = setTimeout(() => void this.load(), 300);
   }
 
-  protected setFiltro(campo: 'estado' | 'emailEstado', valor: string): void {
+  protected setFiltro(campo: 'estado' | 'emailEstado' | 'origen', valor: string): void {
     this.filtros.set({ ...this.filtros(), [campo]: valor || undefined });
     void this.load();
   }

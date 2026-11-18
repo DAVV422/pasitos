@@ -257,7 +257,8 @@ describe('Check-in (HU-301)', () => {
     const resumen = respuesta.json();
     expect(resumen.presentes).toBeGreaterThanOrEqual(2);
     expect(resumen.total).toBeGreaterThan(resumen.presentes);
-    expect(resumen).toMatchObject({ registrosRestantes: null, avisosNoFuiYo: 0 });
+    // El evento de prueba trae un aviso No fui yo abierto (para V9).
+    expect(resumen).toMatchObject({ registrosRestantes: null, avisosNoFuiYo: 1 });
   });
 
   it('el evento en cada estado: publicado sí, borrador no', async () => {

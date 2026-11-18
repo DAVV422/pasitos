@@ -56,6 +56,8 @@ export const esquemaBuscarAsistentes = z.object({
   q: z.string().trim().max(120).optional(),
   estado: z.enum(ESTADOS_ASISTENTE).optional(),
   emailEstado: z.enum(ESTADOS_EMAIL).optional(),
+  // HU-303: los registrados en la puerta.
+  origen: z.enum(['lista', 'csv', 'puerta']).optional(),
   cursor: z.string().max(20).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });

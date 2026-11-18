@@ -49,4 +49,11 @@ export const EJEMPLOS_CORREO: { readonly [T in TipoCorreo]: DatosCorreo<T> } = {
     organizacion: 'Comunidad de Ejemplo',
     enlace: 'http://localhost:4200/app/acceso/invitacion/ejemplo',
   },
+  registro_puerta: {
+    nombre: 'Carla',
+    evento: 'Encuentro de Ejemplo 2026',
+    fecha: '21/11/2026',
+    lugar: 'Centro de Convenciones de Ejemplo',
+    codigo: 'A-0232',
+  },
 };

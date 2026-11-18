@@ -1,5 +1,5 @@
-import { and, asc, count, eq, ne, or, sql, type SQL } from 'drizzle-orm';
-import { asistentes, eventos, withOrganizacion, type Db, type Tx } from '@pasitos/db';
+import { and, asc, count, eq, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
+import { asistentes, eventos, usuarios, withOrganizacion, type Db, type Tx } from '@pasitos/db';
 import { AppError } from '@pasitos/dominio';
 import {
   isCodigoAsistente,
@@ -13,6 +13,7 @@ import type { ContextoEvento } from '../../common/permisos/marcas';
 import type { Reloj } from '../auth/sesiones.service';
 import { toActor } from '../bitacora/actores';
 import { BitacoraService, diff } from '../bitacora/bitacora.service';
+import { getNombreCorto } from '../puerta/check-in.service';
 import { listEstadosInvitacion, revokeInvitacion } from './invitaciones.service';
 
 type Asistente = typeof asistentes.$inferSelect;
@@ -28,6 +29,7 @@ export interface FiltrosAsistentes {
   readonly q?: string | undefined;
   readonly estado?: (typeof ESTADOS_ASISTENTE)[number] | undefined;
   readonly emailEstado?: (typeof ESTADOS_EMAIL)[number] | undefined;
+  readonly origen?: 'lista' | 'csv' | 'puerta' | undefined;
   readonly cursor?: string | undefined;
   readonly limit: number;
 }
@@ -57,6 +59,7 @@ export class AsistentesService {
       const condiciones: SQL[] = [eq(asistentes.eventoId, contexto.eventoId)];
       if (filtros.estado) condiciones.push(eq(asistentes.estado, filtros.estado));
       if (filtros.emailEstado) condiciones.push(eq(asistentes.emailEstado, filtros.emailEstado));
+      if (filtros.origen) condiciones.push(eq(asistentes.origen, filtros.origen));
       const q = filtros.q?.trim() ?? '';
       let orden: SQL[] = [
         sql`length(${asistentes.codigoAsistente})`,
@@ -337,7 +340,22 @@ export class AsistentesService {
       tx,
       filas.map((a) => a.id),
     );
-    return filas.map((a) => this.toFila(a, contexto, invitaciones.get(a.id) ?? null));
+    // HU-303 §3: quién registró en la puerta (*"Puerta · Luis C."*).
+    const ids = [...new Set(filas.flatMap((a) => (a.registradoPor ? [a.registradoPor] : [])))];
+    const registradores = new Map(
+      ids.length === 0
+        ? []
+        : (
+            await tx
+              .select({ id: usuarios.id, nombre: usuarios.nombre })
+              .from(usuarios)
+              .where(inArray(usuarios.id, ids))
+          ).map((u) => [u.id, getNombreCorto(u.nombre)] as const),
+    );
+    return filas.map((a) => ({
+      ...this.toFila(a, contexto, invitaciones.get(a.id) ?? null),
+      registradoPor: a.registradoPor ? (registradores.get(a.registradoPor) ?? null) : null,
+    }));
   }
 
   /** El registrador ve el correo enmascarado (HU-210 §3). */

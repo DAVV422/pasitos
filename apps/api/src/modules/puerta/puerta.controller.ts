@@ -1,16 +1,31 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import {
   esquemaAnularCheckIn,
   esquemaCheckIn,
   esquemaEscanearEntrada,
   esquemaGenerarAcceso,
+  esquemaListarAlertas,
+  esquemaResolverAlerta,
+  esquemaRegistroPuerta,
 } from '@pasitos/dominio/esquemas';
 import type { FastifyRequest } from 'fastify';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
 import { getPedidoIdempotente } from '../acceso/idempotencia';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
 import { AccesosPuertaService } from './accesos-puerta';
+import { AlertasPuertaService } from './alertas-puerta';
 import { PuertaService } from './puerta.service';
+import { RegistroPuertaService } from './registro-puerta';
 
 type RequestConCuerpo = FastifyRequest & { rawBody?: Buffer };
 
@@ -23,7 +38,53 @@ export class PuertaController {
   constructor(
     private readonly puerta: PuertaService,
     private readonly accesos: AccesosPuertaService,
+    private readonly registros: RegistroPuertaService,
+    private readonly alertas: AlertasPuertaService,
   ) {}
+
+  /** HU-305: el registrador solo ve los *No fui yo*. */
+  @Get('eventos/:eventoId/alertas')
+  @Permiso('invitados.read')
+  listAlertas(@Contexto() contexto: ContextoEvento, @Query() query: unknown) {
+    return this.alertas.list(contexto, esquemaListarAlertas.parse(query));
+  }
+
+  @Post('alertas/:id/atender')
+  @Permiso('puerta.use', { recurso: 'alertas' })
+  @AccionBitacoraDe('alerta.atender')
+  @HttpCode(200)
+  attendAlerta(@Contexto() contexto: ContextoEvento, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.alertas.attend(contexto, id);
+  }
+
+  @Post('alertas/:id/resolver')
+  @Permiso('puerta.use', { recurso: 'alertas' })
+  @AccionBitacoraDe('alerta.resolver')
+  @HttpCode(200)
+  resolveAlerta(
+    @Contexto() contexto: ContextoEvento,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() cuerpo: unknown,
+  ) {
+    return this.alertas.resolve(contexto, id, esquemaResolverAlerta.parse(cuerpo));
+  }
+
+  /** HU-303: registrar a alguien que no estaba en la lista; queda presente. */
+  @Post('eventos/:eventoId/puerta/registros')
+  @Permiso('puerta.use')
+  @AccionBitacoraDe('asistente.registrar_puerta')
+  @HttpCode(201)
+  createRegistro(
+    @Contexto() contexto: ContextoEvento,
+    @Body() cuerpo: unknown,
+    @Req() request: RequestConCuerpo,
+  ) {
+    return this.registros.register(
+      contexto,
+      esquemaRegistroPuerta.parse(cuerpo),
+      getPedidoIdempotente(request),
+    );
+  }
 
   /** HU-302: el QR de asistente de 2 minutos y su enlace corto. */
   @Post('asistentes/:id/accesos')

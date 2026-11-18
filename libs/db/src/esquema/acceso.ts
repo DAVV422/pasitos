@@ -232,7 +232,7 @@ export const alertas = pgTable(
     check('alertas_prioridad', sql`${t.prioridad} in ('normal', 'alta')`),
     check(
       'alertas_estado',
-      sql`${t.estado} in ('abierta', 'atendiendo', 'resuelta', 'descartada')`,
+      sql`${t.estado} in ('abierta', 'atendiendo', 'derivada', 'resuelta', 'descartada')`,
     ),
     uniqueIndex('alertas_clave').on(t.eventoId, t.clave),
     index('alertas_evento').on(t.eventoId, t.estado, t.createdAt),

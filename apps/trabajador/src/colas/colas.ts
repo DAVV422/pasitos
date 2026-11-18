@@ -4,6 +4,7 @@ import type { PgBoss } from 'pg-boss';
 import type { Db } from '@pasitos/db';
 import type { ContratoService } from '../contrato/contrato.service';
 import type { PurgaArchivosService } from '../archivos/purga.service';
+import type { AlertasDiferidasService } from '../acceso/alertas-diferidas.service';
 import type { BorradoDispositivosService } from '../acceso/borrado-dispositivos.service';
 import type { EnviosCorreoService } from '../correos/envios.service';
 import { OutboxService, type AperturaEventosService } from '../eventos/outbox.service';
@@ -20,6 +21,7 @@ export const COLA_APERTURA = 'open-eventos';
 export const COLA_PURGA_ARCHIVOS = 'purge-archivos';
 export const COLA_PURGA_OUTBOX = 'purge-outbox';
 export const COLA_BORRADO_DISPOSITIVOS = 'borrar-dispositivos';
+export const COLA_ALERTAS_DIFERIDAS = 'alertas-diferidas';
 /** El procesador de outbox corre cada 5 s (pg-boss programa por minuto: va con un intervalo). */
 export const OUTBOX_CADA_MS = 5_000;
 /** Importar y exportar invitados (HU-210): la vista previa tiene que llegar en segundos. */
@@ -101,6 +103,7 @@ export interface DependenciasColas {
   readonly apertura: AperturaEventosService;
   readonly purga: PurgaArchivosService;
   readonly borrado: BorradoDispositivosService;
+  readonly alertasDiferidas: AlertasDiferidasService;
   readonly operaciones: OperacionesTrabajoService;
 }
 
@@ -115,6 +118,7 @@ export async function startColas({
   apertura,
   purga,
   borrado,
+  alertasDiferidas,
   operaciones,
 }: DependenciasColas): Promise<() => void> {
   const logger = new Logger('Colas');
@@ -126,6 +130,14 @@ export async function startColas({
   await boss.createQueue(COLA_PURGA_ARCHIVOS);
   await boss.createQueue(COLA_PURGA_OUTBOX);
   await boss.createQueue(COLA_BORRADO_DISPOSITIVOS);
+  await boss.createQueue(COLA_ALERTAS_DIFERIDAS);
+
+  // HU-305 §2: los No fui yo sin atender suben de prioridad a los 10 minutos.
+  await boss.schedule(COLA_ALERTAS_DIFERIDAS, '* * * * *');
+  await boss.work(COLA_ALERTAS_DIFERIDAS, { localConcurrency: 1 }, async () => {
+    const subidas = await alertasDiferidas.raisePrioridad();
+    if (subidas > 0) logger.log({ subidas }, 'Avisos No fui yo con prioridad alta');
+  });
 
   // HU-307 §7: lo técnico de los dispositivos, 30 días después del cierre. A las 03:00 de Bolivia.
   await boss.schedule(COLA_BORRADO_DISPOSITIVOS, '0 7 * * *');

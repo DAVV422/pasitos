@@ -35,6 +35,7 @@ import type { Reloj } from '../auth/sesiones.service';
 import { getUrlArchivo } from '../archivos/archivos.service';
 import { normalizeCodigoCorto, PROPOSITO_CORTO, PROPOSITO_QR } from '../puerta/accesos-puerta';
 import { BitacoraService } from '../bitacora/bitacora.service';
+import { closeAlertaRevincular } from '../puerta/alertas-puerta';
 import type { CheckInService } from '../puerta/check-in.service';
 import type { AccesoSistema } from './acceso-sistema';
 import { getEstadoApp, type EstadoApp } from './estado-app';
@@ -458,6 +459,14 @@ export class AccesoService {
               rol: null,
             }
           : { tipo: 'sistema', nombre: 'QR de asistente' },
+      });
+    }
+    // HU-305: el *No fui yo* que pidió este acceso se cierra al vincular.
+    if (fuente.motivo?.alertaId) {
+      await closeAlertaRevincular(tx, {
+        alertaId: fuente.motivo.alertaId,
+        eventoId: fuente.eventoId,
+        ahora: datos.ahora,
       });
     }
     await tx.insert(outbox).values({

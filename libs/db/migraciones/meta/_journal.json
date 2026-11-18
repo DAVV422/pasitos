@@ -204,6 +204,13 @@
       "when": 1795000323695,
       "tag": "0028_acceso_puerta",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1795013368228,
+      "tag": "0029_alertas_derivadas",
+      "breakpoints": true
     }
   ]
 }

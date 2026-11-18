@@ -180,6 +180,7 @@ El catálogo vive en **`libs/dominio/errores.ts`** y es la única fuente: de ah�
 | `DISPOSITIVO_YA_VINCULADO` | 409 | Este navegador ya tiene otra entrada en este evento. |
 | **Puerta** | | |
 | `LIMITE_REGISTRO_ALCANZADO` | 422 | Se alcanzó el límite de registros en puerta. |
+| `REGISTRO_PUERTA_CERRADO` | 422 | El registro en la puerta está cerrado para este evento. |
 | `ASISTENTE_YA_REGISTRADO` | 409 | Esta persona ya está registrada en el evento. |
 | `ASISTENTE_POSIBLE_DUPLICADO` | 409 | Ya hay alguien con un nombre o correo parecido. Revisa antes de continuar. |
 | `CHECK_IN_YA_HECHO` | 409 | Esta persona ya está presente. |

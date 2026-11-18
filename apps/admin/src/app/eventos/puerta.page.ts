@@ -20,14 +20,16 @@ import { EnVivoService, ErrorApi } from '@pasitos/web-core';
 import { RouterLink } from '@angular/router';
 import { AccesoPuertaComponent, type AvisoVinculado } from './acceso-puerta.component';
 import { EventoActualService } from './evento.layout';
+import { RegistroPuertaComponent } from './registro-puerta.component';
 import {
   PuertaApi,
+  type AlertaPuerta,
   type FichaPuerta,
   type ResultadoBusqueda,
   type ResumenPuerta,
 } from './puerta-api.service';
 
-type Modo = 'inicio' | 'escanear' | 'buscar' | 'ficha' | 'acceso';
+type Modo = 'inicio' | 'escanear' | 'buscar' | 'ficha' | 'acceso' | 'registrar';
 
 const VOLVER_MS = 2_000;
 const ESPERA_BUSQUEDA_MS = 250;
@@ -42,6 +44,7 @@ const ESPERA_BUSQUEDA_MS = 250;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AccesoPuertaComponent,
+    RegistroPuertaComponent,
     RouterLink,
     AvisoComponent,
     BotonDirective,
@@ -63,10 +66,32 @@ const ESPERA_BUSQUEDA_MS = 250;
           </p>
         }
       </header>
-      @if (resumen()?.avisosNoFuiYo; as avisos) {
-        <px-aviso variante="peligro"
-          >{{ avisos }} {{ avisos === 1 ? 'aviso' : 'avisos' }} «No fui yo» por atender.</px-aviso
+      @if (alertas().length > 0) {
+        <section
+          class="border-danger flex flex-col gap-2 rounded-xl border-2 p-3"
+          aria-labelledby="avisos-no-fui-yo"
         >
+          <h2 id="avisos-no-fui-yo" class="text-danger font-bold">Avisos «No fui yo»</h2>
+          @for (a of alertas(); track a.id) {
+            <div class="flex flex-wrap items-center justify-between gap-2" data-testid="aviso">
+              <p class="text-sm">
+                <b>{{ a.asistente?.nombre }} · {{ a.asistente?.codigo }}</b> ·
+                {{ a.queNoReconoce ?? 'No reconoce algo' }} · {{ hora(a.at) }}
+                @if (a.prioridad === 'alta') {
+                  <px-chip variante="peligro">Esperando</px-chip>
+                }
+                @if (a.estado === 'derivada') {
+                  <px-chip variante="puntos">Pasado a coorganizador</px-chip>
+                }
+              </p>
+              @if (a.estado === 'atendiendo' && a.atendidaPor && a.id !== alertaActual()?.id) {
+                <span class="text-muted text-sm">Lo está atendiendo {{ a.atendidaPor }}</span>
+              } @else if (a.estado !== 'derivada' || puedeDeshacer()) {
+                <button pxBoton [chico]="true" type="button" (click)="attend(a)">Atender</button>
+              }
+            </div>
+          }
+        </section>
       }
       @if (resumen()?.registrosRestantes !== null && resumen()?.registrosRestantes !== undefined) {
         <p class="text-muted text-sm">
@@ -75,13 +100,23 @@ const ESPERA_BUSQUEDA_MS = 250;
       }
 
       @switch (modo()) {
+        @case ('registrar') {
+          <adm-registro-puerta
+            [eventoId]="eventoId()"
+            [restantes]="resumen()?.registrosRestantes ?? null"
+            (registrada)="onRegistrada($event)"
+            (elegida)="open($event)"
+            (cancelado)="reset()"
+          />
+        }
         @case ('acceso') {
           @if (ficha(); as f) {
             <adm-acceso-puerta
               [ficha]="f"
               [zonaHoraria]="zona()"
               [avisoVinculado]="avisoVinculado()"
-              (listo)="reset()"
+              [alertaId]="revinculando()"
+              (listo)="afterAcceso()"
             />
           }
         }
@@ -111,8 +146,44 @@ const ESPERA_BUSQUEDA_MS = 250;
                   {{ describeMetodo(d.metodo) }}
                 </p>
               }
+              @if (alertaActual(); as alerta) {
+                <div
+                  class="bg-surface2 flex flex-col gap-2 rounded-lg p-3"
+                  role="group"
+                  aria-label="Atender el aviso"
+                >
+                  <p class="text-danger font-semibold">
+                    {{ alerta.queNoReconoce ?? 'No reconoce algo' }}
+                    {{ alerta.desde === 'anulado' ? '(desde el celular anulado)' : '' }}
+                  </p>
+                  <p class="text-sm">Compara el nombre con la persona antes de decidir.</p>
+                  <div class="flex flex-wrap gap-2">
+                    <button pxBoton [chico]="true" type="button" (click)="revincular(alerta)">
+                      Revincular
+                    </button>
+                    <button
+                      pxBoton="secundario"
+                      [chico]="true"
+                      type="button"
+                      (click)="descartando.set(true)"
+                    >
+                      Descartar
+                    </button>
+                    @if (esRegistrador()) {
+                      <button
+                        pxBoton="secundario"
+                        [chico]="true"
+                        type="button"
+                        (click)="derive(alerta)"
+                      >
+                        Pasar a un coorganizador
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
               @if (f.historial.length > 0) {
-                <details class="text-sm">
+                <details class="text-sm" [open]="alertaActual() !== null">
                   <summary class="cursor-pointer font-semibold">
                     Historial de vinculaciones ({{ f.historial.length }})
                   </summary>
@@ -156,7 +227,12 @@ const ESPERA_BUSQUEDA_MS = 250;
               }
               @if (f.estado !== 'cancelado') {
                 <div class="grid grid-cols-2 gap-2">
-                  <button pxBoton="secundario" type="button" (click)="setModo('acceso')">
+                  <button
+                    pxBoton="secundario"
+                    type="button"
+                    data-testid="generar-qr"
+                    (click)="setModo('acceso')"
+                  >
                     <px-icono nombre="scan" [tamano]="18" />{{
                       f.dispositivo ? 'Generar acceso nuevo' : 'Generar QR de asistente'
                     }}
@@ -212,6 +288,11 @@ const ESPERA_BUSQUEDA_MS = 250;
               </button>
             </div>
           }
+          @if (registroAbierto()) {
+            <button pxBoton="secundario" type="button" (click)="setModo('registrar')">
+              <px-icono nombre="plus" [tamano]="18" />Registrar a alguien nuevo
+            </button>
+          }
           <px-campo
             #busqueda="pxCampo"
             etiqueta="Nombre, código o correo"
@@ -263,6 +344,36 @@ const ESPERA_BUSQUEDA_MS = 250;
     </section>
 
     <pnl-dialogo
+      titulo="Descartar el aviso"
+      [abierto]="descartando()"
+      (cerrado)="descartando.set(false)"
+    >
+      <px-campo
+        #campoNota="pxCampo"
+        etiqueta="Nota"
+        ayuda="Por ejemplo: reconoce el cambio, era su tablet."
+      >
+        <textarea
+          [id]="campoNota.idControl"
+          [attr.aria-describedby]="campoNota.idDescripcion"
+          rows="3"
+          maxlength="500"
+          [value]="nota()"
+          (input)="nota.set($any($event.target).value)"
+        ></textarea>
+      </px-campo>
+      <button
+        pnlPie
+        pxBoton
+        type="button"
+        [deshabilitado]="nota().trim().length < 5"
+        (click)="discard()"
+      >
+        Descartar
+      </button>
+    </pnl-dialogo>
+
+    <pnl-dialogo
       titulo="Deshacer el check-in"
       [abierto]="deshaciendo()"
       (cerrado)="deshaciendo.set(false)"
@@ -312,6 +423,13 @@ export class PuertaPage {
   protected readonly motivo = signal('');
   /** El último `acceso.vinculado` en vivo, para **Vinculado ✓** (HU-302). */
   protected readonly avisoVinculado = signal<AvisoVinculado | null>(null);
+  /** HU-305: los *No fui yo* abiertos, el que se atiende y la nota al descartar. */
+  protected readonly alertas = signal<readonly AlertaPuerta[]>([]);
+  protected readonly alertaActual = signal<AlertaPuerta | null>(null);
+  protected readonly revinculando = signal<string | null>(null);
+  protected readonly descartando = signal(false);
+  protected readonly nota = signal('');
+  protected readonly esRegistrador = computed(() => this.contexto.rol() === 'registrador');
   /** Cómo se llegó a la ficha: el método del check-in. */
   private metodo: 'escaneo_entrada' | 'busqueda' = 'busqueda';
   private esperaBusqueda: ReturnType<typeof setTimeout> | undefined;
@@ -319,14 +437,27 @@ export class PuertaPage {
   private leyendo = false;
 
   protected readonly puedeDeshacer = computed(() => this.contexto.canDo('puntos.ajustar'));
+  /** HU-303: con el registro activo y cupo. */
+  protected readonly registroAbierto = computed(
+    () =>
+      this.actual.evento()?.reglas.registroPuertaActivo !== false &&
+      this.resumen()?.registrosRestantes !== 0,
+  );
   protected readonly eventoId = computed(() => this.actual.evento()?.id ?? '');
   protected readonly zona = computed(() => this.actual.evento()?.zonaHoraria ?? 'America/La_Paz');
 
   constructor() {
     void this.loadResumen();
+    void this.loadAlertas();
     const canal = inject(EnVivoService).connect(
       `/api/v1/eventos/${this.eventoId()}/en-vivo`,
-      ['asistencia.registrada', 'asistencia.anulada', 'alerta.creada', 'acceso.vinculado'],
+      [
+        'asistencia.registrada',
+        'asistencia.anulada',
+        'alerta.creada',
+        'alerta.actualizada',
+        'acceso.vinculado',
+      ],
       inject(DestroyRef),
     );
     for (const tipo of [
@@ -336,6 +467,9 @@ export class PuertaPage {
       'reiniciar',
     ]) {
       canal.on(tipo, () => void this.loadResumen());
+    }
+    for (const tipo of ['alerta.creada', 'alerta.actualizada', 'reiniciar']) {
+      canal.on(tipo, () => void this.loadAlertas());
     }
     canal.on('acceso.vinculado', (aviso) => {
       const datos = aviso.datos as Partial<AvisoVinculado> | null;
@@ -360,6 +494,8 @@ export class PuertaPage {
 
   protected reset(): void {
     clearTimeout(this.volver);
+    this.alertaActual.set(null);
+    this.revinculando.set(null);
     this.ficha.set(null);
     this.error.set(null);
     this.consulta.set('');
@@ -391,6 +527,82 @@ export class PuertaPage {
     } finally {
       this.leyendo = false;
     }
+  }
+
+  /** Tomar el aviso: se abre la ficha con el historial de dispositivos a la vista. */
+  protected async attend(alerta: AlertaPuerta): Promise<void> {
+    this.error.set(null);
+    try {
+      await this.api.attendAlerta(alerta.id);
+      this.alertaActual.set(alerta);
+      if (alerta.asistente) {
+        this.ficha.set(await this.api.getFicha(alerta.asistente.id));
+        this.modo.set('ficha');
+      }
+      void this.loadAlertas();
+    } catch (error) {
+      this.error.set(getMensajeError(error));
+      void this.loadAlertas();
+    }
+  }
+
+  /** Revincular: el acceso nuevo con el motivo ya elegido; el aviso se cierra al vincular. */
+  protected async revincular(alerta: AlertaPuerta): Promise<void> {
+    try {
+      await this.api.resolveAlerta(alerta.id, { resolucion: 'revincular' });
+      this.revinculando.set(alerta.id);
+      this.modo.set('acceso');
+    } catch (error) {
+      this.error.set(getMensajeError(error));
+    }
+  }
+
+  protected async discard(): Promise<void> {
+    const alerta = this.alertaActual();
+    if (!alerta) return;
+    try {
+      await this.api.resolveAlerta(alerta.id, {
+        resolucion: 'descartar',
+        nota: this.nota().trim(),
+      });
+      this.descartando.set(false);
+      this.nota.set('');
+      this.alertaActual.set(null);
+      void this.loadAlertas();
+    } catch (error) {
+      this.descartando.set(false);
+      this.error.set(getMensajeError(error));
+    }
+  }
+
+  protected async derive(alerta: AlertaPuerta): Promise<void> {
+    try {
+      await this.api.resolveAlerta(alerta.id, { resolucion: 'derivar' });
+      this.alertaActual.set(null);
+      void this.loadAlertas();
+    } catch (error) {
+      this.error.set(getMensajeError(error));
+    }
+  }
+
+  protected afterAcceso(): void {
+    this.reset();
+    void this.loadAlertas();
+  }
+
+  private async loadAlertas(): Promise<void> {
+    if (!this.eventoId()) return;
+    this.alertas.set(await this.api.listAlertas(this.eventoId()).catch(() => this.alertas()));
+  }
+
+  /** La persona nueva ya está presente: su ficha, con *Generar QR de asistente* a mano. */
+  protected onRegistrada(ficha: FichaPuerta): void {
+    this.ficha.set(ficha);
+    this.modo.set('ficha');
+    void this.loadResumen();
+    queueMicrotask(() =>
+      document.querySelector<HTMLElement>('[data-testid="generar-qr"]')?.focus(),
+    );
   }
 
   protected async open(asistenteId: string): Promise<void> {

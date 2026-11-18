@@ -12,6 +12,7 @@ export const esquemaGenerarAcceso = z.object({
     .object({
       tipo: z.enum(TIPOS_MOTIVO_REVINCULAR),
       texto: z.string().trim().max(300).optional(),
+      alertaId: z.uuid().optional(),
     })
     .refine((m) => m.tipo !== 'otro' || (m.texto?.length ?? 0) >= 5, {
       error: 'Cuenta el motivo (al menos 5 letras).',
@@ -19,6 +20,36 @@ export const esquemaGenerarAcceso = z.object({
     })
     .optional(),
 });
+
+/** HU-303: registrar a alguien que no estaba en la lista. El carnet llega con HU-320 y HU-321. */
+export const esquemaRegistroPuerta = z.object({
+  nombre: z.string().trim().min(2, { error: 'Escribe el nombre.' }).max(80),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(254)
+    .transform((valor) => (valor === '' ? undefined : valor))
+    .pipe(z.email({ error: 'Revisa el correo.' }).optional())
+    .optional(),
+  confirmarDuplicado: z.boolean().optional(),
+});
+
+/** HU-305: atender y resolver un *No fui yo*. */
+export const esquemaListarAlertas = z.object({
+  tipo: z.string().max(20).optional(),
+  estado: z.enum(['abierta', 'atendiendo', 'derivada', 'resuelta', 'descartada']).optional(),
+});
+
+export const esquemaResolverAlerta = z
+  .object({
+    resolucion: z.enum(['revincular', 'descartar', 'derivar']),
+    nota: z.string().trim().max(500).optional(),
+  })
+  .refine((r) => r.resolucion !== 'descartar' || (r.nota?.length ?? 0) >= 5, {
+    error: 'Cuenta por qué se descarta (al menos 5 letras).',
+    path: ['nota'],
+  });
 
 export const esquemaAnularCheckIn = z.object({
   motivo: z.string().trim().min(5, { error: 'Escribe el motivo (al menos 5 letras).' }).max(300),

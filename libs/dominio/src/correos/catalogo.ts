@@ -159,6 +159,20 @@ export const CORREOS = {
       'Si lo abres desde Gmail o WhatsApp y no funciona, cópialo y ábrelo en Chrome o Safari.',
     pie: 'Te llega este correo porque {organizacion} te inscribió en {evento}.',
   },
+
+  // ── Puerta (HU-303, V22) ───────────────────────────────────────────────────
+  // Es solo un aviso: no hay que confirmar nada (D35).
+  registro_puerta: {
+    prioridad: 3,
+    asunto: 'Te registraste en {evento}',
+    parrafos: [
+      'Hola, {nombre}.',
+      'Te registraste en **{evento}**, el {fecha} en {lugar}.',
+      'Tu código de asistente es **{codigo}**. Si en la puerta te lo piden, dilo así.',
+      'Es solo un aviso: no tienes que confirmar nada.',
+    ],
+    pie: 'Te llega este correo porque te registraste en la puerta de {evento} con esta dirección.',
+  },
 } as const satisfies Record<string, DefinicionCorreo>;
 
 export type TipoCorreo = keyof typeof CORREOS;

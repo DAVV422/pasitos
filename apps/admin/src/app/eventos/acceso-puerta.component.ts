@@ -144,6 +144,8 @@ export class AccesoPuertaComponent {
   readonly zonaHoraria = input('America/La_Paz');
   /** El último `acceso.vinculado` que llegó en vivo (lo escucha la página). */
   readonly avisoVinculado = input<AvisoVinculado | null>(null);
+  /** HU-305: el *No fui yo* que se cierra al vincular; el motivo ya va elegido. */
+  readonly alertaId = input<string | null>(null);
   readonly listo = output<void>();
 
   protected readonly paso = signal<Paso>('generando');
@@ -163,7 +165,10 @@ export class AccesoPuertaComponent {
   constructor() {
     // Con un celular activo, primero el motivo (HU-304); si no, el QR directo.
     queueMicrotask(() => {
-      if (this.ficha().dispositivo) this.paso.set('motivo');
+      if (this.alertaId()) {
+        this.tipoMotivo.set('se_vinculo_otra_persona');
+        void this.generate();
+      } else if (this.ficha().dispositivo) this.paso.set('motivo');
       else void this.generate();
     });
     effect(() => {
@@ -195,7 +200,13 @@ export class AccesoPuertaComponent {
       const texto = this.motivo().trim();
       const acceso = await this.api.createAcceso(
         this.ficha().id,
-        tipo ? { tipo, ...(tipo === 'otro' ? { texto } : {}) } : undefined,
+        tipo
+          ? {
+              tipo,
+              ...(tipo === 'otro' ? { texto } : {}),
+              ...(this.alertaId() ? { alertaId: this.alertaId() ?? undefined } : {}),
+            }
+          : undefined,
       );
       this.acceso.set(acceso);
       this.paso.set('mostrando');

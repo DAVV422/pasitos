@@ -139,6 +139,7 @@ export class DispositivoAppService {
       const avisos = await this.listAvisos(tx, contexto.asistenteId, [
         'abierta',
         'atendiendo',
+        'derivada',
         'resuelta',
         'descartada',
       ]);
@@ -189,6 +190,7 @@ export class DispositivoAppService {
         const [abierto] = await this.listAvisos(tx, contexto.asistenteId, [
           'abierta',
           'atendiendo',
+          'derivada',
         ]);
         if (abierto) {
           return {
@@ -210,7 +212,8 @@ export class DispositivoAppService {
             refId: datos.refId ?? null,
           },
           clave,
-          prioridad: 'alta',
+          // Sube a alta si nadie lo atiende en 10 minutos (HU-305 §2).
+          prioridad: 'normal',
         });
         const [creada] = await tx
           .select({ id: alertas.id, estado: alertas.estado })

@@ -154,6 +154,21 @@ export const CATALOGO_ERRORES = {
     title: 'Ya está presente',
     mensaje: 'Esta persona ya está presente.',
   },
+  ALERTA_YA_ATENDIDA: {
+    status: 409,
+    title: 'Aviso tomado',
+    mensaje: 'Otra persona ya está atendiendo este aviso.',
+  },
+  REGISTRO_PUERTA_CERRADO: {
+    status: 422,
+    title: 'Registro cerrado',
+    mensaje: 'El registro en la puerta está cerrado para este evento.',
+  },
+  LIMITE_REGISTRO_ALCANZADO: {
+    status: 422,
+    title: 'Límite de registros',
+    mensaje: 'Se alcanzó el límite de registros en puerta.',
+  },
   ASISTENTE_CANCELADO: {
     status: 422,
     title: 'Fuera de la lista',

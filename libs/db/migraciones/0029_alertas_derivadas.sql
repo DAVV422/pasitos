@@ -1,0 +1,2 @@
+ALTER TABLE "alertas" DROP CONSTRAINT "alertas_estado";--> statement-breakpoint
+ALTER TABLE "alertas" ADD CONSTRAINT "alertas_estado" CHECK ("alertas"."estado" in ('abierta', 'atendiendo', 'derivada', 'resuelta', 'descartada'));

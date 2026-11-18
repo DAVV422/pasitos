@@ -1,5 +1,6 @@
 import {
   actividades,
+  alertas,
   asistentes,
   operaciones,
   eventos,
@@ -47,6 +48,7 @@ export interface EventoDePrueba {
     readonly operaciones: string;
     readonly importaciones: string;
     readonly accesos: string;
+    readonly alertas: string;
   };
 }
 
@@ -159,6 +161,16 @@ export async function createEventoDePrueba(
     grupo: accesoId,
     expiraAt: new Date('2026-01-01T00:00:00Z'),
   });
+  // HU-305: un aviso No fui yo.
+  const alertaId = uuidv7();
+  await base.sistema.db.insert(alertas).values({
+    id: alertaId,
+    organizacionId,
+    eventoId,
+    tipo: 'no_fui_yo',
+    asistenteId,
+    clave: `prueba:${alertaId}`,
+  });
   return {
     organizacionId,
     eventoId,
@@ -177,6 +189,7 @@ export async function createEventoDePrueba(
       operaciones: exportacionId,
       importaciones: importacionId,
       accesos: accesoId,
+      alertas: alertaId,
     },
   };
 }

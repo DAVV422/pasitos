@@ -6,9 +6,12 @@ import { AuthModule } from '../auth/auth.module';
 import { RELOJ, type Reloj } from '../auth/sesiones.service';
 import { MovimientosModule } from '../movimientos/movimientos.module';
 import { AccesosPuertaService } from './accesos-puerta';
+import { AlertasPuertaService } from './alertas-puerta';
 import { CheckInService } from './check-in.service';
 import { PuertaController } from './puerta.controller';
+import { CorreosService } from '@pasitos/correos';
 import { PuertaService } from './puerta.service';
+import { RegistroPuertaService } from './registro-puerta';
 
 /** La puerta: check-in (HU-301) y QR de asistente (HU-302). Otros módulos reutilizan `CheckInService`. */
 @Module({
@@ -25,6 +28,24 @@ import { PuertaService } from './puerta.service';
       inject: [DbService, CheckInService, RELOJ],
       useFactory: (db: DbService, checkIn: CheckInService, reloj: Reloj) =>
         new PuertaService(db.db, checkIn, reloj),
+    },
+    {
+      provide: RegistroPuertaService,
+      inject: [DbService, CheckInService, CorreosService, PuertaService],
+      useFactory: (
+        db: DbService,
+        checkIn: CheckInService,
+        correos: CorreosService,
+        puerta: PuertaService,
+      ) =>
+        new RegistroPuertaService(db.db, checkIn, correos, (tx, contexto, id) =>
+          puerta.buildFicha(tx, contexto, id),
+        ),
+    },
+    {
+      provide: AlertasPuertaService,
+      inject: [DbService, RELOJ],
+      useFactory: (db: DbService, reloj: Reloj) => new AlertasPuertaService(db.db, reloj),
     },
     {
       provide: AccesosPuertaService,

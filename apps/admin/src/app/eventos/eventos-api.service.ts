@@ -113,6 +113,8 @@ export interface AsistentePanel {
   readonly estado: 'invitado' | 'registrado' | 'presente' | 'cancelado';
   readonly emailEstado: 'sin_correo' | 'pendiente' | 'en_cola' | 'enviado' | 'rebotado';
   readonly origen: 'lista' | 'csv' | 'puerta';
+  /** HU-303: quién lo registró en la puerta (*"Luis C."*). */
+  readonly registradoPor?: string | null;
   /** HU-211: la invitación vigente; `saleEl` si su correo está en cola. */
   readonly invitacion: { readonly estado: string; readonly saleEl: string | null } | null;
 }
@@ -435,7 +437,13 @@ export class EventosApi {
 
   async searchAsistentes(
     eventoId: string,
-    filtros: { q?: string; estado?: string; emailEstado?: string; cursor?: string | null },
+    filtros: {
+      q?: string;
+      estado?: string;
+      emailEstado?: string;
+      origen?: string;
+      cursor?: string | null;
+    },
   ): Promise<Pagina<AsistentePanel>> {
     let params = new HttpParams().set('limit', 100);
     for (const [clave, valor] of Object.entries(filtros)) {
