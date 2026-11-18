@@ -1,6 +1,15 @@
 import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
-import { asistentes, invitaciones, outbox, vinculaciones, withOrganizacion } from '@pasitos/db';
+import {
+  alertas,
+  asistentes,
+  dispositivos,
+  invitaciones,
+  outbox,
+  registrosTecnicos,
+  vinculaciones,
+  withOrganizacion,
+} from '@pasitos/db';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import { VERSION_TERMINOS } from '@pasitos/dominio';
 import {
@@ -35,7 +44,7 @@ class PruebaFirmaController {
   constructor(@Inject(DbService) private readonly db: DbService) {}
 
   @Post()
-  @Asistente({ firmado: true })
+  @Asistente({ firmado: true, momento: 'reclamo' })
   @HttpCode(201)
   post(
     @AsistenteActual() asistente: ContextoAsistente,
@@ -130,7 +139,12 @@ describe('Vincular el celular (HU-306)', () => {
     });
   }
 
-  async function vincular(token: string, navegador: Navegador, agente = CHROME_ANDROID) {
+  async function vincular(
+    token: string,
+    navegador: Navegador,
+    agente = CHROME_ANDROID,
+    senales?: Record<string, string | number | boolean | null>,
+  ) {
     const respuesta = await api.app.inject({
       method: 'POST',
       url: '/api/v1/acceso/vincular',
@@ -141,6 +155,7 @@ describe('Vincular el celular (HU-306)', () => {
         token,
         llavePublica: navegador.llavePublica,
         deviceId: navegador.deviceId,
+        ...(senales ? { senales } : {}),
         terminos: { version: VERSION_TERMINOS, privacidad: VERSION_TERMINOS },
       },
     });
@@ -356,6 +371,155 @@ describe('Vincular el celular (HU-306)', () => {
         payload: '{}',
       });
       expect(respuesta.json().code).toBe('VALIDACION');
+    });
+  });
+
+  describe('registro técnico y alertas (HU-307)', () => {
+    const SENALES = {
+      plataforma: 'Android',
+      modelo: 'SM-A145M',
+      pantalla: '412x915@2.63',
+      zonaHoraria: 'America/La_Paz',
+      idioma: 'es-BO',
+      nucleos: 8,
+      memoria: 4,
+      tactil: true,
+      navegador: 'chrome',
+      webdriver: false,
+    };
+
+    function getRegistros(asistenteId: string) {
+      return base.sistema.db
+        .select()
+        .from(registrosTecnicos)
+        .where(eq(registrosTecnicos.asistenteId, asistenteId))
+        .orderBy(registrosTecnicos.id);
+    }
+
+    function getAlertas(tipo: string) {
+      return base.sistema.db
+        .select()
+        .from(alertas)
+        .where(and(eq(alertas.eventoId, evento.eventoId), eq(alertas.tipo, tipo)))
+        .orderBy(alertas.id);
+    }
+
+    it('vincular guarda las señales, la huella y el modelo legible; la respuesta no los trae', async () => {
+      const { asistenteId, token } = await newInvitado('Rosa Señales');
+      const celular = await newNavegador();
+      const respuesta = await vincular(token, celular, CHROME_ANDROID, SENALES);
+      expect(respuesta.statusCode).toBe(201);
+      expect(respuesta.body).not.toMatch(/huella|senales|"ip"|10\.8\./);
+
+      const [registro] = await getRegistros(asistenteId);
+      expect(registro).toMatchObject({
+        momento: 'vinculacion',
+        resultado: 'aceptado',
+        senales: SENALES,
+        userAgent: CHROME_ANDROID,
+      });
+      expect(registro?.ip).toMatch(/^10\.8\./);
+      const [dispositivo] = await base.sistema.db
+        .select()
+        .from(dispositivos)
+        .where(eq(dispositivos.id, registro?.dispositivoId ?? ''));
+      expect(dispositivo?.modelo).toBe('SM-A145M · Chrome');
+      expect(dispositivo?.huella).toHaveLength(32);
+    });
+
+    it('A1: dos navegadores del mismo celular en dos asistentes, una sola alerta por par', async () => {
+      const antes = (await getAlertas('A1')).length;
+      const primera = await newInvitado('Ana Huella');
+      const segunda = await newInvitado('Beto Huella');
+      const senales = { ...SENALES, modelo: 'SM-A556E', pantalla: '384x854@2.81' };
+      const uno = await vincular(primera.token, await newNavegador(), CHROME_ANDROID, senales);
+      expect(uno.statusCode).toBe(201);
+      const dos = await vincular(segunda.token, await newNavegador(), CHROME_ANDROID, senales);
+      expect(dos.statusCode).toBe(201);
+      // El segundo vuelve a vincular con otro navegador: el par ya tiene su alerta.
+      const otraVez = await newInvitacion(segunda.asistenteId);
+      const tres = await vincular(otraVez, await newNavegador(), CHROME_ANDROID, senales);
+      expect(tres.statusCode).toBe(201);
+
+      const nuevas = (await getAlertas('A1')).slice(antes);
+      expect(nuevas).toHaveLength(1);
+      expect(nuevas[0]).toMatchObject({
+        asistenteId: segunda.asistenteId,
+        datos: { otroAsistenteId: primera.asistenteId },
+        estado: 'abierta',
+      });
+      const avisos = await base.sistema.db
+        .select({ payload: outbox.payload })
+        .from(outbox)
+        .where(eq(outbox.tipo, 'alerta.creada'));
+      expect(avisos.map((a) => (a.payload as { alertaId: string }).alertaId)).toContain(
+        nuevas[0]?.id,
+      );
+    });
+
+    it('A2: el mismo navegador intentando otra inscripción queda registrado y alerta', async () => {
+      const mio = await newInvitado('Caro Navegador');
+      const ajeno = await newInvitado('Dani Navegador');
+      const celular = await newNavegador();
+      expect((await vincular(mio.token, celular, CHROME_ANDROID, SENALES)).statusCode).toBe(201);
+      const rechazo = await vincular(ajeno.token, celular, CHROME_ANDROID, SENALES);
+      expect(rechazo.json().code).toBe('DISPOSITIVO_YA_VINCULADO');
+
+      const [registro] = await getRegistros(ajeno.asistenteId);
+      expect(registro).toMatchObject({
+        momento: 'vinculacion',
+        resultado: 'rechazado',
+        motivo: 'DISPOSITIVO_YA_VINCULADO',
+      });
+      const a2 = (await getAlertas('A2')).filter((a) => a.asistenteId === ajeno.asistenteId);
+      expect(a2).toHaveLength(1);
+      expect(a2[0]?.dispositivoId).toBe(registro?.dispositivoId);
+    });
+
+    it('el enlace usado en otro celular queda como intento fallido', async () => {
+      const { asistenteId, token } = await newInvitado('Eva Intento');
+      expect((await vincular(token, await newNavegador())).statusCode).toBe(201);
+      expect((await vincular(token, await newNavegador())).json().code).toBe('INVITACION_YA_USADA');
+      const registros = await getRegistros(asistenteId);
+      expect(registros.map((r) => [r.momento, r.resultado, r.motivo])).toEqual([
+        ['vinculacion', 'aceptado', null],
+        ['intento_fallido', 'rechazado', 'INVITACION_YA_USADA'],
+      ]);
+    });
+
+    it('A8: un navegador automatizado alerta pero vincula', async () => {
+      const { asistenteId, token } = await newInvitado('Fede Robot');
+      const respuesta = await vincular(token, await newNavegador(), CHROME_ANDROID, {
+        ...SENALES,
+        webdriver: true,
+      });
+      expect(respuesta.statusCode).toBe(201);
+      const [a8] = (await getAlertas('A8')).filter((a) => a.asistenteId === asistenteId);
+      expect(a8?.datos).toEqual({ motivos: ['webdriver'] });
+    });
+
+    it('cada pedido firmado deja su registro con la diferencia de reloj y la latencia, también si falla', async () => {
+      const { asistenteId, token } = await newInvitado('Gabi Reclamo');
+      const celular = await newNavegador();
+      expect((await vincular(token, celular)).statusCode).toBe(201);
+      const ok = await firmado(
+        celular,
+        { qr: 'a' },
+        { timestamp: api.reloj.now().getTime() - 1_500 },
+      );
+      expect(ok.statusCode).toBe(201);
+      const otro = await newNavegador();
+      const mala = await firmado(celular, { qr: 'b' }, { firmarCon: otro.par.privateKey });
+      expect(mala.json().code).toBe('FIRMA_INVALIDA');
+
+      const reclamos = (await getRegistros(asistenteId)).filter((r) => r.momento === 'reclamo');
+      expect(reclamos.map((r) => [r.resultado, r.motivo])).toEqual([
+        ['aceptado', null],
+        ['rechazado', 'FIRMA_INVALIDA'],
+      ]);
+      expect(reclamos[0]?.diferenciaRelojMs).toBe(1_500);
+      expect(reclamos[0]?.latenciaMs).toBeGreaterThanOrEqual(0);
+      expect(reclamos[1]?.latenciaMs).toBeNull();
     });
   });
 

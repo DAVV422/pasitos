@@ -35,6 +35,7 @@ async function bootstrap(): Promise<void> {
     envios: composicion.envios,
     apertura: composicion.apertura,
     purga: composicion.purga,
+    borrado: composicion.borrado,
     operaciones: composicion.operaciones,
   });
   logger.log(

@@ -12,7 +12,14 @@ import {
   type Db,
   type Tx,
 } from '@pasitos/db';
-import { AppError, isNavegadorSoportado, VERSION_TERMINOS } from '@pasitos/dominio';
+import {
+  AppError,
+  describeModelo,
+  getMotivosAutomatizado,
+  isNavegadorSoportado,
+  type SenalesDispositivo,
+  VERSION_TERMINOS,
+} from '@pasitos/dominio';
 import type { TipoAcceso } from '@pasitos/dominio';
 import type { DatosVincular } from '@pasitos/dominio/esquemas';
 import { toLlaveCruda } from '@pasitos/firmas';
@@ -24,6 +31,7 @@ import type { Reloj } from '../auth/sesiones.service';
 import { getUrlArchivo } from '../archivos/archivos.service';
 import type { AccesoSistema } from './acceso-sistema';
 import { getEstadoApp, type EstadoApp } from './estado-app';
+import { getHuella, type RegistroTecnicoService } from './registro-tecnico';
 import { getVencimientoSesion, type SesionesAsistenteService } from './sesiones-asistente';
 
 /** Lo que muestra la bienvenida antes de tocar *Entrar* (`GET /acceso/:tipo/:token`). */
@@ -70,6 +78,7 @@ export class AccesoService {
     private readonly db: Db,
     private readonly sistema: AccesoSistema,
     private readonly sesiones: SesionesAsistenteService,
+    private readonly registro: RegistroTecnicoService,
     private readonly reloj: Reloj,
   ) {
     const ahora = () => this.reloj.now().getTime();
@@ -128,13 +137,72 @@ export class AccesoService {
         ],
       });
     }
-    const llave = Buffer.from(toLlaveCruda(checkPuntoP256(datos.llavePublica)));
+    checkPuntoP256(datos.llavePublica);
     const organizacionId = await this.findOrganizacion(datos.tipo, datos.token);
     const ahora = this.reloj.now();
-    const modelo = describeDispositivo(userAgent);
+    const senales = datos.senales ?? null;
+    const modelo = describeModelo(datos.senales, describeDispositivo(userAgent));
+    const huella = getHuella(datos.senales);
+    const tecnico = { ip, userAgent, senales };
+    // Lo que se sabe antes de fallar, para registrar el rechazo aparte (HU-307 §4).
+    const visto: { eventoId?: string; asistenteId?: string; dispositivoId?: string } = {};
 
-    return withOrganizacion(this.db, organizacionId, async (tx) => {
-      const invitacion = await this.lockInvitacion(tx, datos.token, true);
+    try {
+      return await withOrganizacion(this.db, organizacionId, async (tx) => {
+        const invitacion = await this.lockInvitacion(tx, datos.token, true);
+        visto.eventoId = invitacion.eventoId;
+        visto.asistenteId = invitacion.asistenteId;
+        const resultado = await this.link(tx, {
+          datos,
+          invitacion,
+          organizacionId,
+          ahora,
+          modelo,
+          huella,
+          visto,
+        });
+        await this.registro.record(tx, organizacionId, {
+          ...tecnico,
+          eventoId: invitacion.eventoId,
+          asistenteId: invitacion.asistenteId,
+          dispositivoId: resultado.dispositivoId,
+          momento: 'vinculacion',
+          resultado: 'aceptado',
+        });
+        await this.raiseAlertasDeVinculacion(tx, {
+          organizacionId,
+          eventoId: invitacion.eventoId,
+          asistenteId: invitacion.asistenteId,
+          dispositivoId: resultado.dispositivoId,
+          huella,
+          motivosA8: getMotivosAutomatizado(datos.senales),
+        });
+        return resultado.vinculado;
+      });
+    } catch (error) {
+      if (error instanceof AppError && visto.eventoId) {
+        await this.recordRechazo(organizacionId, error.code, { ...tecnico, ...visto });
+      }
+      throw error;
+    }
+  }
+
+  /** Los pasos de vincular, dentro de la transacción. */
+  private async link(
+    tx: Tx,
+    paso: {
+      datos: DatosVincular;
+      invitacion: InvitacionBloqueada;
+      organizacionId: string;
+      ahora: Date;
+      modelo: string;
+      huella: Buffer | null;
+      visto: { dispositivoId?: string };
+    },
+  ): Promise<{ vinculado: Vinculado; dispositivoId: string }> {
+    const { datos, invitacion, organizacionId, ahora, modelo } = paso;
+    const llave = Buffer.from(toLlaveCruda(datos.llavePublica));
+    {
       const { evento, asistente } = await this.getEventoYAsistente(tx, invitacion);
       const deviceIdHash = hashDeviceId(datos.deviceId);
 
@@ -150,6 +218,9 @@ export class AccesoService {
           and(eq(dispositivos.eventoId, evento.id), eq(dispositivos.deviceIdHash, deviceIdHash)),
         )
         .for('update');
+      if (existente) {
+        paso.visto.dispositivoId = existente.id;
+      }
 
       // El enlace ya se usó: solo vuelve a entrar el mismo navegador (perdió la cookie).
       if (invitacion.estado === 'usada' && (!existente || activa?.dispositivoId !== existente.id)) {
@@ -164,6 +235,7 @@ export class AccesoService {
         deviceIdHash,
         llave,
         modelo,
+        huella: paso.huella,
         borrarAt: getVencimientoSesion(evento.finAt),
       });
 
@@ -229,8 +301,78 @@ export class AccesoService {
         expiraAt,
         modelo,
       });
-      return { sesion, expiraAt, estado: await getEstadoApp(tx, asistente.id) };
-    });
+      return {
+        vinculado: { sesion, expiraAt, estado: await getEstadoApp(tx, asistente.id) },
+        dispositivoId,
+      };
+    }
+  }
+
+  /** A1 y A8 al vincular (HU-307 §5). Solo avisan: la vinculación sigue. */
+  private async raiseAlertasDeVinculacion(
+    tx: Tx,
+    datos: {
+      organizacionId: string;
+      eventoId: string;
+      asistenteId: string;
+      dispositivoId: string;
+      huella: Buffer | null;
+      motivosA8: string[];
+    },
+  ): Promise<void> {
+    const { organizacionId, huella, motivosA8, ...ids } = datos;
+    if (huella) {
+      await this.registro.checkHuellaRepetida(tx, organizacionId, { ...ids, huella });
+    }
+    if (motivosA8.length > 0) {
+      await this.registro.raiseAlerta(tx, organizacionId, {
+        ...ids,
+        tipo: 'A8',
+        datos: { motivos: motivosA8 },
+        clave: `A8:${ids.dispositivoId}`,
+      });
+    }
+  }
+
+  /**
+   * El rechazo queda registrado aunque la transacción se deshaga. El enlace usado en otro
+   * celular es un *intento fallido*; el navegador que ya fue de otra persona crea una A2.
+   */
+  private async recordRechazo(
+    organizacionId: string,
+    codigo: string,
+    datos: {
+      eventoId?: string;
+      asistenteId?: string;
+      dispositivoId?: string;
+      ip: string;
+      userAgent: string;
+      senales: SenalesDispositivo | null;
+    },
+  ): Promise<void> {
+    const { eventoId, ...resto } = datos;
+    if (!eventoId) return;
+    const a2 =
+      codigo === 'DISPOSITIVO_YA_VINCULADO' && datos.dispositivoId && datos.asistenteId
+        ? {
+            eventoId,
+            tipo: 'A2' as const,
+            asistenteId: datos.asistenteId,
+            dispositivoId: datos.dispositivoId,
+            clave: `A2:${datos.dispositivoId}:${datos.asistenteId}`,
+          }
+        : undefined;
+    await this.registro.recordAparte(
+      organizacionId,
+      {
+        ...resto,
+        eventoId,
+        momento: codigo === 'INVITACION_YA_USADA' ? 'intento_fallido' : 'vinculacion',
+        resultado: 'rechazado',
+        motivo: codigo,
+      },
+      a2,
+    );
   }
 
   // ── Pasos ───────────────────────────────────────────────────────────────
@@ -337,6 +479,7 @@ export class AccesoService {
       deviceIdHash: Buffer;
       llave: Buffer;
       modelo: string;
+      huella: Buffer | null;
       borrarAt: Date;
     },
   ): Promise<string> {
@@ -356,7 +499,7 @@ export class AccesoService {
       }
       await tx
         .update(dispositivos)
-        .set({ llavePublica: datos.llave, modelo: datos.modelo })
+        .set({ llavePublica: datos.llave, modelo: datos.modelo, huella: datos.huella })
         .where(eq(dispositivos.id, datos.existente));
       return datos.existente;
     }
@@ -367,6 +510,7 @@ export class AccesoService {
       eventoId: datos.eventoId,
       deviceIdHash: datos.deviceIdHash,
       llavePublica: datos.llave,
+      huella: datos.huella,
       modelo: datos.modelo,
       borrarAt: datos.borrarAt,
     });

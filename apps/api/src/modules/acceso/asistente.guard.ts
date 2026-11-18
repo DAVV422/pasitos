@@ -9,6 +9,7 @@ import {
   type RequestConAsistente,
 } from '../../common/sesion/asistente';
 import type { Reloj } from '../auth/sesiones.service';
+import type { RegistroTecnicoService } from './registro-tecnico';
 import { COOKIE_ASISTENTE, type SesionesAsistenteService } from './sesiones-asistente';
 
 /** La hora del celular puede diferir de la del servidor hasta 5 minutos (API §2.1). */
@@ -19,6 +20,25 @@ const MAXIMO_LLAVES = 5_000;
 function header(request: RequestConAsistente, nombre: string): string | undefined {
   const valor = request.headers[nombre.toLowerCase()];
   return Array.isArray(valor) ? valor[0] : valor;
+}
+
+/** Lo técnico de un pedido del asistente, para el registro de HU-307. */
+export function getTecnicoDelPedido(
+  request: RequestConAsistente,
+  asistente: { eventoId: string; asistenteId: string; dispositivoId: string },
+) {
+  const timestamp = Number(header(request, 'X-Pasitos-Timestamp'));
+  return {
+    eventoId: asistente.eventoId,
+    asistenteId: asistente.asistenteId,
+    dispositivoId: asistente.dispositivoId,
+    ip: request.ip,
+    userAgent: header(request, 'User-Agent') ?? null,
+    diferenciaRelojMs:
+      Number.isFinite(timestamp) && request.llegadaMs !== undefined
+        ? request.llegadaMs - timestamp
+        : null,
+  };
 }
 
 /**
@@ -33,6 +53,7 @@ export class AsistenteGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly sesiones: SesionesAsistenteService,
+    private readonly registro: RegistroTecnicoService,
     private readonly reloj: Reloj,
   ) {}
 
@@ -45,11 +66,25 @@ export class AsistenteGuard implements CanActivate {
       return true;
     }
     const request = ejecucion.switchToHttp().getRequest<RequestConAsistente>();
+    request.llegadaMs = this.reloj.now().getTime();
     const sesion = await this.sesiones.authenticate(request.cookies[COOKIE_ASISTENTE]);
     const { llavePublica, ...contexto } = sesion;
     request.asistente = contexto;
     if (opciones.firmado) {
-      request.firma = await this.verifyFirma(request, sesion.dispositivoId, llavePublica);
+      try {
+        request.firma = await this.verifyFirma(request, sesion.dispositivoId, llavePublica);
+      } catch (error) {
+        // HU-307 §4: la firma o la hora rechazadas también quedan registradas.
+        if (opciones.momento && error instanceof AppError) {
+          await this.registro.recordAparte(contexto.organizacionId, {
+            ...getTecnicoDelPedido(request, contexto),
+            momento: opciones.momento,
+            resultado: 'rechazado',
+            motivo: error.code,
+          });
+        }
+        throw error;
+      }
     }
     return true;
   }

@@ -152,3 +152,89 @@ export const idempotencia = pgTable(
   },
   (t) => [primaryKey({ columns: [t.actor, t.clave] }), index('idempotencia_vieja').on(t.createdAt)],
 );
+
+/**
+ * Lo técnico de cada momento sensible (HU-307, Acceso §6): vincular, reclamar, canjear, enviar una
+ * foto y los intentos fallidos. Solo para detectar trampas: el equipo nunca ve la IP ni las
+ * señales crudas. Se borra a los 30 días del cierre (`borrar_at`).
+ */
+export const registrosTecnicos = pgTable(
+  'registros_tecnicos',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+    dispositivoId: uuid('dispositivo_id').references(() => dispositivos.id),
+    asistenteId: uuid('asistente_id').references(() => asistentes.id),
+    momento: text('momento').notNull(),
+    resultado: text('resultado').notNull(),
+    motivo: text('motivo'),
+    ip: text('ip'),
+    // Proveedor de la red (ASN), si el proxy lo manda.
+    red: text('red'),
+    userAgent: text('user_agent'),
+    senales: jsonb('senales'),
+    diferenciaRelojMs: integer('diferencia_reloj_ms'),
+    latenciaMs: integer('latencia_ms'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    borrarAt: timestamp('borrar_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    check(
+      'registros_tecnicos_momento',
+      sql`${t.momento} in ('vinculacion', 'reclamo', 'canje', 'foto', 'intento_fallido')`,
+    ),
+    check('registros_tecnicos_resultado', sql`${t.resultado} in ('aceptado', 'rechazado')`),
+    index('registros_tecnicos_evento').on(t.eventoId, t.createdAt),
+    index('registros_tecnicos_dispositivo').on(t.dispositivoId),
+    index('registros_tecnicos_borrar').on(t.borrarAt),
+  ],
+);
+
+/**
+ * Alertas de trampa del evento (HU-307 y HU-318, Acceso §6.2): A1…A11 y los *No fui yo*. **Solo
+ * avisan, nunca bloquean.** `datos` dice con qué se cruzó (ids, nunca la IP ni la huella).
+ */
+export const alertas = pgTable(
+  'alertas',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+    tipo: text('tipo').notNull(),
+    asistenteId: uuid('asistente_id').references(() => asistentes.id),
+    dispositivoId: uuid('dispositivo_id').references(() => dispositivos.id),
+    datos: jsonb('datos').notNull().default({}),
+    // Una misma situación no repite la alerta (por ejemplo, el par de asistentes de una A1).
+    clave: text('clave'),
+    prioridad: text('prioridad').notNull().default('normal'),
+    estado: text('estado').notNull().default('abierta'),
+    atendidaPor: uuid('atendida_por').references(() => usuarios.id),
+    atendidaAt: timestamp('atendida_at', { withTimezone: true }),
+    resolucion: text('resolucion'),
+    nota: text('nota'),
+    resueltaAt: timestamp('resuelta_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      'alertas_tipo',
+      sql`${t.tipo} in ('A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'no_fui_yo')`,
+    ),
+    check('alertas_prioridad', sql`${t.prioridad} in ('normal', 'alta')`),
+    check(
+      'alertas_estado',
+      sql`${t.estado} in ('abierta', 'atendiendo', 'resuelta', 'descartada')`,
+    ),
+    uniqueIndex('alertas_clave').on(t.eventoId, t.clave),
+    index('alertas_evento').on(t.eventoId, t.estado, t.createdAt),
+  ],
+);

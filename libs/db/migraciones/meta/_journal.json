@@ -176,6 +176,13 @@
       "when": 1794974939582,
       "tag": "0024_acceso_asistente",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794994346790,
+      "tag": "0025_registro_tecnico",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { BorradoDispositivosService } from './acceso/borrado-dispositivos.service';
 import { buildCifrador, createConexion, type ConexionDb } from '@pasitos/db';
 import { RpcStellar, TransaccionesStellarRepository, type StellarPort } from '@pasitos/stellar';
 import { AlertasEnLogs } from './comun/alertas-operacion';
@@ -27,6 +28,7 @@ export interface Composicion {
   readonly envios: EnviosCorreoService;
   readonly apertura: AperturaEventosService;
   readonly purga: PurgaArchivosService;
+  readonly borrado: BorradoDispositivosService;
   readonly operaciones: OperacionesTrabajoService;
 }
 
@@ -119,6 +121,7 @@ export function buildComposicion(
     repositorio,
     envios,
     apertura,
+    borrado: new BorradoDispositivosService(conexion.db, reloj),
     purga: new PurgaArchivosService(conexion.db, config.ARCHIVOS_DIR, reloj),
     operaciones: new OperacionesTrabajoService(conexion.db, config.ARCHIVOS_DIR, reloj),
   };

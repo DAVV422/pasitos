@@ -4,6 +4,7 @@ import type { PgBoss } from 'pg-boss';
 import type { Db } from '@pasitos/db';
 import type { ContratoService } from '../contrato/contrato.service';
 import type { PurgaArchivosService } from '../archivos/purga.service';
+import type { BorradoDispositivosService } from '../acceso/borrado-dispositivos.service';
 import type { EnviosCorreoService } from '../correos/envios.service';
 import { OutboxService, type AperturaEventosService } from '../eventos/outbox.service';
 import type { CostoRedService } from '../costo/costo-red.service';
@@ -18,6 +19,7 @@ export const COLA_CORREOS = 'send-correos';
 export const COLA_APERTURA = 'open-eventos';
 export const COLA_PURGA_ARCHIVOS = 'purge-archivos';
 export const COLA_PURGA_OUTBOX = 'purge-outbox';
+export const COLA_BORRADO_DISPOSITIVOS = 'borrar-dispositivos';
 /** El procesador de outbox corre cada 5 s (pg-boss programa por minuto: va con un intervalo). */
 export const OUTBOX_CADA_MS = 5_000;
 /** Importar y exportar invitados (HU-210): la vista previa tiene que llegar en segundos. */
@@ -98,6 +100,7 @@ export interface DependenciasColas {
   readonly envios: EnviosCorreoService;
   readonly apertura: AperturaEventosService;
   readonly purga: PurgaArchivosService;
+  readonly borrado: BorradoDispositivosService;
   readonly operaciones: OperacionesTrabajoService;
 }
 
@@ -111,6 +114,7 @@ export async function startColas({
   envios,
   apertura,
   purga,
+  borrado,
   operaciones,
 }: DependenciasColas): Promise<() => void> {
   const logger = new Logger('Colas');
@@ -121,6 +125,13 @@ export async function startColas({
   await boss.createQueue(COLA_APERTURA);
   await boss.createQueue(COLA_PURGA_ARCHIVOS);
   await boss.createQueue(COLA_PURGA_OUTBOX);
+  await boss.createQueue(COLA_BORRADO_DISPOSITIVOS);
+
+  // HU-307 §7: lo técnico de los dispositivos, 30 días después del cierre. A las 03:00 de Bolivia.
+  await boss.schedule(COLA_BORRADO_DISPOSITIVOS, '0 7 * * *');
+  await boss.work(COLA_BORRADO_DISPOSITIVOS, { localConcurrency: 1 }, async () => {
+    logger.log(await borrado.deleteVencidos(), 'Datos técnicos vencidos borrados');
+  });
 
   // HU-214 §7: cada día a las 04:00 de Bolivia (08:00 UTC; Bolivia no tiene horario de verano).
   await boss.schedule(COLA_PURGA_ARCHIVOS, '0 8 * * *');

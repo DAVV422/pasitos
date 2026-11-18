@@ -10,6 +10,11 @@ export interface OpcionesAsistente {
    * celular (±5 min) y la `Idempotency-Key` (API §2.1, HU-306 §4).
    */
   readonly firmado?: boolean;
+  /**
+   * Momento sensible (HU-307 §4): cada pedido, aceptado o rechazado, deja su registro técnico
+   * con la diferencia de reloj y la latencia.
+   */
+  readonly momento?: 'reclamo' | 'canje' | 'foto';
 }
 
 /** Ruta del asistente vinculado (`/app/*`): sesión `px_asistente`, no la del equipo. */
@@ -42,6 +47,8 @@ export type RequestConAsistente = FastifyRequest & {
   firma?: FirmaVerificada;
   /** El cuerpo tal como llegó (`rawBody: true` en la app), para el hash firmado. */
   rawBody?: Buffer;
+  /** Cuándo llegó, por el reloj del servidor (para la latencia y la diferencia de reloj). */
+  llegadaMs?: number;
 };
 
 /** El asistente de la sesión, en el controlador. */

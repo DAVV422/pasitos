@@ -19,6 +19,7 @@ import {
   ErrorApi,
   getDeviceId,
   getLlavePublicaAsistente,
+  getSenales,
   isPosibleIncognito,
   requestPersistencia,
 } from '@pasitos/web-core';
@@ -184,16 +185,18 @@ export class AccesoPage implements OnInit {
     this.entrando.set(true);
     this.error.set(null);
     try {
-      const [deviceId, llavePublica] = await Promise.all([
+      void requestPersistencia();
+      const [deviceId, llavePublica, senales] = await Promise.all([
         getDeviceId(),
         getLlavePublicaAsistente(),
+        getSenales().catch(() => undefined),
       ]);
-      void requestPersistencia();
       const estado = await this.api.vincular({
         tipo,
         token: this.token(),
         deviceId,
         llavePublica,
+        ...(senales ? { senales } : {}),
         terminos: acceso.terminos,
       });
       this.sesion.set(estado);

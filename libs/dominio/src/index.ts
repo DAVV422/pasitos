@@ -12,3 +12,4 @@ export * from './archivos/propositos';
 export * from './terminales/conexion';
 export * from './acceso/navegador';
 export * from './acceso/tipos';
+export * from './acceso/senales';
