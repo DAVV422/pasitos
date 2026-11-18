@@ -1,5 +1,6 @@
-import { and, eq, lt } from 'drizzle-orm';
-import { alertas, outbox, type Db } from '@pasitos/db';
+import { and, count, desc, eq, gte, inArray, lt, lte } from 'drizzle-orm';
+import { alertas, escaneos, eventos, outbox, qrEmitidos, type Db } from '@pasitos/db';
+import { getVentana, isA6, UMBRALES_ALERTAS } from '@pasitos/dominio';
 import { uuidv7 } from 'uuidv7';
 import type { Reloj } from '../comun/reloj';
 
@@ -49,5 +50,83 @@ export class AlertasDiferidasService {
       }
       return subidas.length;
     });
+  }
+
+  /**
+   * A6 (HU-318 §1): en una pantalla, más de 10 escaneos `vencido` en el minuto siguiente a cada uno
+   * de los últimos 3 cambios de QR: una foto del QR circula. Una alerta por pantalla cada 10 min.
+   */
+  async raiseA6(): Promise<number> {
+    const ahora = this.reloj.now();
+    const hastaInicio = new Date(ahora.getTime() - UMBRALES_ALERTAS.a6VentanaMs);
+    const desde = new Date(ahora.getTime() - 15 * 60 * 1000);
+    const recientes = await this.db
+      .select({
+        pantallaId: qrEmitidos.pantallaId,
+        eventoId: qrEmitidos.eventoId,
+        organizacionId: qrEmitidos.organizacionId,
+        inicioAt: qrEmitidos.inicioAt,
+      })
+      .from(qrEmitidos)
+      .innerJoin(eventos, eq(eventos.id, qrEmitidos.eventoId))
+      .where(
+        and(
+          inArray(eventos.estado, ['en_curso', 'pausado']),
+          gte(qrEmitidos.inicioAt, desde),
+          lte(qrEmitidos.inicioAt, hastaInicio),
+        ),
+      )
+      .orderBy(desc(qrEmitidos.inicioAt));
+    const porPantalla = new Map<string, typeof recientes>();
+    for (const fila of recientes) {
+      const lista = porPantalla.get(fila.pantallaId) ?? [];
+      if (lista.length < UMBRALES_ALERTAS.a6Cambios) lista.push(fila);
+      porPantalla.set(fila.pantallaId, lista);
+    }
+    let creadas = 0;
+    for (const [pantallaId, cambios] of porPantalla) {
+      const vencidos: number[] = [];
+      for (const cambio of cambios) {
+        const [fila] = await this.db
+          .select({ total: count() })
+          .from(escaneos)
+          .where(
+            and(
+              eq(escaneos.pantallaId, pantallaId),
+              eq(escaneos.resultado, 'vencido'),
+              gte(escaneos.createdAt, cambio.inicioAt),
+              lt(
+                escaneos.createdAt,
+                new Date(cambio.inicioAt.getTime() + UMBRALES_ALERTAS.a6VentanaMs),
+              ),
+            ),
+          );
+        vencidos.push(fila?.total ?? 0);
+      }
+      const primero = cambios[0];
+      if (!primero || !isA6(vencidos)) continue;
+      const id = uuidv7();
+      const [nueva] = await this.db
+        .insert(alertas)
+        .values({
+          id,
+          organizacionId: primero.organizacionId,
+          eventoId: primero.eventoId,
+          tipo: 'A6',
+          datos: { pantallaId, vencidos },
+          clave: `A6:${pantallaId}:${getVentana(ahora, 10 * 60 * 1000)}`,
+        })
+        .onConflictDoNothing({ target: [alertas.eventoId, alertas.clave] })
+        .returning({ id: alertas.id });
+      if (!nueva) continue;
+      await this.db.insert(outbox).values({
+        id: uuidv7(),
+        tipo: 'alerta.creada',
+        eventoId: primero.eventoId,
+        payload: { eventoId: primero.eventoId, alertaId: id, tipo: 'A6', prioridad: 'normal' },
+      });
+      creadas++;
+    }
+    return creadas;
   }
 }

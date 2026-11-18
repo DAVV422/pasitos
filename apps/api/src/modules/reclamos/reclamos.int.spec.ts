@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import {
+  alertas,
   asistentes,
   escaneos,
   eventos,
@@ -573,5 +574,56 @@ describe('Pantalla de sala y reclamos (HU-314, HU-310)', () => {
       expect(cuerpo.rechazos).toContainEqual(expect.objectContaining({ resultado: 'vencido' }));
       expect(cuerpo.qr.length).toBeGreaterThan(0);
     });
+  });
+  it('A5 (HU-318): reclamar en dos lugares distintos en menos de 60 s crea una alerta, sin bloquear', async () => {
+    const otroLugar = uuidv7();
+    await base.sistema.db.insert(lugares).values({
+      id: otroLugar,
+      organizacionId: evento.organizacionId,
+      eventoId: evento.eventoId,
+      tipo: 'stand',
+      nombre: 'Stand B',
+    });
+    const otraTablet = await createParLlaves();
+    const otraPantalla = uuidv7();
+    await base.sistema.db.insert(pantallas).values({
+      id: otraPantalla,
+      organizacionId: evento.organizacionId,
+      eventoId: evento.eventoId,
+      nombre: 'Tablet Stand B',
+      lugarId: otroLugar,
+      estado: 'activa',
+      llavePublica: Buffer.from(toLlaveCruda(await exportLlavePublica(otraTablet))),
+    });
+    const [fila] = await base.sistema.db
+      .select({ numero: pantallas.numero, epoca: pantallas.epoca })
+      .from(pantallas)
+      .where(eq(pantallas.id, otraPantalla));
+    const [propia] = await base.sistema.db
+      .select({ epoca: pantallas.epoca })
+      .from(pantallas)
+      .where(eq(pantallas.id, pantallaId));
+    const retoA = await newReto();
+    const retoB = await newReto();
+    const celular = await newCelular();
+    const franja = getFranjaQr(api.reloj.now().getTime(), 30);
+    const primero = await reclamar(
+      celular,
+      await qrPorTiempo(retoA.numero, { epoca: propia?.epoca ?? 0 }),
+    );
+    expect(primero.statusCode).toBe(201);
+    const qrB = await buildQrReto(otraTablet.privateKey, {
+      p: fila?.numero ?? 0,
+      r: retoB.numero,
+      e: fila?.epoca ?? 0,
+      f: franja,
+    });
+    const segundo = await reclamar(celular, qrB);
+    expect(segundo.statusCode).toBe(201);
+    const a5 = await base.sistema.db
+      .select()
+      .from(alertas)
+      .where(and(eq(alertas.asistenteId, celular.asistenteId), eq(alertas.tipo, 'A5')));
+    expect(a5).toHaveLength(1);
   });
 });

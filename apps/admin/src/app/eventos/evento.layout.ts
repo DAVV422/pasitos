@@ -2,6 +2,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
+  effect,
   inject,
   Injectable,
   signal,
@@ -9,6 +11,7 @@ import {
 import { RouterOutlet, type CanActivateFn } from '@angular/router';
 import { canDo, type AccionEvento } from '@pasitos/dominio';
 import { ContextoEventoService, LayoutComponent, type ItemMenu } from '@pasitos/panel';
+import { AlertasAbiertasService } from './alertas-api.service';
 import { EventosApi, type EventoDetalle } from './eventos-api.service';
 
 /** El evento abierto en el panel. Fija el rol en `ContextoEventoService` (HU-204 §5). */
@@ -49,6 +52,7 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: '', texto: 'Resumen', grupo: 'Evento', exacto: true, accion: 'evento.read' },
   { ruta: 'configuracion', texto: 'Configuración', grupo: 'Evento', accion: 'evento.update' },
   { ruta: 'bitacora', texto: 'Bitácora', grupo: 'Evento', accion: 'bitacora.read' },
+  { ruta: 'alertas', texto: 'Alertas', grupo: 'Evento', accion: 'bitacora.read' },
   { ruta: 'lugares', texto: 'Lugares', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'agenda', texto: 'Agenda', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'sponsors', texto: 'Sponsors', grupo: 'Contenido', accion: 'contenido.read' },
@@ -85,16 +89,30 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
 })
 export class EventoLayout {
   protected readonly actual = inject(EventoActualService);
+  private readonly alertas = inject(AlertasAbiertasService);
+  private readonly destroy = inject(DestroyRef);
+
+  constructor() {
+    // HU-318: el contador de alertas y el aviso al llegar una, para dueño y coorganizador.
+    effect(() => {
+      const evento = this.actual.evento();
+      if (evento && canDo(evento.miRol, 'bitacora.read'))
+        this.alertas.watch(evento.id, this.destroy);
+    });
+  }
+
   protected readonly menu = computed(() => {
     const evento = this.actual.evento();
     if (!evento) {
       return [];
     }
+    const abiertas = this.alertas.abiertas();
     return MENU_EVENTO.filter((item) => canDo(evento.miRol, item.accion)).map((item): ItemMenu => ({
       texto: item.texto,
       ruta: `/eventos/${evento.id}${item.ruta ? `/${item.ruta}` : ''}`,
       ...(item.grupo ? { grupo: item.grupo } : {}),
       ...(item.exacto ? { exacto: true } : {}),
+      ...(item.ruta === 'alertas' && abiertas > 0 ? { contador: abiertas } : {}),
     }));
   });
 }

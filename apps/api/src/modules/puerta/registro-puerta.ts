@@ -18,6 +18,7 @@ import { formatFechaHora } from '../auth/auth.service';
 import { toActor } from '../bitacora/actores';
 import { BitacoraService } from '../bitacora/bitacora.service';
 import { normalizado } from '../invitados/asistentes.service';
+import { checkA3 } from '../acceso/reglas-alertas';
 import type { CheckInService } from './check-in.service';
 import type { FichaPuerta } from './puerta.service';
 
@@ -82,6 +83,13 @@ export class RegistroPuertaService {
           metodo: 'registro_puerta',
           registradorId: contexto.usuarioId,
           actor: toActor(contexto),
+        });
+        // HU-318: A3 si registra demasiadas personas seguidas.
+        await checkA3(tx, {
+          organizacionId: contexto.organizacionId,
+          eventoId: contexto.eventoId,
+          registradorId: contexto.usuarioId,
+          ahora: new Date(),
         });
         if (email) {
           // V22: solo un aviso, con la prioridad de la puerta (D57).

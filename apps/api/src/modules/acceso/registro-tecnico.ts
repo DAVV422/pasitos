@@ -59,6 +59,49 @@ function toEntero(valor: number | null | undefined): number | null {
 }
 
 /**
+ * Crea la alerta si no existía una con la misma clave, y avisa al panel (`alerta.creada`). Sirve
+ * dentro de cualquier transacción (HU-307, HU-318).
+ */
+export async function raiseAlerta(
+  tx: Tx,
+  organizacionId: string,
+  alerta: DatosAlerta,
+): Promise<boolean> {
+  const id = uuidv7();
+  const [creada] = await tx
+    .insert(alertas)
+    .values({
+      id,
+      organizacionId,
+      eventoId: alerta.eventoId,
+      tipo: alerta.tipo,
+      asistenteId: alerta.asistenteId ?? null,
+      dispositivoId: alerta.dispositivoId ?? null,
+      datos: alerta.datos ?? {},
+      clave: alerta.clave,
+      prioridad: alerta.prioridad ?? 'normal',
+    })
+    .onConflictDoNothing({ target: [alertas.eventoId, alertas.clave] })
+    .returning({ id: alertas.id });
+  if (!creada) {
+    return false;
+  }
+  await tx.insert(outbox).values({
+    id: uuidv7(),
+    tipo: 'alerta.creada',
+    eventoId: alerta.eventoId,
+    payload: {
+      eventoId: alerta.eventoId,
+      alertaId: id,
+      tipo: alerta.tipo,
+      asistenteId: alerta.asistenteId ?? null,
+      prioridad: alerta.prioridad ?? 'normal',
+    },
+  });
+  return true;
+}
+
+/**
  * El registro técnico y las alertas de trampa (HU-307). Cuando el caso de uso falla, el registro
  * se escribe **aparte** (`recordAparte`), para que el rechazo quede aunque su transacción se
  * deshaga. Un registro que no se pudo escribir nunca hace fallar el pedido.
@@ -98,6 +141,7 @@ export class RegistroTecnicoService {
     organizacionId: string,
     datos: DatosRegistro,
     alerta?: DatosAlerta,
+    despues?: (tx: Tx) => Promise<void>,
   ): Promise<void> {
     try {
       await withOrganizacion(this.db, organizacionId, async (tx) => {
@@ -105,6 +149,7 @@ export class RegistroTecnicoService {
         if (alerta) {
           await this.raiseAlerta(tx, organizacionId, alerta);
         }
+        await despues?.(tx);
       });
     } catch (error) {
       this.logger.warn(
@@ -115,39 +160,8 @@ export class RegistroTecnicoService {
   }
 
   /** Crea la alerta si no existía una con la misma clave, y avisa al panel (`alerta.creada`). */
-  async raiseAlerta(tx: Tx, organizacionId: string, alerta: DatosAlerta): Promise<boolean> {
-    const id = uuidv7();
-    const [creada] = await tx
-      .insert(alertas)
-      .values({
-        id,
-        organizacionId,
-        eventoId: alerta.eventoId,
-        tipo: alerta.tipo,
-        asistenteId: alerta.asistenteId ?? null,
-        dispositivoId: alerta.dispositivoId ?? null,
-        datos: alerta.datos ?? {},
-        clave: alerta.clave,
-        prioridad: alerta.prioridad ?? 'normal',
-      })
-      .onConflictDoNothing({ target: [alertas.eventoId, alertas.clave] })
-      .returning({ id: alertas.id });
-    if (!creada) {
-      return false;
-    }
-    await tx.insert(outbox).values({
-      id: uuidv7(),
-      tipo: 'alerta.creada',
-      eventoId: alerta.eventoId,
-      payload: {
-        eventoId: alerta.eventoId,
-        alertaId: id,
-        tipo: alerta.tipo,
-        asistenteId: alerta.asistenteId ?? null,
-        prioridad: alerta.prioridad ?? 'normal',
-      },
-    });
-    return true;
+  raiseAlerta(tx: Tx, organizacionId: string, alerta: DatosAlerta): Promise<boolean> {
+    return raiseAlerta(tx, organizacionId, alerta);
   }
 
   /**

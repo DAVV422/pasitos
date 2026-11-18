@@ -63,6 +63,12 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/contenido.page').then((m) => m.ContenidoPage),
       })),
       {
+        path: 'alertas',
+        canActivate: [canDoActivate('bitacora.read')],
+        title: 'Alertas · Pasitos',
+        loadComponent: () => import('./eventos/alertas.page').then((m) => m.AlertasPage),
+      },
+      {
         path: 'ajustes',
         canActivate: [canDoActivate('puntos.ajustar')],
         title: 'Ajustes · Pasitos',

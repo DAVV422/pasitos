@@ -17,7 +17,7 @@ import {
   LectorQrComponent,
 } from '@pasitos/ui';
 import { EnVivoService, ErrorApi } from '@pasitos/web-core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AccesoPuertaComponent, type AvisoVinculado } from './acceso-puerta.component';
 import { EventoActualService } from './evento.layout';
 import { RegistroPuertaComponent } from './registro-puerta.component';
@@ -449,6 +449,9 @@ export class PuertaPage {
   constructor() {
     void this.loadResumen();
     void this.loadAlertas();
+    // HU-318: *Ver persona* desde Alertas abre su ficha.
+    const asistente = inject(ActivatedRoute).snapshot.queryParamMap.get('asistente');
+    if (asistente) void this.open(asistente);
     const canal = inject(EnVivoService).connect(
       `/api/v1/eventos/${this.eventoId()}/en-vivo`,
       [

@@ -23,6 +23,7 @@ import {
 import { uuidv7 } from 'uuidv7';
 import type { ContextoAsistente, FirmaVerificada } from '../../common/sesion/asistente';
 import { runIdempotente } from '../acceso/idempotencia';
+import { checkA5 } from '../acceso/reglas-alertas';
 import { Limitador } from '../auth/limitador';
 import type { Reloj } from '../auth/sesiones.service';
 
@@ -219,9 +220,10 @@ export class ReclamosService {
     });
 
     // 10. El escaneo aceptado y el contador de la pantalla (en un solo uso, con el nonce usado).
+    const escaneoId = uuidv7();
     try {
       await tx.insert(escaneos).values({
-        id: uuidv7(),
+        id: escaneoId,
         organizacionId: asistente.organizacionId,
         eventoId: asistente.eventoId,
         pantallaId: pantalla.id,
@@ -239,6 +241,15 @@ export class ReclamosService {
       if (isNonceRepetido(error)) throw new AppError('QR_YA_USADO');
       throw error;
     }
+    // HU-318: A5 si reclamó en otro lugar hace menos de 60 s.
+    await checkA5(tx, {
+      organizacionId: asistente.organizacionId,
+      eventoId: asistente.eventoId,
+      asistenteId: asistente.asistenteId,
+      pantallaId: pantalla.id,
+      escaneoId,
+      ahora: new Date(),
+    });
     const [contador] = await tx
       .select({ entregados: retos.entregados })
       .from(retos)

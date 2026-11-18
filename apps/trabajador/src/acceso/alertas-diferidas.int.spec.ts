@@ -1,5 +1,5 @@
-import { eq } from 'drizzle-orm';
-import { alertas, eventos, outbox } from '@pasitos/db';
+import { and, eq } from 'drizzle-orm';
+import { alertas, escaneos, eventos, outbox, pantallas, qrEmitidos, retos } from '@pasitos/db';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import { seedMovimientosPrueba } from '@pasitos/libro';
 import { uuidv7 } from 'uuidv7';
@@ -63,5 +63,63 @@ describe('alertas-diferidas', () => {
       .where(eq(outbox.tipo, 'alerta.actualizada'));
     expect(avisos.map((a) => (a.payload as { alertaId: string }).alertaId)).toEqual([ids.viejo]);
     expect(await servicio.raisePrioridad()).toBe(0);
+  });
+  it('A6 (HU-318): más de 10 vencidos después de cada uno de los últimos 3 cambios de QR', async () => {
+    const { eventoId } = await seedMovimientosPrueba(base.sistema.db, {
+      asistentes: 1,
+      minutos: 0,
+    });
+    const [evento] = await base.sistema.db
+      .select({ organizacionId: eventos.organizacionId })
+      .from(eventos)
+      .where(eq(eventos.id, eventoId));
+    const organizacionId = evento?.organizacionId ?? '';
+    await base.sistema.db
+      .update(eventos)
+      .set({ estado: 'en_curso' })
+      .where(eq(eventos.id, eventoId));
+    const reloj = createReloj();
+    const pantallaId = uuidv7();
+    await base.sistema.db
+      .insert(pantallas)
+      .values({ id: pantallaId, organizacionId, eventoId, nombre: 'Tablet A6' });
+    const [reto] = await base.sistema.db
+      .select({ id: retos.id })
+      .from(retos)
+      .where(eq(retos.eventoId, eventoId));
+    const ahora = reloj.now().getTime();
+    for (const minutos of [4, 3, 2]) {
+      const inicio = new Date(ahora - minutos * 60_000);
+      await base.sistema.db.insert(qrEmitidos).values({
+        id: uuidv7(),
+        organizacionId,
+        eventoId,
+        pantallaId,
+        retoId: reto?.id ?? '',
+        modo: 'por_tiempo',
+        epoca: minutos,
+        franja: minutos,
+        inicioAt: inicio,
+      });
+      await base.sistema.db.insert(escaneos).values(
+        Array.from({ length: 11 }, (_, i) => ({
+          id: uuidv7(),
+          organizacionId,
+          eventoId,
+          pantallaId,
+          resultado: 'vencido',
+          createdAt: new Date(inicio.getTime() + 1_000 + i * 1_000),
+        })),
+      );
+    }
+    const servicio = new AlertasDiferidasService(base.sistema.db, reloj);
+    expect(await servicio.raiseA6()).toBe(1);
+    const a6 = await base.sistema.db
+      .select()
+      .from(alertas)
+      .where(and(eq(alertas.eventoId, eventoId), eq(alertas.tipo, 'A6')));
+    expect(a6[0]?.datos).toMatchObject({ pantallaId, vencidos: [11, 11, 11] });
+    // Una sola vez por ventana.
+    expect(await servicio.raiseA6()).toBe(0);
   });
 });

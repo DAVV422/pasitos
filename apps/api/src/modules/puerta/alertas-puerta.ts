@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import {
   alertas,
   asistentes,
+  dispositivos,
   outbox,
   usuarios,
   withOrganizacion,
@@ -35,10 +36,56 @@ export interface AlertaPuerta {
     readonly codigo: string;
   } | null;
   readonly queNoReconoce: string | null;
+  /** HU-318: la frase de la alerta y el modelo del celular. Nunca la IP ni la huella. */
+  readonly frase: string;
+  readonly modelo: string | null;
   /** Desde el celular anulado o el actual. */
   readonly desde: string | null;
   readonly atendidaPor: string | null;
   readonly resolucion: string | null;
+}
+
+/**
+ * La frase de cada alerta (HU-318 §3), con nombres y el modelo del celular: nunca la IP ni la
+ * huella (Acceso §6.3).
+ */
+export function describeAlerta(
+  tipo: string,
+  ctx: {
+    nombre: string | null;
+    modelo: string | null;
+    datos: Record<string, unknown>;
+    nombres: ReadonlyMap<string, string>;
+  },
+): string {
+  const quien = ctx.nombre ?? 'Alguien';
+  const nombreDe = (clave: string) => {
+    const id = ctx.datos[clave];
+    return typeof id === 'string' ? (ctx.nombres.get(id) ?? 'otra persona') : 'otra persona';
+  };
+  const celular = ctx.modelo ? ` (${ctx.modelo})` : '';
+  switch (tipo) {
+    case 'A1':
+      return `${quien} y ${nombreDe('otroAsistenteId')} usan el mismo celular${celular}`;
+    case 'A2':
+      return `El celular de ${quien}${celular} intentó abrir otra inscripción`;
+    case 'A3':
+      return `${nombreDe('registradorId')} registró o vinculó ${String(ctx.datos['personas'] ?? 'muchas')} personas en 10 minutos`;
+    case 'A4':
+      return `Muchas revinculaciones: ${quien} o ${nombreDe('registradorId')}`;
+    case 'A5':
+      return `${quien} reclamó en dos lugares distintos en menos de un minuto`;
+    case 'A6':
+      return 'Muchos QR vencidos después de cada cambio en una pantalla: puede circular una foto del QR';
+    case 'A7':
+      return `El celular anulado de ${quien}${celular} sigue intentando entrar`;
+    case 'A8':
+      return `El celular de ${quien}${celular} parece automatizado`;
+    case 'no_fui_yo':
+      return `${quien} dice «No fui yo»`;
+    default:
+      return `Alerta ${tipo} sobre ${quien}`;
+  }
 }
 
 /** El aviso, después de escribirlo: avisa a todos los que lo ven en vivo (T-301). */
@@ -110,10 +157,12 @@ export class AlertasPuertaService {
           nombre: asistentes.nombre,
           codigo: asistentes.codigoAsistente,
           atendidaPor: usuarios.nombre,
+          modelo: dispositivos.modelo,
         })
         .from(alertas)
         .leftJoin(asistentes, eq(asistentes.id, alertas.asistenteId))
         .leftJoin(usuarios, eq(usuarios.id, alertas.atendidaPor))
+        .leftJoin(dispositivos, eq(dispositivos.id, alertas.dispositivoId))
         .where(and(...condiciones))
         // Los derivados arriba, después los de prioridad alta y los más viejos.
         .orderBy(
@@ -122,6 +171,30 @@ export class AlertasPuertaService {
           alertas.createdAt,
         )
         .limit(100);
+      // Los nombres que aparecen en las frases (la otra persona de una A1, el registrador de una A3).
+      const ids = new Set<string>();
+      for (const f of filas) {
+        const d = (f.datos ?? {}) as Record<string, unknown>;
+        for (const clave of ['otroAsistenteId', 'registradorId']) {
+          if (typeof d[clave] === 'string') ids.add(d[clave]);
+        }
+      }
+      const nombres = new Map<string, string>();
+      if (ids.size > 0) {
+        const lista = [...ids];
+        for (const p of await tx
+          .select({ id: asistentes.id, nombre: asistentes.nombre })
+          .from(asistentes)
+          .where(inArray(asistentes.id, lista))) {
+          nombres.set(p.id, p.nombre);
+        }
+        for (const u of await tx
+          .select({ id: usuarios.id, nombre: usuarios.nombre })
+          .from(usuarios)
+          .where(inArray(usuarios.id, lista))) {
+          nombres.set(u.id, getNombreCorto(u.nombre) ?? u.nombre);
+        }
+      }
       return {
         items: filas.map((f): AlertaPuerta => {
           const datos = (f.datos ?? {}) as { sobre?: string; desde?: string };
@@ -138,6 +211,13 @@ export class AlertasPuertaService {
             desde: datos.desde ?? null,
             atendidaPor: getNombreCorto(f.atendidaPor),
             resolucion: f.resolucion,
+            frase: describeAlerta(f.tipo, {
+              nombre: f.nombre,
+              modelo: f.modelo,
+              datos: (f.datos ?? {}) as Record<string, unknown>,
+              nombres,
+            }),
+            modelo: f.modelo,
           };
         }),
         pagination: { nextCursor: null },
@@ -184,7 +264,10 @@ export class AlertasPuertaService {
   resolve(
     contexto: ContextoEvento,
     alertaId: string,
-    datos: { resolucion: 'revincular' | 'descartar' | 'derivar'; nota?: string | undefined },
+    datos: {
+      resolucion: 'revincular' | 'descartar' | 'derivar' | 'revisada';
+      nota?: string | undefined;
+    },
   ) {
     return withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
       const alerta = await this.lock(tx, contexto, alertaId);
@@ -193,6 +276,9 @@ export class AlertasPuertaService {
       }
       if (alerta.estado === 'resuelta' || alerta.estado === 'descartada') {
         throw new AppError('ALERTA_YA_ATENDIDA', { detail: 'Este aviso ya se resolvió.' });
+      }
+      if (datos.resolucion === 'revisada' && contexto.rol === 'registrador') {
+        throw new AppError('SIN_PERMISO');
       }
       if (datos.resolucion === 'derivar' && contexto.rol !== 'registrador') {
         throw new AppError('SIN_PERMISO', {
@@ -203,11 +289,13 @@ export class AlertasPuertaService {
       const cambios =
         datos.resolucion === 'descartar'
           ? { estado: 'descartada', resueltaAt: ahora }
-          : datos.resolucion === 'derivar'
-            ? // Pasa a los coorganizadores: se suelta para que la tome uno de ellos.
-              { estado: 'derivada', atendidaPor: null, atendidaAt: null }
-            : // Revincular: sigue en atención hasta que el celular nuevo se vincule.
-              { estado: 'atendiendo', atendidaPor: contexto.usuarioId, atendidaAt: ahora };
+          : datos.resolucion === 'revisada'
+            ? { estado: 'resuelta', resueltaAt: ahora, atendidaPor: contexto.usuarioId }
+            : datos.resolucion === 'derivar'
+              ? // Pasa a los coorganizadores: se suelta para que la tome uno de ellos.
+                { estado: 'derivada', atendidaPor: null, atendidaAt: null }
+              : // Revincular: sigue en atención hasta que el celular nuevo se vincule.
+                { estado: 'atendiendo', atendidaPor: contexto.usuarioId, atendidaAt: ahora };
       await tx
         .update(alertas)
         .set({ ...cambios, resolucion: datos.resolucion, nota: datos.nota ?? null })

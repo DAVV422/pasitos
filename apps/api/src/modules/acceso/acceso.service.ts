@@ -39,6 +39,7 @@ import { closeAlertaRevincular } from '../puerta/alertas-puerta';
 import type { CheckInService } from '../puerta/check-in.service';
 import type { AccesoSistema } from './acceso-sistema';
 import { getEstadoApp, type EstadoApp } from './estado-app';
+import { checkA3, checkA4 } from './reglas-alertas';
 import { getHuella, type RegistroTecnicoService } from './registro-tecnico';
 import { getVencimientoSesion, type SesionesAsistenteService } from './sesiones-asistente';
 
@@ -288,6 +289,14 @@ export class AccesoService {
             })
             .where(eq(vinculaciones.id, activa.id));
           if (fuente.registradorId) {
+            // HU-318: A4 si se revincula demasiado.
+            await checkA4(tx, {
+              organizacionId,
+              eventoId: evento.id,
+              registradorId: fuente.registradorId,
+              asistenteId: asistente.id,
+              ahora,
+            });
             await this.recordRevincular(tx, {
               organizacionId,
               eventoId: evento.id,
@@ -459,6 +468,15 @@ export class AccesoService {
               rol: null,
             }
           : { tipo: 'sistema', nombre: 'QR de asistente' },
+      });
+    }
+    // HU-318: A3 si el registrador vincula demasiadas personas seguidas.
+    if (fuente.registradorId) {
+      await checkA3(tx, {
+        organizacionId: datos.organizacionId,
+        eventoId: fuente.eventoId,
+        registradorId: fuente.registradorId,
+        ahora: new Date(),
       });
     }
     // HU-305: el *No fui yo* que pidió este acceso se cierra al vincular.

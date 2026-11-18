@@ -140,6 +140,9 @@ export async function startColas({
   await boss.work(COLA_ALERTAS_DIFERIDAS, { localConcurrency: 1 }, async () => {
     const subidas = await alertasDiferidas.raisePrioridad();
     if (subidas > 0) logger.log({ subidas }, 'Avisos No fui yo con prioridad alta');
+    // HU-318: A6, un QR que circula en foto.
+    const a6 = await alertasDiferidas.raiseA6();
+    if (a6 > 0) logger.log({ a6 }, 'Alertas A6 creadas');
   });
 
   // HU-307 §7: lo técnico de los dispositivos, 30 días después del cierre. A las 03:00 de Bolivia.

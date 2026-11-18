@@ -9,6 +9,7 @@ import {
   type RequestConAsistente,
 } from '../../common/sesion/asistente';
 import type { Reloj } from '../auth/sesiones.service';
+import { checkA7 } from './reglas-alertas';
 import type { RegistroTecnicoService } from './registro-tecnico';
 import { COOKIE_ASISTENTE, type SesionesAsistenteService } from './sesiones-asistente';
 
@@ -71,12 +72,18 @@ export class AsistenteGuard implements CanActivate {
       permitirAnulada: opciones.permiteAnulado === true,
       // HU-307 §4: el celular anulado que sigue intentando queda registrado.
       alAnulada: (contexto) =>
-        this.registro.recordAparte(contexto.organizacionId, {
-          ...getTecnicoDelPedido(request, contexto),
-          momento: 'intento_fallido',
-          resultado: 'rechazado',
-          motivo: 'DISPOSITIVO_NO_VINCULADO',
-        }),
+        this.registro.recordAparte(
+          contexto.organizacionId,
+          {
+            ...getTecnicoDelPedido(request, contexto),
+            momento: 'intento_fallido',
+            resultado: 'rechazado',
+            motivo: 'DISPOSITIVO_NO_VINCULADO',
+          },
+          undefined,
+          // HU-318: A7 si el celular anulado sigue intentando.
+          (tx) => checkA7(tx, contexto),
+        ),
     });
     const { llavePublica, ...contexto } = sesion;
     request.asistente = contexto;

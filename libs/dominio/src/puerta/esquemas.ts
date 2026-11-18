@@ -43,13 +43,15 @@ export const esquemaListarAlertas = z.object({
 
 export const esquemaResolverAlerta = z
   .object({
-    resolucion: z.enum(['revincular', 'descartar', 'derivar']),
+    // HU-318: *revisada* ("Lo revisé") para las alertas A1–A11, también con nota.
+    resolucion: z.enum(['revincular', 'descartar', 'derivar', 'revisada']),
     nota: z.string().trim().max(500).optional(),
   })
-  .refine((r) => r.resolucion !== 'descartar' || (r.nota?.length ?? 0) >= 5, {
-    error: 'Cuenta por qué se descarta (al menos 5 letras).',
-    path: ['nota'],
-  });
+  .refine(
+    (r) =>
+      (r.resolucion !== 'descartar' && r.resolucion !== 'revisada') || (r.nota?.length ?? 0) >= 5,
+    { error: 'Cuenta qué revisaste (al menos 5 letras).', path: ['nota'] },
+  );
 
 export const esquemaAnularCheckIn = z.object({
   motivo: z.string().trim().min(5, { error: 'Escribe el motivo (al menos 5 letras).' }).max(300),

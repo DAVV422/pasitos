@@ -20,6 +20,8 @@ export interface ItemMenu {
   readonly grupo?: string;
   /** Activo solo en esa ruta exacta (por ejemplo, el *Resumen* en la ruta base del evento). */
   readonly exacto?: boolean;
+  /** Un contador al lado (*Alertas · 2*, HU-318). */
+  readonly contador?: number;
 }
 
 interface GrupoMenu {
@@ -113,6 +115,13 @@ interface GrupoMenu {
                     [routerLinkActiveOptions]="{ exact: item.exacto ?? false }"
                   >
                     {{ item.texto }}
+                    @if (item.contador) {
+                      <span
+                        class="bg-danger text-surface ml-2 rounded-full px-2 text-xs font-bold"
+                        [attr.aria-label]="item.contador + ' sin revisar'"
+                        >{{ item.contador }}</span
+                      >
+                    }
                   </a>
                 </li>
               }

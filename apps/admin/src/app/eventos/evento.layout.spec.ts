@@ -1,7 +1,9 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { RolEvento } from '@pasitos/dominio';
 import { ContextoEventoService } from '@pasitos/panel';
+import { AlertasAbiertasService } from './alertas-api.service';
 import { EventoActualService, EventoLayout } from './evento.layout';
 import type { EventoDetalle } from './eventos-api.service';
 
@@ -42,7 +44,16 @@ function buildEvento(miRol: RolEvento): EventoDetalle {
 
 describe('Menú del evento según el rol (HU-204 §5)', () => {
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        // Sin canal en vivo en las pruebas: el contador de alertas en 0.
+        {
+          provide: AlertasAbiertasService,
+          useValue: { abiertas: signal(0), watch: () => undefined },
+        },
+      ],
+    });
   });
 
   it.each([
@@ -53,6 +64,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Resumen',
         'Configuración',
         'Bitácora',
+        'Alertas',
         'Lugares',
         'Agenda',
         'Sponsors',
@@ -75,6 +87,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Resumen',
         'Configuración',
         'Bitácora',
+        'Alertas',
         'Lugares',
         'Agenda',
         'Sponsors',
