@@ -17,6 +17,8 @@ import {
   LectorQrComponent,
 } from '@pasitos/ui';
 import { EnVivoService, ErrorApi } from '@pasitos/web-core';
+import { RouterLink } from '@angular/router';
+import { AccesoPuertaComponent, type AvisoVinculado } from './acceso-puerta.component';
 import { EventoActualService } from './evento.layout';
 import {
   PuertaApi,
@@ -25,7 +27,7 @@ import {
   type ResumenPuerta,
 } from './puerta-api.service';
 
-type Modo = 'inicio' | 'escanear' | 'buscar' | 'ficha';
+type Modo = 'inicio' | 'escanear' | 'buscar' | 'ficha' | 'acceso';
 
 const VOLVER_MS = 2_000;
 const ESPERA_BUSQUEDA_MS = 250;
@@ -39,6 +41,8 @@ const ESPERA_BUSQUEDA_MS = 250;
   selector: 'adm-puerta-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AccesoPuertaComponent,
+    RouterLink,
     AvisoComponent,
     BotonDirective,
     CampoComponent,
@@ -71,6 +75,16 @@ const ESPERA_BUSQUEDA_MS = 250;
       }
 
       @switch (modo()) {
+        @case ('acceso') {
+          @if (ficha(); as f) {
+            <adm-acceso-puerta
+              [ficha]="f"
+              [zonaHoraria]="zona()"
+              [avisoVinculado]="avisoVinculado()"
+              (listo)="reset()"
+            />
+          }
+        }
         @case ('ficha') {
           @if (ficha(); as f) {
             <article class="border-line bg-surface flex flex-col gap-4 rounded-xl border p-5">
@@ -120,6 +134,19 @@ const ESPERA_BUSQUEDA_MS = 250;
                 >
                   <px-icono nombre="check" [tamano]="24" />Marcar presente
                 </button>
+              }
+              @if (f.estado !== 'cancelado') {
+                <div class="grid grid-cols-2 gap-2">
+                  <button pxBoton="secundario" type="button" (click)="setModo('acceso')">
+                    <px-icono nombre="scan" [tamano]="18" />Generar QR de asistente
+                  </button>
+                  <a
+                    pxBoton="secundario"
+                    [routerLink]="['/eventos', eventoId(), 'puerta', 'tarjeta', f.id]"
+                  >
+                    <px-icono nombre="ticket" [tamano]="18" />Imprimir tarjeta
+                  </a>
+                </div>
               }
               @if (error(); as e) {
                 <px-aviso variante="peligro">{{ e }}</px-aviso>
@@ -262,6 +289,8 @@ export class PuertaPage {
   protected readonly error = signal<string | null>(null);
   protected readonly deshaciendo = signal(false);
   protected readonly motivo = signal('');
+  /** El último `acceso.vinculado` en vivo, para **Vinculado ✓** (HU-302). */
+  protected readonly avisoVinculado = signal<AvisoVinculado | null>(null);
   /** Cómo se llegó a la ficha: el método del check-in. */
   private metodo: 'escaneo_entrada' | 'busqueda' = 'busqueda';
   private esperaBusqueda: ReturnType<typeof setTimeout> | undefined;
@@ -269,13 +298,14 @@ export class PuertaPage {
   private leyendo = false;
 
   protected readonly puedeDeshacer = computed(() => this.contexto.canDo('puntos.ajustar'));
-  private readonly eventoId = computed(() => this.actual.evento()?.id ?? '');
+  protected readonly eventoId = computed(() => this.actual.evento()?.id ?? '');
+  protected readonly zona = computed(() => this.actual.evento()?.zonaHoraria ?? 'America/La_Paz');
 
   constructor() {
     void this.loadResumen();
     const canal = inject(EnVivoService).connect(
       `/api/v1/eventos/${this.eventoId()}/en-vivo`,
-      ['asistencia.registrada', 'asistencia.anulada', 'alerta.creada'],
+      ['asistencia.registrada', 'asistencia.anulada', 'alerta.creada', 'acceso.vinculado'],
       inject(DestroyRef),
     );
     for (const tipo of [
@@ -286,6 +316,16 @@ export class PuertaPage {
     ]) {
       canal.on(tipo, () => void this.loadResumen());
     }
+    canal.on('acceso.vinculado', (aviso) => {
+      const datos = aviso.datos as Partial<AvisoVinculado> | null;
+      if (datos?.accesoId && datos.modelo && datos.hora) {
+        this.avisoVinculado.set({
+          accesoId: datos.accesoId,
+          modelo: datos.modelo,
+          hora: datos.hora,
+        });
+      }
+    });
     inject(DestroyRef).onDestroy(() => {
       clearTimeout(this.esperaBusqueda);
       clearTimeout(this.volver);

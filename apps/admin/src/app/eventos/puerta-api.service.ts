@@ -34,6 +34,28 @@ export interface ResultadoBusqueda {
   readonly estado: string;
 }
 
+/** HU-302: el QR de asistente y su enlace corto. */
+export interface AccesoGenerado {
+  readonly id: string;
+  readonly qr: string;
+  readonly enlaceCorto: string;
+  readonly codigoCorto: string;
+  readonly expiraAt: string;
+}
+
+export interface EstadoAcceso {
+  readonly estado: 'pendiente' | 'vinculado' | 'vencido';
+  readonly modelo: string | null;
+  readonly vinculadoAt: string | null;
+}
+
+export interface TarjetaImpresa {
+  readonly nombre: string;
+  readonly codigo: string;
+  readonly evento: string;
+  readonly qr: string;
+}
+
 /** Lo que mueve puntos va con `Idempotency-Key`: un doble toque no da dos bienvenidas. */
 function conClave(clave: string = crypto.randomUUID()): { headers: HttpHeaders } {
   return { headers: new HttpHeaders({ 'Idempotency-Key': clave }) };
@@ -75,6 +97,25 @@ export class PuertaApi {
         { metodo },
         conClave(),
       ),
+    );
+  }
+
+  createAcceso(asistenteId: string, motivo?: string): Promise<AccesoGenerado> {
+    return firstValueFrom(
+      this.http.post<AccesoGenerado>(
+        `${BASE}/asistentes/${asistenteId}/accesos`,
+        motivo ? { motivo } : {},
+      ),
+    );
+  }
+
+  getAcceso(id: string): Promise<EstadoAcceso> {
+    return firstValueFrom(this.http.get<EstadoAcceso>(`${BASE}/accesos/${id}`));
+  }
+
+  getTarjeta(asistenteId: string): Promise<TarjetaImpresa> {
+    return firstValueFrom(
+      this.http.get<TarjetaImpresa>(`${BASE}/asistentes/${asistenteId}/tarjeta`),
     );
   }
 

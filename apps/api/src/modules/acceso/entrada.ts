@@ -28,6 +28,26 @@ function getFirma(llave: Buffer, asistente: Buffer, franja: number): Buffer {
     .subarray(0, 16);
 }
 
+/**
+ * La firma de la tarjeta impresa (HU-302 §4, D31): sin franja, con su propio texto firmado para
+ * que no se confunda con ninguna franja.
+ */
+function getFirmaFija(llave: Buffer, asistente: Buffer): Buffer {
+  return createHmac('sha256', llave)
+    .update(Buffer.concat([asistente, Buffer.from('tarjeta', 'utf8')]))
+    .digest()
+    .subarray(0, 16);
+}
+
+/**
+ * `PXE1.<asistenteId>.<hmac>`: el QR fijo de la tarjeta impresa, para quien no tiene celular.
+ * Sirve para el check-in y para que el equipo otorgue retos a mano; **nunca para vincular**.
+ */
+export function buildQrEntradaFija(llave: Buffer, asistenteId: string): string {
+  const asistente = toBytesUuid(asistenteId);
+  return `${PREFIJO_ENTRADA}.${asistente.toString('base64url')}.${getFirmaFija(llave, asistente).toString('base64url')}`;
+}
+
 export function getFranjaEntrada(ahoraMs: number): number {
   return Math.floor(ahoraMs / FRANJA_ENTRADA_MS);
 }
@@ -49,12 +69,15 @@ export function buildQrEntrada(llave: Buffer, asistenteId: string, ahoraMs: numb
 }
 
 export type ResultadoQrEntrada =
-  | { readonly valido: true; readonly asistenteId: string }
+  | { readonly valido: true; readonly asistenteId: string; readonly fija: boolean }
   | { readonly valido: false; readonly motivo: 'formato' | 'firma' | 'vencido' };
 
 /** La franja actual o la anterior (entre 30 y 60 s). Lo usa la puerta (HU-301). */
 export function verifyQrEntrada(llave: Buffer, qr: string, ahoraMs: number): ResultadoQrEntrada {
   const partes = qr.trim().split('.');
+  if (partes.length === 3 && partes[0] === PREFIJO_ENTRADA) {
+    return verifyQrEntradaFija(llave, partes[1] ?? '', partes[2] ?? '');
+  }
   if (partes.length !== 4 || partes[0] !== PREFIJO_ENTRADA) {
     return { valido: false, motivo: 'formato' };
   }
@@ -77,5 +100,21 @@ export function verifyQrEntrada(llave: Buffer, qr: string, ahoraMs: number): Res
   if (franja !== actual && franja !== actual - 1) {
     return { valido: false, motivo: 'vencido' };
   }
-  return { valido: true, asistenteId: fromBytesUuid(asistente) };
+  return { valido: true, asistenteId: fromBytesUuid(asistente), fija: false };
+}
+
+function verifyQrEntradaFija(
+  llave: Buffer,
+  asistenteB64: string,
+  firmaB64: string,
+): ResultadoQrEntrada {
+  const asistente = Buffer.from(asistenteB64, 'base64url');
+  const firma = Buffer.from(firmaB64, 'base64url');
+  if (asistente.length !== 16 || firma.length !== 16 || !UUID.test(fromBytesUuid(asistente))) {
+    return { valido: false, motivo: 'formato' };
+  }
+  if (!timingSafeEqual(getFirmaFija(llave, asistente), firma)) {
+    return { valido: false, motivo: 'firma' };
+  }
+  return { valido: true, asistenteId: fromBytesUuid(asistente), fija: true };
 }

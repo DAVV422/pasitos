@@ -249,7 +249,7 @@ describe('Inicio de la app (HU-308)', () => {
         .where(eq(eventos.id, evento.eventoId));
       expect(
         verifyQrEntrada(fila?.llave ?? Buffer.alloc(32), entrada.qr, api.reloj.now().getTime()),
-      ).toEqual({ valido: true, asistenteId: sara.asistenteId });
+      ).toEqual({ valido: true, asistenteId: sara.asistenteId, fija: false });
       expect(JSON.stringify(entrada)).not.toContain(
         (fila?.llave ?? Buffer.alloc(1)).toString('base64'),
       );

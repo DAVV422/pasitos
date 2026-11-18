@@ -15,6 +15,7 @@ import {
   retos,
   sessions,
   sponsors,
+  tokens,
   usuarios,
 } from '@pasitos/db';
 import type { BaseDePrueba } from '@pasitos/db/pruebas';
@@ -45,6 +46,7 @@ export interface EventoDePrueba {
     readonly asistentes: string;
     readonly operaciones: string;
     readonly importaciones: string;
+    readonly accesos: string;
   };
 }
 
@@ -146,6 +148,17 @@ export async function createEventoDePrueba(
       expiraAt: new Date('2030-01-01T00:00:00Z'),
     },
   ]);
+  // HU-302: un QR de asistente ya vencido (el id del acceso es el del token del QR).
+  const accesoId = uuidv7();
+  await base.sistema.db.insert(tokens).values({
+    id: accesoId,
+    tokenHash: createTokenAleatorio().hash,
+    proposito: 'qr_asistente',
+    eventoId,
+    refId: asistenteId,
+    grupo: accesoId,
+    expiraAt: new Date('2026-01-01T00:00:00Z'),
+  });
   return {
     organizacionId,
     eventoId,
@@ -163,6 +176,7 @@ export async function createEventoDePrueba(
       asistentes: asistenteId,
       operaciones: exportacionId,
       importaciones: importacionId,
+      accesos: accesoId,
     },
   };
 }

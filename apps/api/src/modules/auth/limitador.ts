@@ -36,6 +36,20 @@ export class Limitador {
     return 0;
   }
 
+  /** Cuánto falta esperar, sin registrar un pedido (para contar solo los fallidos). */
+  check(clave: string): number {
+    const ahora = this.ahora();
+    const marcas = this.marcas.get(clave) ?? [];
+    for (const ventana of this.ventanas) {
+      const dentro = marcas.filter((t) => t > ahora - ventana.ms);
+      if (dentro.length >= ventana.maximo) {
+        const masVieja = dentro[dentro.length - ventana.maximo] ?? ahora;
+        return Math.max(1, Math.ceil((masVieja + ventana.ms - ahora) / 1000));
+      }
+    }
+    return 0;
+  }
+
   reset(clave: string): void {
     this.marcas.delete(clave);
   }

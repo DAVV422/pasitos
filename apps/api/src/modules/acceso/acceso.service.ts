@@ -7,6 +7,8 @@ import {
   eventos,
   invitaciones,
   outbox,
+  tokens,
+  usuarios,
   vinculaciones,
   withOrganizacion,
   type Db,
@@ -29,6 +31,8 @@ import { describeDispositivo } from '../auth/dispositivo';
 import { Limitador } from '../auth/limitador';
 import type { Reloj } from '../auth/sesiones.service';
 import { getUrlArchivo } from '../archivos/archivos.service';
+import { normalizeCodigoCorto, PROPOSITO_CORTO, PROPOSITO_QR } from '../puerta/accesos-puerta';
+import type { CheckInService } from '../puerta/check-in.service';
 import type { AccesoSistema } from './acceso-sistema';
 import { getEstadoApp, type EstadoApp } from './estado-app';
 import { getHuella, type RegistroTecnicoService } from './registro-tecnico';
@@ -59,31 +63,55 @@ export function hashDeviceId(deviceId: string): Buffer {
   return createHash('sha256').update(deviceId, 'utf8').digest();
 }
 
-interface InvitacionBloqueada {
+/**
+ * De dónde viene el acceso: el enlace de la invitación (HU-306) o el QR de asistente y el enlace
+ * corto que genera la puerta (HU-302). Los tres siguen el mismo camino al vincular.
+ */
+interface FuenteAcceso {
+  readonly tipo: TipoAcceso;
+  /** La invitación o el token. */
   readonly id: string;
   readonly asistenteId: string;
   readonly eventoId: string;
-  readonly estado: string;
+  readonly usada: boolean;
+  readonly metodo: 'enlace' | 'qr_puerta' | 'enlace_corto';
+  /** En la puerta: el id del acceso (el QR) y quién lo generó. */
+  readonly grupo: string | null;
+  readonly registradorId: string | null;
+}
+
+/** Usada en otro celular: la invitación lo dice; el QR de la puerta responde como vencido. */
+function getErrorUsada(tipo: TipoAcceso): AppError {
+  return new AppError(tipo === 'invitacion' ? 'INVITACION_YA_USADA' : 'QR_ASISTENTE_VENCIDO');
+}
+
+/** Cómo se guarda el hash de cada tipo de token. */
+function hashAcceso(tipo: TipoAcceso, token: string): Buffer {
+  return hashToken(tipo === 'corto' ? normalizeCodigoCorto(token) : token);
 }
 
 /**
- * Vincular el celular del asistente (HU-306 §2 y §3). Por ahora con el enlace de la invitación;
- * el QR de la puerta y el enlace corto llegan con HU-302 y usan el mismo camino.
+ * Vincular el celular del asistente (HU-306 §2 y §3): con el enlace de la invitación, el QR de
+ * asistente o el enlace corto de la puerta (HU-302).
  */
 export class AccesoService {
   private readonly porIp: Limitador;
   private readonly porToken: Limitador;
+  /** S8: 5 códigos cortos fallidos por minuto por IP. */
+  private readonly cortosFallidos: Limitador;
 
   constructor(
     private readonly db: Db,
     private readonly sistema: AccesoSistema,
     private readonly sesiones: SesionesAsistenteService,
     private readonly registro: RegistroTecnicoService,
+    private readonly checkIn: CheckInService,
     private readonly reloj: Reloj,
   ) {
     const ahora = () => this.reloj.now().getTime();
     this.porIp = new Limitador([{ maximo: 10, ms: 60_000 }], ahora);
     this.porToken = new Limitador([{ maximo: 10, ms: 60_000 }], ahora);
+    this.cortosFallidos = new Limitador([{ maximo: 5, ms: 60_000 }], ahora);
   }
 
   async describe(
@@ -92,16 +120,16 @@ export class AccesoService {
     ip: string,
     deviceId: string | undefined,
   ): Promise<DescripcionAcceso> {
-    this.checkLimite(ip, token);
-    const organizacionId = await this.findOrganizacion(tipo, token);
+    this.checkLimite(tipo, ip, token);
+    const organizacionId = await this.findOrganizacion(tipo, token, ip);
     return withOrganizacion(this.db, organizacionId, async (tx) => {
-      const invitacion = await this.lockInvitacion(tx, token, false);
-      const { evento, asistente } = await this.getEventoYAsistente(tx, invitacion);
+      const fuente = await this.lockFuente(tx, tipo, token, false);
+      const { evento, asistente } = await this.getEventoYAsistente(tx, fuente);
       let yaVinculado = false;
-      if (invitacion.estado === 'usada') {
-        yaVinculado = await this.isMismoNavegador(tx, invitacion, deviceId);
+      if (fuente.usada) {
+        yaVinculado = await this.isMismoNavegador(tx, fuente, deviceId);
         if (!yaVinculado) {
-          throw new AppError('INVITACION_YA_USADA');
+          throw getErrorUsada(tipo);
         }
       }
       return {
@@ -119,7 +147,7 @@ export class AccesoService {
   }
 
   async vincular(datos: DatosVincular, ip: string, userAgent: string): Promise<Vinculado> {
-    this.checkLimite(ip, datos.token);
+    this.checkLimite(datos.tipo, ip, datos.token);
     if (!isNavegadorSoportado(userAgent)) {
       throw new AppError('NAVEGADOR_NO_SOPORTADO');
     }
@@ -138,7 +166,7 @@ export class AccesoService {
       });
     }
     checkPuntoP256(datos.llavePublica);
-    const organizacionId = await this.findOrganizacion(datos.tipo, datos.token);
+    const organizacionId = await this.findOrganizacion(datos.tipo, datos.token, ip);
     const ahora = this.reloj.now();
     const senales = datos.senales ?? null;
     const modelo = describeModelo(datos.senales, describeDispositivo(userAgent));
@@ -149,12 +177,12 @@ export class AccesoService {
 
     try {
       return await withOrganizacion(this.db, organizacionId, async (tx) => {
-        const invitacion = await this.lockInvitacion(tx, datos.token, true);
-        visto.eventoId = invitacion.eventoId;
-        visto.asistenteId = invitacion.asistenteId;
+        const fuente = await this.lockFuente(tx, datos.tipo, datos.token, true);
+        visto.eventoId = fuente.eventoId;
+        visto.asistenteId = fuente.asistenteId;
         const resultado = await this.link(tx, {
           datos,
-          invitacion,
+          fuente,
           organizacionId,
           ahora,
           modelo,
@@ -163,16 +191,16 @@ export class AccesoService {
         });
         await this.registro.record(tx, organizacionId, {
           ...tecnico,
-          eventoId: invitacion.eventoId,
-          asistenteId: invitacion.asistenteId,
+          eventoId: fuente.eventoId,
+          asistenteId: fuente.asistenteId,
           dispositivoId: resultado.dispositivoId,
           momento: 'vinculacion',
           resultado: 'aceptado',
         });
         await this.raiseAlertasDeVinculacion(tx, {
           organizacionId,
-          eventoId: invitacion.eventoId,
-          asistenteId: invitacion.asistenteId,
+          eventoId: fuente.eventoId,
+          asistenteId: fuente.asistenteId,
           dispositivoId: resultado.dispositivoId,
           huella,
           motivosA8: getMotivosAutomatizado(datos.senales),
@@ -192,7 +220,7 @@ export class AccesoService {
     tx: Tx,
     paso: {
       datos: DatosVincular;
-      invitacion: InvitacionBloqueada;
+      fuente: FuenteAcceso;
       organizacionId: string;
       ahora: Date;
       modelo: string;
@@ -200,10 +228,10 @@ export class AccesoService {
       visto: { dispositivoId?: string };
     },
   ): Promise<{ vinculado: Vinculado; dispositivoId: string }> {
-    const { datos, invitacion, organizacionId, ahora, modelo } = paso;
+    const { datos, fuente, organizacionId, ahora, modelo } = paso;
     const llave = Buffer.from(toLlaveCruda(datos.llavePublica));
     {
-      const { evento, asistente } = await this.getEventoYAsistente(tx, invitacion);
+      const { evento, asistente } = await this.getEventoYAsistente(tx, fuente);
       const deviceIdHash = hashDeviceId(datos.deviceId);
 
       const [activa] = await tx
@@ -223,8 +251,8 @@ export class AccesoService {
       }
 
       // El enlace ya se usó: solo vuelve a entrar el mismo navegador (perdió la cookie).
-      if (invitacion.estado === 'usada' && (!existente || activa?.dispositivoId !== existente.id)) {
-        throw new AppError('INVITACION_YA_USADA');
+      if (fuente.usada && (!existente || activa?.dispositivoId !== existente.id)) {
+        throw getErrorUsada(fuente.tipo);
       }
 
       const dispositivoId = await this.upsertDispositivo(tx, {
@@ -262,16 +290,15 @@ export class AccesoService {
           eventoId: evento.id,
           asistenteId: asistente.id,
           dispositivoId,
-          metodo: 'enlace',
-          invitacionId: invitacion.id,
+          metodo: fuente.metodo,
+          invitacionId: fuente.tipo === 'invitacion' ? fuente.id : null,
+          tokenId: fuente.tipo === 'invitacion' ? null : fuente.id,
+          registradorId: fuente.registradorId,
         });
       }
 
-      if (invitacion.estado !== 'usada') {
-        await tx
-          .update(invitaciones)
-          .set({ estado: 'usada', usadaAt: ahora, updatedAt: ahora })
-          .where(eq(invitaciones.id, invitacion.id));
+      if (!fuente.usada) {
+        await this.markUsada(tx, fuente, ahora);
       }
       if (asistente.estado === 'invitado') {
         await tx
@@ -294,6 +321,10 @@ export class AccesoService {
         },
       ]);
 
+      if (fuente.tipo !== 'invitacion') {
+        await this.completePuerta(tx, { fuente, organizacionId, modelo, ahora, asistente });
+      }
+
       const expiraAt = getVencimientoSesion(evento.finAt);
       const sesion = await this.sesiones.create(tx, {
         vinculacionId,
@@ -306,6 +337,78 @@ export class AccesoService {
         dispositivoId,
       };
     }
+  }
+
+  /** El acceso queda usado. En la puerta, usar el QR anula el enlace corto y al revés. */
+  private async markUsada(tx: Tx, fuente: FuenteAcceso, ahora: Date): Promise<void> {
+    if (fuente.tipo === 'invitacion') {
+      await tx
+        .update(invitaciones)
+        .set({ estado: 'usada', usadaAt: ahora, updatedAt: ahora })
+        .where(eq(invitaciones.id, fuente.id));
+      return;
+    }
+    await tx.update(tokens).set({ usadoAt: ahora }).where(eq(tokens.id, fuente.id));
+    if (fuente.grupo) {
+      await tx
+        .update(tokens)
+        .set({ revocadoAt: ahora })
+        .where(
+          and(eq(tokens.grupo, fuente.grupo), ne(tokens.id, fuente.id), isNull(tokens.usadoAt)),
+        );
+    }
+  }
+
+  /**
+   * Vincular en la puerta (HU-302 §2): la persona queda presente (`vinculacion_puerta`) si no lo
+   * estaba, y quien generó el QR ve **Vinculado ✓** con el modelo (`acceso.vinculado`).
+   */
+  private async completePuerta(
+    tx: Tx,
+    datos: {
+      fuente: FuenteAcceso;
+      organizacionId: string;
+      modelo: string;
+      ahora: Date;
+      asistente: { id: string };
+    },
+  ): Promise<void> {
+    const { fuente } = datos;
+    if (!(await this.checkIn.findActivo(tx, fuente.asistenteId))) {
+      const [registrador] = fuente.registradorId
+        ? await tx
+            .select({ nombre: usuarios.nombre })
+            .from(usuarios)
+            .where(eq(usuarios.id, fuente.registradorId))
+        : [];
+      await this.checkIn.register(tx, {
+        organizacionId: datos.organizacionId,
+        eventoId: fuente.eventoId,
+        asistenteId: fuente.asistenteId,
+        metodo: 'vinculacion_puerta',
+        registradorId: fuente.registradorId,
+        actor: registrador
+          ? {
+              tipo: 'usuario',
+              id: fuente.registradorId ?? '',
+              nombre: registrador.nombre,
+              rol: null,
+            }
+          : { tipo: 'sistema', nombre: 'QR de asistente' },
+      });
+    }
+    await tx.insert(outbox).values({
+      id: uuidv7(),
+      tipo: 'acceso.vinculado',
+      eventoId: fuente.eventoId,
+      payload: {
+        eventoId: fuente.eventoId,
+        accesoId: fuente.grupo,
+        creadoPor: fuente.registradorId,
+        modelo: datos.modelo,
+        hora: datos.ahora.toISOString(),
+      },
+    });
   }
 
   /** A1 y A8 al vincular (HU-307 §5). Solo avisan: la vinculación sigue. */
@@ -367,7 +470,10 @@ export class AccesoService {
       {
         ...resto,
         eventoId,
-        momento: codigo === 'INVITACION_YA_USADA' ? 'intento_fallido' : 'vinculacion',
+        momento:
+          codigo === 'INVITACION_YA_USADA' || codigo === 'QR_ASISTENTE_VENCIDO'
+            ? 'intento_fallido'
+            : 'vinculacion',
         resultado: 'rechazado',
         motivo: codigo,
       },
@@ -377,8 +483,9 @@ export class AccesoService {
 
   // ── Pasos ───────────────────────────────────────────────────────────────
 
-  private checkLimite(ip: string, token: string): void {
+  private checkLimite(tipo: TipoAcceso, ip: string, token: string): void {
     const espera = Math.max(
+      tipo === 'corto' ? this.cortosFallidos.check(ip) : 0,
       this.porIp.hit(ip),
       this.porToken.hit(hashToken(token).toString('hex')),
     );
@@ -388,41 +495,99 @@ export class AccesoService {
   }
 
   /** De qué organización es el token. Uno que no existe responde igual que uno vencido. */
-  private async findOrganizacion(tipo: TipoAcceso, token: string): Promise<string> {
-    if (tipo !== 'invitacion') {
-      // HU-302: el QR de asistente y el enlace corto.
-      throw new AppError('QR_ASISTENTE_VENCIDO');
+  private async findOrganizacion(tipo: TipoAcceso, token: string, ip: string): Promise<string> {
+    if (tipo === 'invitacion') {
+      const organizacionId = await this.sistema.findOrganizacionDeInvitacion(hashToken(token));
+      if (!organizacionId) {
+        throw new AppError('ENLACE_VENCIDO');
+      }
+      return organizacionId;
     }
-    const organizacionId = await this.sistema.findOrganizacionDeInvitacion(hashToken(token));
+    const organizacionId = await this.sistema.findOrganizacionDeToken(
+      hashAcceso(tipo, token),
+      tipo === 'qr' ? PROPOSITO_QR : PROPOSITO_CORTO,
+    );
     if (!organizacionId) {
-      throw new AppError('ENLACE_VENCIDO');
+      // Un código corto inventado cuenta para el límite (S8).
+      if (tipo === 'corto') this.cortosFallidos.hit(ip);
+      throw new AppError('QR_ASISTENTE_VENCIDO');
     }
     return organizacionId;
   }
 
-  private async lockInvitacion(
+  private async lockFuente(
     tx: Tx,
+    tipo: TipoAcceso,
     token: string,
     bloquear: boolean,
-  ): Promise<InvitacionBloqueada> {
+  ): Promise<FuenteAcceso> {
+    if (tipo === 'invitacion') {
+      const consulta = tx
+        .select({
+          id: invitaciones.id,
+          asistenteId: invitaciones.asistenteId,
+          eventoId: invitaciones.eventoId,
+          estado: invitaciones.estado,
+        })
+        .from(invitaciones)
+        .where(eq(invitaciones.tokenHash, hashToken(token)));
+      const [invitacion] = bloquear ? await consulta.for('update') : await consulta;
+      if (!invitacion || invitacion.estado === 'revocada') {
+        throw new AppError('ENLACE_VENCIDO');
+      }
+      return {
+        tipo,
+        id: invitacion.id,
+        asistenteId: invitacion.asistenteId,
+        eventoId: invitacion.eventoId,
+        usada: invitacion.estado === 'usada',
+        metodo: 'enlace',
+        grupo: null,
+        registradorId: null,
+      };
+    }
     const consulta = tx
       .select({
-        id: invitaciones.id,
-        asistenteId: invitaciones.asistenteId,
-        eventoId: invitaciones.eventoId,
-        estado: invitaciones.estado,
+        id: tokens.id,
+        refId: tokens.refId,
+        eventoId: tokens.eventoId,
+        grupo: tokens.grupo,
+        creadoPor: tokens.creadoPor,
+        expiraAt: tokens.expiraAt,
+        usadoAt: tokens.usadoAt,
+        revocadoAt: tokens.revocadoAt,
       })
-      .from(invitaciones)
-      .where(eq(invitaciones.tokenHash, hashToken(token)));
-    const [invitacion] = bloquear ? await consulta.for('update') : await consulta;
-    if (!invitacion || invitacion.estado === 'revocada') {
-      throw new AppError('ENLACE_VENCIDO');
+      .from(tokens)
+      .where(
+        and(
+          eq(tokens.tokenHash, hashAcceso(tipo, token)),
+          eq(tokens.proposito, tipo === 'qr' ? PROPOSITO_QR : PROPOSITO_CORTO),
+        ),
+      );
+    const [fila] = bloquear ? await consulta.for('update') : await consulta;
+    const vencido =
+      !fila ||
+      !fila.refId ||
+      !fila.eventoId ||
+      fila.revocadoAt !== null ||
+      (fila.usadoAt === null && fila.expiraAt.getTime() <= this.reloj.now().getTime());
+    if (vencido) {
+      throw new AppError('QR_ASISTENTE_VENCIDO');
     }
-    return invitacion;
+    return {
+      tipo,
+      id: fila.id,
+      asistenteId: fila.refId as string,
+      eventoId: fila.eventoId as string,
+      usada: fila.usadoAt !== null,
+      metodo: tipo === 'qr' ? 'qr_puerta' : 'enlace_corto',
+      grupo: fila.grupo,
+      registradorId: fila.creadoPor,
+    };
   }
 
   /** El enlace vence al cierre del evento; un asistente quitado de la lista ya no entra. */
-  private async getEventoYAsistente(tx: Tx, invitacion: InvitacionBloqueada) {
+  private async getEventoYAsistente(tx: Tx, fuente: FuenteAcceso) {
     const [evento] = await tx
       .select({
         id: eventos.id,
@@ -433,11 +598,11 @@ export class AccesoService {
         logoArchivoId: eventos.logoArchivoId,
       })
       .from(eventos)
-      .where(eq(eventos.id, invitacion.eventoId));
+      .where(eq(eventos.id, fuente.eventoId));
     const [asistente] = await tx
       .select({ id: asistentes.id, nombre: asistentes.nombre, estado: asistentes.estado })
       .from(asistentes)
-      .where(eq(asistentes.id, invitacion.asistenteId));
+      .where(eq(asistentes.id, fuente.asistenteId));
     if (!evento || !asistente || evento.estado === 'cerrado' || asistente.estado === 'cancelado') {
       throw new AppError('ENLACE_VENCIDO');
     }
@@ -446,7 +611,7 @@ export class AccesoService {
 
   private async isMismoNavegador(
     tx: Tx,
-    invitacion: InvitacionBloqueada,
+    fuente: FuenteAcceso,
     deviceId: string | undefined,
   ): Promise<boolean> {
     if (!deviceId) return false;
@@ -456,7 +621,7 @@ export class AccesoService {
       .innerJoin(dispositivos, eq(dispositivos.id, vinculaciones.dispositivoId))
       .where(
         and(
-          eq(vinculaciones.asistenteId, invitacion.asistenteId),
+          eq(vinculaciones.asistenteId, fuente.asistenteId),
           isNull(vinculaciones.anuladaAt),
           eq(dispositivos.deviceIdHash, hashDeviceId(deviceId)),
         ),

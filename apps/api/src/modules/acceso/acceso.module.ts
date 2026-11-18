@@ -4,6 +4,8 @@ import { DbService } from '../../infra/db/db.module';
 import { AuthModule } from '../auth/auth.module';
 import { RELOJ, type Reloj } from '../auth/sesiones.service';
 import { EnVivoModule } from '../en-vivo/en-vivo.module';
+import { CheckInService } from '../puerta/check-in.service';
+import { PuertaModule } from '../puerta/puerta.module';
 import { AccesoSistema, PROVEEDOR_ACCESO_SISTEMA } from './acceso-sistema';
 import { AccesoController, AppAsistenteController } from './acceso.controller';
 import { AccesoService } from './acceso.service';
@@ -14,7 +16,7 @@ import { SesionesAsistenteService } from './sesiones-asistente';
 
 /** El acceso del asistente (HU-306): vincular el celular, su sesión y la firma del dispositivo. */
 @Module({
-  imports: [AuthModule, EnVivoModule],
+  imports: [AuthModule, EnVivoModule, PuertaModule],
   controllers: [AccesoController, AppAsistenteController],
   providers: [
     PROVEEDOR_ACCESO_SISTEMA,
@@ -30,14 +32,22 @@ import { SesionesAsistenteService } from './sesiones-asistente';
     },
     {
       provide: AccesoService,
-      inject: [DbService, AccesoSistema, SesionesAsistenteService, RegistroTecnicoService, RELOJ],
+      inject: [
+        DbService,
+        AccesoSistema,
+        SesionesAsistenteService,
+        RegistroTecnicoService,
+        CheckInService,
+        RELOJ,
+      ],
       useFactory: (
         db: DbService,
         sistema: AccesoSistema,
         sesiones: SesionesAsistenteService,
         registro: RegistroTecnicoService,
+        checkIn: CheckInService,
         reloj: Reloj,
-      ) => new AccesoService(db.db, sistema, sesiones, registro, reloj),
+      ) => new AccesoService(db.db, sistema, sesiones, registro, checkIn, reloj),
     },
     // Global: toda ruta `@Asistente()` pasa por aquí, en cualquier módulo.
     {

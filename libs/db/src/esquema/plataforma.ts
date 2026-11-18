@@ -150,6 +150,9 @@ export const tokens = pgTable(
     // Lo que el token guarda hasta usarse (el secreto de TOTP por confirmar, el desafío de
     // WebAuthn), cifrado con LLAVE_CIFRADO_DATOS.
     secretoCifrado: bytea('secreto_cifrado'),
+    // HU-302: el QR de asistente y su enlace corto son un mismo acceso (el id del QR). Usar uno
+    // anula el otro.
+    grupo: uuid('grupo'),
     expiraAt: timestamp('expira_at', { withTimezone: true }).notNull(),
     usadoAt: timestamp('usado_at', { withTimezone: true }),
     revocadoAt: timestamp('revocado_at', { withTimezone: true }),
@@ -161,6 +164,7 @@ export const tokens = pgTable(
       sql`${t.proposito} in ('qr_asistente', 'enlace_corto_asistente', 'conexion_pantalla', 'conexion_mesa', 'invitacion_equipo', 'invitacion_organizacion', 'invitacion_plataforma', 'restablecer_password', 'desafio_webauthn', 'configurar_totp', 'verificar_email')`,
     ),
     index('tokens_ref').on(t.proposito, t.refId),
+    index('tokens_grupo').on(t.grupo),
   ],
 );
 

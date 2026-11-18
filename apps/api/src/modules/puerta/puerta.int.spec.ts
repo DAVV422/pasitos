@@ -160,6 +160,20 @@ describe('Check-in (HU-301)', () => {
     expect(filas).toHaveLength(1);
   });
 
+  it('la tarjeta impresa: su QR fijo sirve para el check-in en la puerta', async () => {
+    const id = await newAsistente('Sin Celular');
+    const tarjeta = await get(`/asistentes/${id}/tarjeta`, registrador);
+    expect(tarjeta.statusCode).toBe(200);
+    expect(tarjeta.json()).toMatchObject({ nombre: 'Sin Celular', evento: 'Evento de prueba' });
+    const ficha = await post(
+      `/eventos/${evento.eventoId}/puerta/escanear-entrada`,
+      registrador,
+      { qr: tarjeta.json().qr },
+      null,
+    );
+    expect(ficha.json()).toMatchObject({ id, nombre: 'Sin Celular' });
+  });
+
   it('una captura de Mi entrada de más de 60 s se rechaza', async () => {
     const id = await newAsistente('Hugo Captura');
     const vieja = await getQr(id, api.reloj.now().getTime() - 2 * FRANJA_ENTRADA_MS - 1_000);

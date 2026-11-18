@@ -69,6 +69,13 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/puerta.page').then((m) => m.PuertaPage),
       },
       {
+        path: 'puerta/tarjeta/:asistenteId',
+        canActivate: [canDoActivate('puerta.use')],
+        title: 'Tarjeta de entrada · Pasitos',
+        loadComponent: () =>
+          import('./eventos/imprimir-tarjeta.page').then((m) => m.ImprimirTarjetaPage),
+      },
+      {
         path: 'invitados',
         canActivate: [canDoActivate('invitados.update')],
         title: 'Invitados · Pasitos',

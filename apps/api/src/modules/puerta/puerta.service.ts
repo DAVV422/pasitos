@@ -15,7 +15,7 @@ import { AppError } from '@pasitos/dominio';
 import { maskEmail } from '@pasitos/dominio/esquemas';
 import type { ContextoEvento } from '../../common/permisos/marcas';
 import type { FirmaVerificada } from '../../common/sesion/asistente';
-import { verifyQrEntrada } from '../acceso/entrada';
+import { buildQrEntradaFija, verifyQrEntrada } from '../acceso/entrada';
 import { runIdempotente } from '../acceso/idempotencia';
 import type { Reloj } from '../auth/sesiones.service';
 import { toActor } from '../bitacora/actores';
@@ -96,6 +96,32 @@ export class PuertaService {
         });
       }
       return this.buildFicha(tx, contexto, resultado.asistenteId);
+    });
+  }
+
+  /**
+   * La tarjeta impresa (HU-302 §4, D31) para quien no tiene celular: nombre, código y el QR fijo
+   * de *Mi entrada*. Sirve para el check-in; no para vincular.
+   */
+  getTarjeta(contexto: ContextoEvento, asistenteId: string) {
+    return withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
+      const [fila] = await tx
+        .select({
+          nombre: asistentes.nombre,
+          codigo: asistentes.codigoAsistente,
+          evento: eventos.nombre,
+          llave: eventos.llaveEntradas,
+        })
+        .from(asistentes)
+        .innerJoin(eventos, eq(eventos.id, asistentes.eventoId))
+        .where(and(eq(asistentes.id, asistenteId), eq(asistentes.eventoId, contexto.eventoId)));
+      if (!fila) throw new AppError('NO_ENCONTRADO');
+      return {
+        nombre: fila.nombre,
+        codigo: fila.codigo,
+        evento: fila.evento,
+        qr: buildQrEntradaFija(fila.llave, asistenteId),
+      };
     });
   }
 

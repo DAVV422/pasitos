@@ -1,6 +1,6 @@
 import type { Provider } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
-import { invitaciones, type Db } from '@pasitos/db';
+import { and, eq } from 'drizzle-orm';
+import { eventos, invitaciones, tokens, type Db } from '@pasitos/db';
 import { DbSistemaService } from '../../infra/db/db.module';
 
 /**
@@ -16,6 +16,16 @@ export class AccesoSistema {
       .select({ organizacionId: invitaciones.organizacionId })
       .from(invitaciones)
       .where(eq(invitaciones.tokenHash, tokenHash));
+    return fila?.organizacionId ?? null;
+  }
+
+  /** HU-302: el QR de asistente o el enlace corto (los `tokens` no llevan organización). */
+  async findOrganizacionDeToken(tokenHash: Buffer, proposito: string): Promise<string | null> {
+    const [fila] = await this.sistema
+      .select({ organizacionId: eventos.organizacionId })
+      .from(tokens)
+      .innerJoin(eventos, eq(eventos.id, tokens.eventoId))
+      .where(and(eq(tokens.tokenHash, tokenHash), eq(tokens.proposito, proposito)));
     return fila?.organizacionId ?? null;
   }
 }

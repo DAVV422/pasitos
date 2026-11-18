@@ -3,11 +3,13 @@ import {
   esquemaAnularCheckIn,
   esquemaCheckIn,
   esquemaEscanearEntrada,
+  esquemaGenerarAcceso,
 } from '@pasitos/dominio/esquemas';
 import type { FastifyRequest } from 'fastify';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
 import { getPedidoIdempotente } from '../acceso/idempotencia';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
+import { AccesosPuertaService } from './accesos-puerta';
 import { PuertaService } from './puerta.service';
 
 type RequestConCuerpo = FastifyRequest & { rawBody?: Buffer };
@@ -18,7 +20,30 @@ type RequestConCuerpo = FastifyRequest & { rawBody?: Buffer };
  */
 @Controller()
 export class PuertaController {
-  constructor(private readonly puerta: PuertaService) {}
+  constructor(
+    private readonly puerta: PuertaService,
+    private readonly accesos: AccesosPuertaService,
+  ) {}
+
+  /** HU-302: el QR de asistente de 2 minutos y su enlace corto. */
+  @Post('asistentes/:id/accesos')
+  @Permiso('puerta.use', { recurso: 'asistentes' })
+  @AccionBitacoraDe('acceso.create')
+  @HttpCode(201)
+  createAcceso(
+    @Contexto() contexto: ContextoEvento,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() cuerpo: unknown,
+  ) {
+    return this.accesos.create(contexto, id, esquemaGenerarAcceso.parse(cuerpo ?? {}).motivo);
+  }
+
+  /** El respaldo de **Vinculado ✓** cuando el aviso en vivo no llega. */
+  @Get('accesos/:id')
+  @Permiso('invitados.read', { recurso: 'accesos' })
+  getAcceso(@Contexto() contexto: ContextoEvento, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.accesos.getEstado(contexto, id);
+  }
 
   @Get('eventos/:eventoId/puerta')
   @Permiso('invitados.read')
@@ -38,6 +63,12 @@ export class PuertaController {
   @Permiso('invitados.read', { recurso: 'asistentes' })
   getFicha(@Contexto() contexto: ContextoEvento, @Param('id', new ParseUUIDPipe()) id: string) {
     return this.puerta.getFicha(contexto, id);
+  }
+
+  @Get('asistentes/:id/tarjeta')
+  @Permiso('invitados.read', { recurso: 'asistentes' })
+  getTarjeta(@Contexto() contexto: ContextoEvento, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.puerta.getTarjeta(contexto, id);
   }
 
   @Post('asistentes/:id/check-in')
