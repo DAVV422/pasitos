@@ -76,6 +76,7 @@ export const esquemaEditarEvento = z
       .max(60),
     // Reglas y puerta (HU-212).
     registroPuertaActivo: z.boolean(),
+    autoregistroActivo: z.boolean(),
     topeRegistrosPuerta: z.number().int().min(1).max(10_000).nullable(),
     puntosCheckIn: z.number().int().min(0).max(1_000),
     retosRequierenCheckIn: z.boolean(),
@@ -89,6 +90,7 @@ export const esquemaEditarEvento = z
 /** Las reglas de la puerta y de los puntos: su cambio va a la bitácora como `puerta.config.update`. */
 export const CAMPOS_REGLAS = [
   'registroPuertaActivo',
+  'autoregistroActivo',
   'topeRegistrosPuerta',
   'puntosCheckIn',
   'retosRequierenCheckIn',

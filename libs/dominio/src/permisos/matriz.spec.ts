@@ -33,6 +33,9 @@ const FLUJOS_2_4: Readonly<Record<AccionEvento, string>> = {
   'invitados.export': 'DC', // Descargar datos personales
   'puerta.use': 'DCR', // Buscar invitados, check-in, registrar, vincular
   'puntos.ajustar': 'DC', // Ajustes manuales y anular canjes
+  'qr_registro.read': 'DC',
+  'qr_registro.update': 'DC', // Crear y administrar los QR de registro
+  'puerta.activar': 'DCR', // Mostrar el QR de registro asignado (Activar cuentas)
   'panel.read': 'DCRSF', // Panel en vivo (R: solo asistencia · S: sus pantallas · F: lectura)
   'bitacora.read': 'DC',
   'reporte.read': 'DCF',

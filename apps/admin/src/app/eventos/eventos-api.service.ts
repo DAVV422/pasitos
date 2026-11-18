@@ -20,6 +20,8 @@ export interface EventoResumen {
 /** Reglas de la puerta y de los puntos (HU-212). */
 export interface ReglasEvento {
   readonly registroPuertaActivo: boolean;
+  /** HU-319: los QR de registro funcionan (apaga todos de una vez). */
+  readonly autoregistroActivo: boolean;
   readonly topeRegistrosPuerta: number | null;
   readonly puntosCheckIn: number;
   readonly retosRequierenCheckIn: boolean;
@@ -90,6 +92,8 @@ export interface FilaBitacoraEvento {
 
 export interface MiembroEquipo {
   readonly id: string;
+  /** `null` mientras no aceptó la invitación. */
+  readonly usuarioId: string | null;
   readonly email: string;
   readonly nombre: string | null;
   readonly rol: Exclude<RolEvento, 'dueno'>;

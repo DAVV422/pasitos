@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   index,
   integer,
@@ -360,5 +361,78 @@ export const escaneos = pgTable(
       .where(sql`${t.resultado} = 'aceptado' and ${t.qrNonce} is not null`),
     index('escaneos_evento').on(t.eventoId, t.createdAt),
     index('escaneos_asistente').on(t.asistenteId),
+  ],
+);
+
+/**
+ * Los QR de registro (HU-319, D60): con ellos la gente crea su cuenta sola. Con RLS; al abrirlos se
+ * busca su organización con el rol de sistema. El rotativo firma cada franja de 30 s con su
+ * secreto (que no sale del servidor); el fijo lleva un token, guardado como hash y cifrado para
+ * volver a descargarlo. `usuario_id` es la persona del equipo que lo muestra en su celular.
+ */
+export const qrRegistro = pgTable(
+  'qr_registro',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+    nombre: text('nombre').notNull(),
+    tipo: text('tipo').notNull(),
+    muestra: text('muestra').notNull(),
+    usuarioId: uuid('usuario_id').references(() => usuarios.id),
+    pantallaId: uuid('pantalla_id').references(() => pantallas.id),
+    // HU-325 agrega la clave foránea a `grupos`.
+    grupoId: uuid('grupo_id'),
+    marcaPresente: boolean('marca_presente').notNull().default(true),
+    tope: integer('tope'),
+    desde: timestamp('desde', { withTimezone: true }),
+    hasta: timestamp('hasta', { withTimezone: true }),
+    tokenHash: bytea('token_hash').unique(),
+    tokenCifrado: bytea('token_cifrado'),
+    secretoCifrado: bytea('secreto_cifrado'),
+    estado: text('estado').notNull().default('activo'),
+    invalidadoPor: uuid('invalidado_por').references(() => usuarios.id),
+    invalidadoAt: timestamp('invalidado_at', { withTimezone: true }),
+    motivoInvalidacion: text('motivo_invalidacion'),
+    registros: integer('registros').notNull().default(0),
+    createdBy: uuid('created_by').references(() => usuarios.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('qr_registro_nombre').on(t.eventoId, t.nombre),
+    check('qr_registro_nombre_largo', sql`char_length(${t.nombre}) between 2 and 60`),
+    check('qr_registro_tipo', sql`${t.tipo} in ('rotativo', 'fijo')`),
+    check('qr_registro_muestra', sql`${t.muestra} in ('miembro', 'pantalla', 'impreso')`),
+    check('qr_registro_muestra_tipo', sql`(${t.tipo} = 'fijo') = (${t.muestra} = 'impreso')`),
+    check(
+      'qr_registro_quien_muestra',
+      sql`(${t.muestra} <> 'miembro' or ${t.usuarioId} is not null) and (${t.muestra} <> 'pantalla' or ${t.pantallaId} is not null)`,
+    ),
+    check(
+      'qr_registro_secretos',
+      sql`(${t.tipo} = 'fijo' and ${t.tokenHash} is not null and ${t.tokenCifrado} is not null and ${t.secretoCifrado} is null) or (${t.tipo} = 'rotativo' and ${t.secretoCifrado} is not null and ${t.tokenHash} is null)`,
+    ),
+    check('qr_registro_tope', sql`${t.tope} is null or ${t.tope} between 1 and 100000`),
+    check(
+      'qr_registro_vigencia',
+      sql`${t.desde} is null or ${t.hasta} is null or ${t.desde} < ${t.hasta}`,
+    ),
+    check('qr_registro_estado', sql`${t.estado} in ('activo', 'invalidado')`),
+    check(
+      'qr_registro_motivo',
+      sql`${t.motivoInvalidacion} is null or char_length(${t.motivoInvalidacion}) between 5 and 300`,
+    ),
+    check('qr_registro_registros', sql`${t.registros} >= 0`),
+    // Una tablet muestra un solo QR de registro activo.
+    uniqueIndex('qr_registro_pantalla_activa')
+      .on(t.pantallaId)
+      .where(sql`${t.estado} = 'activo' and ${t.pantallaId} is not null`),
+    index('qr_registro_evento').on(t.eventoId),
+    index('qr_registro_usuario').on(t.usuarioId),
   ],
 );

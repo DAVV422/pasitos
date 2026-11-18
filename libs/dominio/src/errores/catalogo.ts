@@ -262,6 +262,31 @@ export const CATALOGO_ERRORES = {
     title: 'QR vencido',
     mensaje: 'Este QR ya venció. Escanea el que se ve ahora en la pantalla.',
   },
+  QR_REGISTRO_INVALIDO: {
+    status: 404,
+    title: 'QR de registro inválido',
+    mensaje: 'Este QR no es de Pasitos o está incompleto. Busca a alguien del equipo.',
+  },
+  QR_REGISTRO_VENCIDO: {
+    status: 422,
+    title: 'QR de registro vencido',
+    mensaje: 'Este QR ya cambió. Escanea el que se ve ahora.',
+  },
+  QR_REGISTRO_INACTIVO: {
+    status: 422,
+    title: 'QR de registro inactivo',
+    mensaje: 'Este QR ya no está activo. Busca a alguien del equipo.',
+  },
+  QR_NO_ASIGNADO: {
+    status: 403,
+    title: 'QR de otra persona',
+    mensaje: 'Este QR de registro lo muestra otra persona o una tablet.',
+  },
+  CONFIRMAR_RIESGO: {
+    status: 422,
+    title: 'Falta confirmar el riesgo',
+    mensaje: 'Un QR fijo se puede copiar y compartir. Marca «Entiendo los riesgos» para crearlo.',
+  },
   QR_YA_USADO: {
     status: 409,
     title: 'QR usado',

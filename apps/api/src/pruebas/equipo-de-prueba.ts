@@ -4,6 +4,7 @@ import {
   asistentes,
   canjes,
   operaciones,
+  qrRegistro,
   eventos,
   lugares,
   miembroTerminales,
@@ -51,6 +52,7 @@ export interface EventoDePrueba {
     readonly accesos: string;
     readonly alertas: string;
     readonly canjes: string;
+    readonly qrRegistro: string;
   };
 }
 
@@ -175,6 +177,18 @@ export async function createEventoDePrueba(
     totalPuntos: 50,
     expiraAt: new Date('2026-01-01T00:00:00Z'),
   });
+  // HU-319: un QR de registro fijo (el token es de mentira: no se descarga en V9).
+  const qrRegistroId = uuidv7();
+  await base.sistema.db.insert(qrRegistro).values({
+    id: qrRegistroId,
+    organizacionId,
+    eventoId,
+    nombre: 'Cartel de prueba',
+    tipo: 'fijo',
+    muestra: 'impreso',
+    tokenHash: createTokenAleatorio().hash,
+    tokenCifrado: Buffer.from('sin-uso'),
+  });
   // HU-305: un aviso No fui yo.
   const alertaId = uuidv7();
   await base.sistema.db.insert(alertas).values({
@@ -205,6 +219,7 @@ export async function createEventoDePrueba(
       accesos: accesoId,
       alertas: alertaId,
       canjes: canjeId,
+      qrRegistro: qrRegistroId,
     },
   };
 }

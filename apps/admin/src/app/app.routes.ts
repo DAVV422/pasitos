@@ -87,6 +87,19 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/puerta.page').then((m) => m.PuertaPage),
       },
       {
+        path: 'puerta/activar',
+        canActivate: [canDoActivate('puerta.activar')],
+        title: 'Activar cuentas · Pasitos',
+        loadComponent: () =>
+          import('./eventos/activar-cuentas.page').then((m) => m.ActivarCuentasPage),
+      },
+      {
+        path: 'qr-registro',
+        canActivate: [canDoActivate('qr_registro.read')],
+        title: 'QR de registro · Pasitos',
+        loadComponent: () => import('./eventos/qr-registro.page').then((m) => m.QrRegistroPage),
+      },
+      {
         path: 'puerta/tarjeta/:asistenteId',
         canActivate: [canDoActivate('puerta.use')],
         title: 'Tarjeta de entrada · Pasitos',

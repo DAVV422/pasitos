@@ -1,6 +1,6 @@
 import type { Provider } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
-import { eventos, invitaciones, tokens, type Db } from '@pasitos/db';
+import { eventos, invitaciones, qrRegistro, tokens, type Db } from '@pasitos/db';
 import { DbSistemaService } from '../../infra/db/db.module';
 
 /**
@@ -27,6 +27,21 @@ export class AccesoSistema {
       .innerJoin(eventos, eq(eventos.id, tokens.eventoId))
       .where(and(eq(tokens.tokenHash, tokenHash), eq(tokens.proposito, proposito)));
     return fila?.organizacionId ?? null;
+  }
+
+  /** HU-319: el QR de registro, por su id (rotativo) o por el hash de su token (fijo). */
+  async findOrganizacionDeQrRegistro(
+    criterio: { readonly id: string } | { readonly tokenHash: Buffer },
+  ): Promise<{ organizacionId: string; id: string } | null> {
+    const [fila] = await this.sistema
+      .select({ organizacionId: qrRegistro.organizacionId, id: qrRegistro.id })
+      .from(qrRegistro)
+      .where(
+        'id' in criterio
+          ? eq(qrRegistro.id, criterio.id)
+          : eq(qrRegistro.tokenHash, criterio.tokenHash),
+      );
+    return fila ?? null;
   }
 }
 

@@ -50,6 +50,7 @@ describe('Configurar la puerta (HU-212)', () => {
     const respuesta = await pedir(dueno, 'GET', `/eventos/${evento.eventoId}`);
     expect(respuesta.json().reglas).toEqual({
       registroPuertaActivo: true,
+      autoregistroActivo: false,
       topeRegistrosPuerta: null,
       puntosCheckIn: 0,
       retosRequierenCheckIn: true,

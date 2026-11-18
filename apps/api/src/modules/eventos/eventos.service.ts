@@ -462,6 +462,7 @@ export class EventosService {
       nombrePuntos: evento.nombrePuntos,
       reglas: {
         registroPuertaActivo: evento.registroPuertaActivo,
+        autoregistroActivo: evento.autoregistroActivo,
         topeRegistrosPuerta: evento.topeRegistrosPuerta,
         puntosCheckIn: evento.puntosCheckIn,
         retosRequierenCheckIn: evento.retosRequierenCheckIn,

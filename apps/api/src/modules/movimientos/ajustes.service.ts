@@ -13,7 +13,6 @@ import {
   usuarios,
   withOrganizacion,
   type Db,
-  type Tx,
 } from '@pasitos/db';
 import { AppError, CATEGORIAS_AJUSTE, type TipoMotivoAjuste } from '@pasitos/dominio';
 import type { LibroService } from '@pasitos/libro';

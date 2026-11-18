@@ -66,6 +66,10 @@ const ESPERA_BUSQUEDA_MS = 250;
           </p>
         }
       </header>
+      @if (autoregistro()) {
+        <!-- HU-319: el QR rotativo asignado a esta persona. -->
+        <a pxBoton="secundario" routerLink="activar">Activar cuentas con mi QR</a>
+      }
       @if (alertas().length > 0) {
         <section
           class="border-danger flex flex-col gap-2 rounded-xl border-2 p-3"
@@ -411,6 +415,9 @@ export class PuertaPage {
   private readonly actual = inject(EventoActualService);
   private readonly contexto = inject(ContextoEventoService);
 
+  protected readonly autoregistro = computed(
+    () => this.actual.evento()?.reglas.autoregistroActivo === true,
+  );
   protected readonly modo = signal<Modo>('inicio');
   protected readonly resumen = signal<ResumenPuerta | null>(null);
   protected readonly consulta = signal('');

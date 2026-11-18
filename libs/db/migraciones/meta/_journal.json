@@ -239,6 +239,13 @@
       "when": 1795024243079,
       "tag": "0033_ajustes",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795035304898,
+      "tag": "0034_qr_registro",
+      "breakpoints": true
     }
   ]
 }

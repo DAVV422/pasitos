@@ -24,6 +24,7 @@ function buildEvento(miRol: RolEvento): EventoDetalle {
     nombrePuntos: 'puntos',
     reglas: {
       registroPuertaActivo: true,
+      autoregistroActivo: false,
       topeRegistrosPuerta: null,
       puntosCheckIn: 0,
       retosRequierenCheckIn: true,
@@ -77,6 +78,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Mis pantallas',
         'Puerta',
         'Invitados',
+        'QR de registro',
         'Equipo',
       ],
     ],
@@ -100,6 +102,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Mis pantallas',
         'Puerta',
         'Invitados',
+        'QR de registro',
         'Equipo',
       ],
     ],

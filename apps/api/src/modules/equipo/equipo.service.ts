@@ -78,6 +78,8 @@ export class EquipoService {
       const filas = await tx
         .select({
           id: miembrosEvento.id,
+          // HU-319: para asignarle un QR de registro.
+          usuarioId: miembrosEvento.usuarioId,
           email: miembrosEvento.emailInvitado,
           rol: miembrosEvento.rol,
           estado: miembrosEvento.estado,

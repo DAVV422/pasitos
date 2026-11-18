@@ -20,6 +20,7 @@ import { EnVivoModule } from './modules/en-vivo/en-vivo.module';
 import { AccesoModule } from './modules/acceso/acceso.module';
 import { PuertaModule } from './modules/puerta/puerta.module';
 import { SalaModule } from './modules/sala/sala.module';
+import { RegistroModule } from './modules/registro/registro.module';
 import { ReclamosModule } from './modules/reclamos/reclamos.module';
 import { CanjesModule } from './modules/canjes/canjes.module';
 import { AjustesModule } from './modules/movimientos/ajustes.module';
@@ -57,6 +58,7 @@ export class AppModule {
         EnVivoModule,
         AccesoModule,
         PuertaModule,
+        RegistroModule,
         SalaModule,
         ReclamosModule,
         CanjesModule,

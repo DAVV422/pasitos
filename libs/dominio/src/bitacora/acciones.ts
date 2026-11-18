@@ -75,6 +75,10 @@ export const ACCIONES_BITACORA = {
   'acceso.create': 'Generó un QR de asistente',
   'asistente.revincular': 'Cambió el celular de un invitado',
   'asistente.registrar_puerta': 'Registró a alguien en la puerta',
+  'qr_registro.create': 'Creó un QR de registro',
+  'qr_registro.update': 'Editó un QR de registro',
+  'qr_registro.invalidate': 'Invalidó un QR de registro',
+  'qr_registro.download': 'Descargó un QR de registro para imprimir',
   'alerta.atender': 'Tomó un aviso para atenderlo',
   'alerta.resolver': 'Resolvió un aviso',
   // Plataforma (evento_id nulo, salvo las que tocan un evento)

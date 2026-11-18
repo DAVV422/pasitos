@@ -24,9 +24,23 @@ export interface EstadoSala {
   readonly proximo: { readonly nombre: string; readonly desde: string } | null;
   readonly epoca: number;
   readonly horaServidor: number;
-  readonly evento: { readonly estado: string };
+  readonly evento: { readonly estado: string; readonly nombre: string };
+  /** HU-319: con un QR de registro asignado, la tablet muestra ese QR en vez del de los retos. */
+  readonly modo: 'reto' | 'registro';
+  readonly registro: { readonly nombre: string; readonly registros: number } | null;
   readonly opciones: readonly { readonly id: string; readonly nombre: string }[];
   readonly fijado: boolean;
+}
+
+/** HU-319: la franja del QR de registro, firmada por el servidor. */
+export interface FranjaRegistro {
+  readonly nombre: string;
+  readonly disponibilidad: string;
+  readonly url: string | null;
+  readonly validoHasta: number | null;
+  readonly horaServidor: number;
+  readonly registros: number;
+  readonly tope: number | null;
 }
 
 /** HU-315: los controles de la pantalla. */
@@ -51,6 +65,14 @@ export class SalaApi {
 
   getEstado(): Promise<EstadoSala> {
     return firstValueFrom(this.http.get<EstadoSala>('/api/v1/sala/estado'));
+  }
+
+  async getFranjaRegistro(): Promise<FranjaRegistro | null> {
+    return (
+      await firstValueFrom(
+        this.http.get<{ franja: FranjaRegistro | null }>('/api/v1/sala/registro/franja'),
+      )
+    ).franja;
   }
 
   control(accion: AccionPantalla, pin: string, retoId?: string | null): Promise<unknown> {

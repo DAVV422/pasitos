@@ -52,6 +52,8 @@ export const eventos = pgTable(
     nombrePuntos: text('nombre_puntos').notNull().default('puntos'),
     modoRegistro: text('modo_registro').notNull().default('lista'),
     registroPuertaActivo: boolean('registro_puerta_activo').notNull().default(true),
+    // HU-319: apaga de una vez todos los QR de registro.
+    autoregistroActivo: boolean('autoregistro_activo').notNull().default(false),
     // HU-212: tope del evento para registrar en la puerta; null = sin límite.
     topeRegistrosPuerta: integer('tope_registros_puerta'),
     puntosCheckIn: integer('puntos_check_in').notNull().default(0),

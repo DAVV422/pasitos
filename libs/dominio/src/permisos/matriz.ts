@@ -61,6 +61,12 @@ export const PERMISOS = {
   /** Buscar invitados, check-in, registrar en la puerta y vincular. */
   'puerta.use': [...DC, 'registrador'],
   'puntos.ajustar': DC,
+  /** HU-319: ver los QR de registro. */
+  'qr_registro.read': DC,
+  /** HU-319: crear, editar, invalidar y descargar los QR de registro. */
+  'qr_registro.update': DC,
+  /** HU-319: mostrar en el celular el QR de registro rotativo asignado (*Activar cuentas*). */
+  'puerta.activar': [...DC, 'registrador'],
   'panel.read': [...DC, 'registrador', 'operador_stand', 'financiador'],
   'bitacora.read': DC,
   'reporte.read': [...DC, 'financiador'],
@@ -82,6 +88,7 @@ export const ACCIONES_ESCRITURA: ReadonlySet<AccionEvento> = new Set<AccionEvent
   'invitados.update',
   'puerta.use',
   'puntos.ajustar',
+  'qr_registro.update',
 ]);
 
 /** Acciones que, para los operadores, valen solo en sus terminales asignadas (²). */

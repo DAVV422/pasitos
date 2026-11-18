@@ -17,6 +17,7 @@ const CAMPOS = ['topeRegistrosPuerta', 'puntosCheckIn', 'topePuntosPersona', 'to
 
 interface Formulario {
   registroPuertaActivo: boolean;
+  autoregistroActivo: boolean;
   topeRegistrosPuerta: string;
   puntosCheckIn: string;
   retosRequierenCheckIn: boolean;
@@ -51,6 +52,21 @@ const toNumero = (t: string) => (t.trim() === '' ? null : Number(t));
             role="switch"
             [checked]="form().registroPuertaActivo"
             (change)="set('registroPuertaActivo', !form().registroPuertaActivo)"
+          />
+        </label>
+        <label class="pnl-interruptor">
+          <span class="pnl-interruptor__texto">
+            Autorregistro con QR
+            <span class="pnl-interruptor__ayuda">
+              La gente crea su cuenta escaneando un QR de registro. Apagado, ningún QR de registro
+              funciona.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            [checked]="form().autoregistroActivo"
+            (change)="set('autoregistroActivo', !form().autoregistroActivo)"
           />
         </label>
         <px-campo
@@ -208,6 +224,7 @@ export class ReglasPuertaComponent implements OnInit {
     const f = this.form();
     const cambios = {
       registroPuertaActivo: f.registroPuertaActivo,
+      autoregistroActivo: f.autoregistroActivo,
       topeRegistrosPuerta: toNumero(f.topeRegistrosPuerta),
       puntosCheckIn: Number(f.puntosCheckIn),
       retosRequierenCheckIn: f.retosRequierenCheckIn,
@@ -281,6 +298,7 @@ export class ReglasPuertaComponent implements OnInit {
   private toFormulario(reglas: ReglasEvento | null): Formulario {
     return {
       registroPuertaActivo: reglas?.registroPuertaActivo ?? true,
+      autoregistroActivo: reglas?.autoregistroActivo ?? false,
       topeRegistrosPuerta: toTexto(reglas?.topeRegistrosPuerta ?? null),
       puntosCheckIn: String(reglas?.puntosCheckIn ?? 0),
       retosRequierenCheckIn: reglas?.retosRequierenCheckIn ?? true,

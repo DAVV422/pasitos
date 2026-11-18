@@ -107,6 +107,8 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 | Registrar en la puerta a quien no estaba inscrito (si está activado) | ✅ | ✅ | ✅ | — | — | — |
 | Vincular o revincular el celular de un asistente | ✅ | ✅ | ✅ | — | — | — |
 | Ajustes manuales de puntos y anular canjes | ✅ | ✅ | — | — | — | — |
+| Crear y administrar los QR de registro | ✅ | ✅ | — | — | — | — |
+| Mostrar el QR de registro asignado (*Activar cuentas*) | ✅ | ✅ | ✅ | — | — | — |
 | Cobrar canjes | ✅ | ✅ | — | ✅ ² | — | — |
 | Controlar pantallas (pausar, generar otro QR, mostrar QR) | ✅ | ✅ | — | — | ✅ ² | — |
 | Panel en vivo | ✅ | ✅ | Solo asistencia | — | Sus pantallas | ✅ lectura |

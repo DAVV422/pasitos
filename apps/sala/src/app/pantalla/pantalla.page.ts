@@ -13,6 +13,7 @@ import { EnVivoService, ErrorApi } from '@pasitos/web-core';
 import { getParLlaves } from '../conectar/llave-local';
 import { SalaApi, type EstadoSala, type QrEmitido } from '../sala-api.service';
 import { ControlesComponent } from './controles.component';
+import { RegistroComponent } from './registro.component';
 
 type Emitido = QrEmitido;
 
@@ -33,7 +34,7 @@ function newNonce(): string {
 @Component({
   selector: 'sala-pantalla-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AvisoComponent, ControlesComponent, IconoComponent, QrComponent],
+  imports: [AvisoComponent, ControlesComponent, IconoComponent, QrComponent, RegistroComponent],
   host: { class: 'bg-bg fixed inset-0 z-20 flex flex-col', '(click)': 'onToque()' },
   template: `
     @if (sinRed()) {
@@ -41,7 +42,9 @@ function newNonce(): string {
         <px-aviso variante="advertencia">Contador sin conexión. El QR sigue funcionando.</px-aviso>
       </div>
     }
-    @if (estado(); as e) {
+    @if (estado()?.modo === 'registro') {
+      <sala-registro [evento]="estado()?.evento.nombre ?? ''" [tamano]="tamanoQr()" />
+    } @else if (estado(); as e) {
       @switch (e.estado) {
         @case ('activa') {
           @if (e.reto; as r) {
@@ -124,14 +127,16 @@ function newNonce(): string {
       </section>
     }
     @if (estado(); as e) {
-      <sala-controles
-        [pausada]="e.estado === 'pausada'"
-        [fijado]="e.fijado"
-        [retoActual]="e.reto?.id ?? null"
-        [opciones]="e.opciones"
-        (optimista)="onOptimista($event)"
-        (cambio)="loadEstado()"
-      />
+      @if (e.modo !== 'registro') {
+        <sala-controles
+          [pausada]="e.estado === 'pausada'"
+          [fijado]="e.fijado"
+          [retoActual]="e.reto?.id ?? null"
+          [opciones]="e.opciones"
+          (optimista)="onOptimista($event)"
+          (cambio)="loadEstado()"
+        />
+      }
     }
   `,
 })
@@ -322,6 +327,8 @@ export class PantallaPage {
     const estado = this.estado();
     const reto = estado?.reto;
     if (!estado || !reto || estado.estado !== 'activa' || !this.llave || this.firmando) return;
+    // HU-319: en modo Registro el QR lo firma el servidor.
+    if (estado.modo === 'registro') return;
     const porTiempo = reto.modo === 'por_tiempo';
     const franja = porTiempo
       ? getFranjaQr(Date.now() + this.desfase, reto.rotacionSegundos)

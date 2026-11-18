@@ -4,6 +4,7 @@ import {
   lugares,
   pantallas,
   qrEmitidos,
+  qrRegistro,
   retos,
   withOrganizacion,
   type Db,
@@ -41,7 +42,13 @@ export interface EstadoSalaApi {
   readonly epoca: number;
   /** Para que la tablet calcule la franja con la hora del servidor. */
   readonly horaServidor: number;
-  readonly evento: { readonly estado: string };
+  readonly evento: { readonly estado: string; readonly nombre: string };
+  /**
+   * HU-319: con un QR de registro asignado, la tablet muestra ese QR en vez del de los retos (la
+   * franja la pide aparte, a `/sala/registro/franja`).
+   */
+  readonly modo: 'reto' | 'registro';
+  readonly registro: { readonly nombre: string; readonly registros: number } | null;
   /** HU-315: los retos que se pueden elegir con *Cambiar de reto*. */
   readonly opciones: readonly { readonly id: string; readonly nombre: string }[];
   /** Si el operador fijó un reto (si no, sigue la agenda). */
@@ -80,6 +87,7 @@ export class SalaService {
           retoFijadoId: pantallas.retoActualId,
           lugar: lugares.nombre,
           eventoEstado: eventos.estado,
+          eventoNombre: eventos.nombre,
         })
         .from(pantallas)
         .innerJoin(eventos, eq(eventos.id, pantallas.eventoId))
@@ -104,6 +112,10 @@ export class SalaService {
         })
         .from(retos)
         .where(and(eq(retos.eventoId, terminal.evento.id), eq(retos.tipo, 'qr')));
+      const [registro] = await tx
+        .select({ nombre: qrRegistro.nombre, registros: qrRegistro.registros })
+        .from(qrRegistro)
+        .where(and(eq(qrRegistro.pantallaId, pantalla.id), eq(qrRegistro.estado, 'activo')));
       const ahora = this.reloj.now();
       const elegido = pickRetoDePantalla(pantalla, filas, { estado: pantalla.eventoEstado }, ahora);
       const reto = elegido.reto;
@@ -135,7 +147,9 @@ export class SalaService {
           : null,
         epoca: pantalla.epoca,
         horaServidor: ahora.getTime(),
-        evento: { estado: pantalla.eventoEstado },
+        evento: { estado: pantalla.eventoEstado, nombre: pantalla.eventoNombre },
+        modo: registro ? 'registro' : 'reto',
+        registro: registro ?? null,
         opciones: listRetosElegibles(filas, pantalla.lugarId, ahora).map((r) => ({
           id: r.id,
           nombre: r.nombre,

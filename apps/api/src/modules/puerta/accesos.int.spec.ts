@@ -45,7 +45,7 @@ describe('QR de asistente (HU-302)', () => {
   afterAll(async () => {
     await api?.close();
     await base?.stop();
-  });
+  }, 60_000);
 
   async function newAsistente(nombre: string) {
     const id = uuidv7();
