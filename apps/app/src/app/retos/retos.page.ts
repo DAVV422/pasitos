@@ -5,8 +5,8 @@ import { SesionAsistente } from '../sesion-asistente';
 import { RetoTarjetaComponent } from './reto-tarjeta.component';
 
 /**
- * *Retos* (mockup A2): agrupados en *Por hacer*, *Más tarde* y *Completados*. HU-309 suma el
- * detalle de cada reto (`/retos/:id`).
+ * *Retos* (mockup A2): agrupados en *Por hacer*, *Más tarde* y *Completados*. El nombre de cada
+ * uno lleva a su detalle (`/retos/:id`, HU-309).
  */
 @Component({
   selector: 'app-retos-page',
@@ -14,7 +14,9 @@ import { RetoTarjetaComponent } from './reto-tarjeta.component';
   imports: [EstadoComponent, RetoTarjetaComponent],
   template: `
     <h1 class="text-2xl font-extrabold">Retos</h1>
-    @if (!sesion.evento() || !sesion.estado()) {
+    @if (sesion.errorEvento()) {
+      <px-estado tipo="error" titulo="No pudimos cargar los retos. Revisa tu conexión." />
+    } @else if (!sesion.evento() || !sesion.estado()) {
       <px-estado tipo="cargando" titulo="Cargando los retos…" />
     } @else if (retos().length === 0) {
       <px-estado tipo="vacio" titulo="Todavía no hay retos en este evento." />

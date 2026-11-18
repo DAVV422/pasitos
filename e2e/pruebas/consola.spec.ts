@@ -235,6 +235,16 @@ test('un administrador crea una organización y la dueña acepta la invitación'
   // Al volver a abrir la app, entra directo (la sesión vive en la cookie).
   await celular.goto(new URL('/app/', page.url()).href);
   await expect(celular).toHaveURL(/\/app\/inicio$/);
+  // HU-309: Mi cuenta lleva al mapa; con la red cortada, la app vuelve a abrir y lo muestra (el
+  // service worker guarda la app y el contenido queda en la copia local).
+  await barra.getByRole('link', { name: 'Más' }).click();
+  await celular.getByRole('link', { name: 'Mapa', exact: true }).click();
+  await expect(celular.getByRole('heading', { name: 'Auditorio principal' })).toBeVisible();
+  await celular.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+  await celularValeria.setOffline(true);
+  await celular.reload();
+  await expect(celular.getByRole('heading', { name: 'Auditorio principal' })).toBeVisible();
+  await celularValeria.setOffline(false);
   // El mismo enlace en otro celular ya no sirve.
   const otroCelular = await browser.newContext({ ...devices['Pixel 7'] });
   const ajeno = await otroCelular.newPage();

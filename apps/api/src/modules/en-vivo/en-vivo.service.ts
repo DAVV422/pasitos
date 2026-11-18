@@ -22,6 +22,7 @@ export function getHoraUuidV7(id: string): number {
  * escucha y reparte a las suyas.
  */
 export class EnVivoService {
+  private readonly escuchas: ((aviso: AvisoOutbox) => void)[] = [];
   private readonly logger = new Logger(EnVivoService.name);
   readonly canales = new CanalesEnVivo();
   private cliente: Client | null = null;
@@ -79,7 +80,16 @@ export class EnVivoService {
 
   /** Reparte una fila de `outbox` (también la usan los tests). */
   dispatch(aviso: AvisoOutbox): void {
+    for (const escucha of this.escuchas) escucha(aviso);
     this.canales.dispatch(aviso);
+  }
+
+  /**
+   * Para lo que vive en memoria y depende de `outbox` (la caché de `/app/evento`, HU-309): se
+   * entera de cada aviso, haya o no canales abiertos.
+   */
+  onAviso(escucha: (aviso: AvisoOutbox) => void): void {
+    this.escuchas.push(escucha);
   }
 
   private getUltimoId(request: FastifyRequest): string | null {
@@ -164,7 +174,7 @@ export class EnVivoService {
   }
 
   private async load(id: string): Promise<void> {
-    if (this.canales.size === 0) return;
+    if (this.canales.size === 0 && this.escuchas.length === 0) return;
     try {
       const [fila] = await this.db
         .select({

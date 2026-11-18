@@ -33,10 +33,12 @@ interface CuerpoProblemDetails {
 /** Convierte la respuesta de error de HttpClient en un ErrorApi. */
 export function toErrorApi(respuesta: HttpErrorResponse): ErrorApi {
   const traceIdCabecera = respuesta.headers?.get('X-Request-Id') ?? null;
-  if (respuesta.status === 0) {
+  // Sin red, el service worker de Angular responde 504 sin cuerpo (HU-309): también es sin conexión.
+  const sinCuerpo = typeof respuesta.error !== 'object' || respuesta.error === null;
+  if (respuesta.status === 0 || (respuesta.status === 504 && sinCuerpo)) {
     return new ErrorApi(
       'SIN_CONEXION',
-      0,
+      respuesta.status,
       'No pudimos conectar. Intenta de nuevo.',
       traceIdCabecera,
     );

@@ -18,6 +18,7 @@ export interface Anulacion {
 }
 
 const SIN_EN_VIVO_MS = 60_000;
+const ESPERA_CONTENIDO_MS = 5_000;
 
 /** Los avisos que cambian lo que se ve (HU-308 §5). */
 const AVISOS = [
@@ -29,6 +30,7 @@ const AVISOS = [
   'evento.reanudado',
   'evento.cerrado',
   'aviso.publicado',
+  'contenido.actualizado',
 ] as const;
 
 /**
@@ -49,6 +51,8 @@ export class SesionAsistente {
   readonly sinConexion = signal(false);
   /** Cuándo llegó lo que se ve (para *"actualizado hace 3 min"*). */
   readonly actualizadoAt = signal<number | null>(null);
+  /** No se pudo traer el contenido del evento y no hay copia (HU-309: el estado de error). */
+  readonly errorEvento = signal(false);
   /** El último aviso del organizador (P2; si llega, se muestra). */
   readonly aviso = signal<string | null>(null);
 
@@ -115,12 +119,15 @@ export class SesionAsistente {
     try {
       const evento = await this.api.getEvento();
       this.evento.set(evento);
+      this.errorEvento.set(false);
       void saveCopia('evento', evento);
     } catch {
       const copia = await loadCopia<EventoApp>('evento');
-      if (copia && !this.evento()) {
+      // Una copia de antes de HU-309 (sin `info`) no sirve para las pantallas nuevas.
+      if (copia && 'info' in copia.valor && !this.evento()) {
         this.evento.set(copia.valor);
       }
+      this.errorEvento.set(!this.evento());
     }
   }
 
@@ -144,6 +151,10 @@ export class SesionAsistente {
         if (resultado !== 'ok')
           void this.router.navigate([`/${resultado === 'anulado' ? 'anulado' : 'sin-acceso'}`]);
       });
+    });
+    // HU-309: el contenido cambió. Cada celular espera un poco al azar para no pedir todos juntos.
+    conexion.on('contenido.actualizado', () => {
+      setTimeout(() => void this.loadEvento(), Math.random() * ESPERA_CONTENIDO_MS);
     });
     conexion.on('aviso.publicado', (aviso) => {
       const texto = (aviso.datos as { texto?: unknown } | null)?.texto;

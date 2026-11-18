@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import { bitacora, mesas, premios } from '@pasitos/db';
+import { bitacora, canjes, mesas, premios } from '@pasitos/db';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
 import { startApiDePrueba, type ApiDePrueba } from '../../pruebas/api-de-prueba';
 import {
@@ -151,6 +151,8 @@ describe('Catálogo de canje (HU-208)', () => {
   it('la lista de chequeo pide una mesa si hay premios activos', async () => {
     const conMesa = await pedir('GET', `/eventos/${evento.eventoId}/lista-de-chequeo`);
     expect(JSON.stringify(conMesa.json())).not.toContain('catalogo_con_mesa');
+    // El cobro de ejemplo del evento de prueba apunta a su mesa.
+    await base.sistema.db.delete(canjes).where(eq(canjes.eventoId, evento.eventoId));
     await base.sistema.db.delete(mesas).where(eq(mesas.eventoId, evento.eventoId));
     const sinMesa = await pedir('GET', `/eventos/${evento.eventoId}/lista-de-chequeo`);
     expect(JSON.stringify(sinMesa.json())).toContain('catalogo_con_mesa');

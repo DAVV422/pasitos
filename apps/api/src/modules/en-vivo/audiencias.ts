@@ -196,6 +196,13 @@ export function toAvisoEnVivo(aviso: AvisoOutbox, suscriptor: Suscriptor): Aviso
         ? { evento: aviso.tipo, datos }
         : null;
 
+    // HU-309: el contenido cambió; la app vuelve a pedir `/app/evento` (la caché ya se invalidó).
+    case 'evento.contenido_actualizado':
+    case 'reto.cambiado':
+      return suscriptor.tipo === 'asistente'
+        ? { evento: 'contenido.actualizado', datos: {}, agrupar: 'contenido' }
+        : null;
+
     // Lo del evento entero: a todos los canales.
     case 'evento.abierto':
     case 'evento.pausado':

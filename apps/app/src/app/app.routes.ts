@@ -20,6 +20,26 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./retos/retos.page').then((m) => m.RetosPage),
       },
       {
+        path: 'retos/:id',
+        loadComponent: () => import('./retos/reto-detalle.page').then((m) => m.RetoDetallePage),
+      },
+      {
+        path: 'agenda',
+        loadComponent: () => import('./contenido/agenda.page').then((m) => m.AgendaPage),
+      },
+      {
+        path: 'mapa',
+        loadComponent: () => import('./contenido/mapa.page').then((m) => m.MapaPage),
+      },
+      {
+        path: 'sponsors',
+        loadComponent: () => import('./contenido/sponsors.page').then((m) => m.SponsorsPage),
+      },
+      {
+        path: 'info',
+        loadComponent: () => import('./contenido/info.page').then((m) => m.InfoPage),
+      },
+      {
         path: 'escanear',
         loadComponent: () => import('./escanear/escanear.page').then((m) => m.EscanearPage),
       },

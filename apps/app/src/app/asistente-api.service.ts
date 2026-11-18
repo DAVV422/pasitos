@@ -69,6 +69,10 @@ export interface EventoApp {
   readonly id: string;
   readonly nombre: string;
   readonly logoUrl: string | null;
+  readonly info: InfoEvento;
+  readonly lugares: readonly LugarApp[];
+  readonly sponsors: readonly SponsorApp[];
+  readonly preguntas: readonly { readonly pregunta: string; readonly respuesta: string }[];
   readonly retos: readonly DefinicionReto[];
   readonly premios: readonly {
     readonly id: string;
@@ -81,6 +85,39 @@ export interface EventoApp {
   readonly agenda: readonly ActividadApp[];
 }
 
+/** Lo de la pantalla *Información* (HU-309). El wifi va solo a la app del asistente. */
+export interface InfoEvento {
+  readonly descripcion: string | null;
+  readonly contacto: string | null;
+  readonly wifi: string | null;
+  readonly inicioAt: string;
+  readonly finAt: string;
+  readonly lugarNombre: string | null;
+  readonly lugarDireccion: string | null;
+  readonly portadaUrl: string | null;
+  /** El plano en 1200 px. */
+  readonly planoUrl: string | null;
+  readonly nombrePuntos: string;
+}
+
+export interface LugarApp {
+  readonly id: string;
+  readonly nombre: string;
+  readonly tipo: string;
+  readonly numeroMapa: number | null;
+  readonly descripcion: string | null;
+}
+
+export interface SponsorApp {
+  readonly id: string;
+  readonly nombre: string;
+  /** El logo en 400 px. */
+  readonly logoUrl: string | null;
+  readonly descripcion: string | null;
+  readonly enlace: string | null;
+  readonly lugar: string | null;
+}
+
 export interface DefinicionReto {
   readonly id: string;
   readonly nombre: string;
@@ -88,6 +125,8 @@ export interface DefinicionReto {
   readonly puntos: number;
   readonly tipo: string;
   readonly lugar: string | null;
+  readonly lugarId: string | null;
+  readonly sponsorId: string | null;
   readonly disponibleDesde: string | null;
   readonly disponibleHasta: string | null;
 }

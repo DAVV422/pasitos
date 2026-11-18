@@ -13,7 +13,7 @@ interface Opcion {
 
 /**
  * *Mi cuenta* (HU-312 §2, mockup A17): quién es, su entrada, su celular y cómo ver mejor. Es la
- * pestaña *Más* de la barra.
+ * pestaña *Más* de la barra; arriba, la agenda, el mapa, los sponsors y la información (HU-309).
  */
 @Component({
   selector: 'app-cuenta-page',
@@ -34,6 +34,16 @@ interface Opcion {
         }
       </section>
     }
+    <nav aria-label="El evento" class="grid grid-cols-2 gap-2">
+      @for (opcion of opcionesEvento; track opcion.ruta) {
+        <a
+          [routerLink]="opcion.ruta"
+          class="border-line bg-surface flex min-h-14 items-center gap-3 rounded-xl border p-4 font-bold"
+        >
+          <px-icono [nombre]="opcion.icono" [tamano]="22" />{{ opcion.texto }}
+        </a>
+      }
+    </nav>
     <nav aria-label="Opciones de la cuenta" class="flex flex-col gap-2">
       @for (opcion of opciones; track opcion.ruta) {
         <a
@@ -97,6 +107,13 @@ export class CuentaPage {
     { valor: 'claro', texto: 'Claro' },
     { valor: 'oscuro', texto: 'Oscuro' },
   ] as const;
+  /** HU-309: lo del evento, para orientarse aunque la señal sea mala. */
+  protected readonly opcionesEvento: readonly Omit<Opcion, 'detalle'>[] = [
+    { ruta: '/agenda', icono: 'cal', texto: 'Agenda' },
+    { ruta: '/mapa', icono: 'pin', texto: 'Mapa' },
+    { ruta: '/sponsors', icono: 'badge', texto: 'Sponsors' },
+    { ruta: '/info', icono: 'info', texto: 'Información' },
+  ];
   protected readonly opciones: readonly Opcion[] = [
     { ruta: '/mi-entrada', icono: 'ticket', texto: 'Mi entrada', detalle: 'Tu QR para la puerta' },
     {

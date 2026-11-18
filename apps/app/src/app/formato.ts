@@ -8,15 +8,19 @@ export function formatHora(fecha: string | Date, zona: string): string {
   }).format(new Date(fecha));
 }
 
-/** *"sábado 21 de noviembre a las 09:00"*. */
-export function formatDiaYHora(fecha: string | Date, zona: string): string {
-  const dia = new Intl.DateTimeFormat('es-BO', {
+/** *"sábado 21 de noviembre"*. */
+export function formatDia(fecha: string | Date, zona: string): string {
+  return new Intl.DateTimeFormat('es-BO', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     timeZone: zona,
   }).format(new Date(fecha));
-  return `${dia} a las ${formatHora(fecha, zona)}`;
+}
+
+/** *"sábado 21 de noviembre a las 09:00"*. */
+export function formatDiaYHora(fecha: string | Date, zona: string): string {
+  return `${formatDia(fecha, zona)} a las ${formatHora(fecha, zona)}`;
 }
 
 /** *"2 días y 4 h"*, *"3 h y 20 min"*, *"12 min"*. */

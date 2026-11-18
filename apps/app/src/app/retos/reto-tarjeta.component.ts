@@ -13,7 +13,13 @@ import { getComoSeCompleta, type RetoVista } from '../retos-vista';
     @let r = reto();
     <article class="border-line bg-surface flex flex-col gap-2 rounded-xl border p-4">
       <div class="flex items-start justify-between gap-3">
-        <h3 class="text-lg leading-snug font-bold">{{ r.nombre }}</h3>
+        <h3 class="text-lg leading-snug font-bold">
+          @if (enlace()) {
+            <a [routerLink]="['/retos', r.id]" class="hover:underline">{{ r.nombre }}</a>
+          } @else {
+            {{ r.nombre }}
+          }
+        </h3>
         <px-chip [variante]="r.estadoPersona.estado === 'completado' ? 'ok' : 'puntos'"
           >+{{ r.puntos }}</px-chip
         >
@@ -65,6 +71,8 @@ export class RetoTarjetaComponent {
   readonly zona = input.required<string>();
   /** Si se puede actuar ahora (el evento en curso y con red). */
   readonly accion = input(true);
+  /** El nombre lleva al detalle (`/retos/:id`, HU-309); en el detalle, no. */
+  readonly enlace = input(true);
 
   protected readonly como = computed(() => getComoSeCompleta(this.reto()));
   protected readonly desde = computed(() => {

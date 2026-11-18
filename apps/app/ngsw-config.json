@@ -1,0 +1,42 @@
+{
+  "$schema": "../../node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "resources": {
+        "files": [
+          "/favicon.ico",
+          "/favicon.svg",
+          "/apple-touch-icon.png",
+          "/index.html",
+          "/*.css",
+          "/*.js"
+        ]
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "contenido-del-evento",
+      "urls": ["/api/v1/app/evento"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "timeout": "3s",
+        "maxSize": 1,
+        "maxAge": "7d"
+      }
+    },
+    {
+      "name": "imagenes-del-evento",
+      "urls": ["/api/v1/archivos/*/400", "/api/v1/archivos/*/1200"],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 60,
+        "maxAge": "7d"
+      }
+    }
+  ],
+  "navigationUrls": ["/**", "!/**/*.*", "!/**/*__*", "!/**/*__*/**"]
+}

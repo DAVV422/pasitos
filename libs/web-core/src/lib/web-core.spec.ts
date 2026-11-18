@@ -56,6 +56,15 @@ describe('interceptores comunes', () => {
     expect(error).toMatchObject({ code: 'SIN_CONEXION', status: 0 });
   });
 
+  it('sin red, el 504 vacío del service worker también es SIN_CONEXION', async () => {
+    const respuesta = firstValueFrom(http.get('/api/v1/app/estado'));
+    servidor
+      .expectOne('/api/v1/app/estado')
+      .flush('', { status: 504, statusText: 'Gateway Timeout' });
+    const error = await respuesta.catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'SIN_CONEXION', status: 504 });
+  });
+
   it('un código que la app no conoce es DESCONOCIDO, con el detail del servidor', async () => {
     const respuesta = firstValueFrom(http.get('/api/v1/x'));
     servidor

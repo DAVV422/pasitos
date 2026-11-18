@@ -29,7 +29,7 @@ import { AccesoService } from './acceso.service';
 import { RELOJ, type Reloj } from '../auth/sesiones.service';
 import { getEstadoApp, getEtag } from './estado-app';
 import { DispositivoAppService } from './dispositivo-app';
-import { getEventoApp } from './evento-app';
+import { EventoAppCache } from './evento-app.cache';
 import { getMiEntrada, listMovimientosApp } from './movimientos-app';
 import { COOKIE_ASISTENTE, COOKIE_DISPOSITIVO } from './sesiones-asistente';
 
@@ -109,6 +109,7 @@ export class AppAsistenteController {
     @Inject(RELOJ) private readonly reloj: Reloj,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly dispositivo: DispositivoAppService,
+    private readonly cacheEvento: EventoAppCache,
   ) {}
 
   /** HU-312 §1: este celular, el historial y los intentos de otros dispositivos. */
@@ -177,9 +178,8 @@ export class AppAsistenteController {
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
-    const evento = await withOrganizacion(this.db.db, asistente.organizacionId, (tx) =>
-      getEventoApp(tx, asistente.eventoId),
-    );
+    // HU-309: de la caché en memoria (se invalida con los avisos de contenido).
+    const { evento } = await this.cacheEvento.get(asistente.organizacionId, asistente.eventoId);
     return sendConEtag(request, reply, evento);
   }
 

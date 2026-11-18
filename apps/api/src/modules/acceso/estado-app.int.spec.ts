@@ -23,6 +23,7 @@ import {
   type EventoDePrueba,
 } from '../../pruebas/equipo-de-prueba';
 import { createTokenAleatorio } from '../auth/auth.repository';
+import { EnVivoService } from '../en-vivo/en-vivo.service';
 import { verifyQrEntrada } from './entrada';
 
 const CHROME_ANDROID =
@@ -228,6 +229,42 @@ describe('Inicio de la app (HU-308)', () => {
       respuesta.headers['etag'] as string,
     );
     expect(igual.statusCode).toBe(304);
+  });
+
+  it('HU-309: el contenido completo, en caché hasta que llega un aviso de contenido', async () => {
+    await base.sistema.db
+      .update(eventos)
+      .set({ wifi: 'Pasitos-Invitados', contacto: 'Mesa de informes' })
+      .where(eq(eventos.id, evento.eventoId));
+    api.app.get(EnVivoService).dispatch({
+      id: uuidv7(),
+      tipo: 'evento.contenido_actualizado',
+      eventoId: evento.eventoId,
+      payload: { eventoId: evento.eventoId },
+    });
+    const nina = await newVinculado('Nina Contenido');
+    const primero = await get('/api/v1/app/evento', nina.cookie);
+    expect(primero.json()).toMatchObject({
+      info: { wifi: 'Pasitos-Invitados', contacto: 'Mesa de informes', nombrePuntos: 'puntos' },
+    });
+    expect(primero.json().lugares.length).toBeGreaterThan(0);
+    const etag = primero.headers['etag'] as string;
+
+    // Un cambio directo en la base no se ve hasta que llega el aviso de contenido.
+    await base.sistema.db
+      .update(eventos)
+      .set({ contacto: 'Stand de Pasitos' })
+      .where(eq(eventos.id, evento.eventoId));
+    expect((await get('/api/v1/app/evento', nina.cookie, etag)).statusCode).toBe(304);
+    api.app.get(EnVivoService).dispatch({
+      id: uuidv7(),
+      tipo: 'evento.contenido_actualizado',
+      eventoId: evento.eventoId,
+      payload: { eventoId: evento.eventoId },
+    });
+    const despues = await get('/api/v1/app/evento', nina.cookie, etag);
+    expect(despues.statusCode).toBe(200);
+    expect(despues.json().info.contacto).toBe('Stand de Pasitos');
   });
 
   it('sin sesión no responde', async () => {

@@ -100,6 +100,11 @@ import { SesionAsistente } from '../sesion-asistente';
 
           @if (agenda().ahora || agenda().siguiente) {
             <section class="flex flex-col gap-2" aria-label="Ahora y a continuación">
+              <div class="flex justify-end">
+                <a routerLink="/agenda" class="text-points font-semibold underline"
+                  >Ver la agenda</a
+                >
+              </div>
               @for (fila of filasAgenda(); track fila.actividad.id) {
                 <div class="border-line bg-surface rounded-xl border p-4">
                   <p class="text-muted text-sm font-semibold uppercase">

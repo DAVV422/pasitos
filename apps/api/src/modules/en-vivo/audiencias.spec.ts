@@ -51,6 +51,18 @@ describe('Audiencias de los avisos en vivo (T-301)', () => {
     expect(toAvisoEnVivo(movimiento, pantalla())).toBeNull();
   });
 
+  it('un cambio de contenido avisa a los asistentes, sin datos y agrupado (HU-309)', () => {
+    for (const tipo of ['evento.contenido_actualizado', 'reto.cambiado']) {
+      expect(toAvisoEnVivo(aviso(tipo, { retoId: 'r-1' }), asistente())).toEqual({
+        evento: 'contenido.actualizado',
+        datos: {},
+        agrupar: 'contenido',
+      });
+      expect(toAvisoEnVivo(aviso(tipo, {}), equipo('dueno'))).toBeNull();
+      expect(toAvisoEnVivo(aviso(tipo, {}), pantalla())).toBeNull();
+    }
+  });
+
   it('el contador va a su pantalla, a los organizadores y al operador de esa pantalla, agrupado', () => {
     const contador = aviso('contador.actualizado', { pantallaId: 'p-1', entregados: 47 });
     expect(toAvisoEnVivo(contador, pantalla('p-1'))).toMatchObject({

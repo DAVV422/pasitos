@@ -4,6 +4,7 @@ import { DbService } from '../../infra/db/db.module';
 import { AuthModule } from '../auth/auth.module';
 import { RELOJ, type Reloj } from '../auth/sesiones.service';
 import { EnVivoModule } from '../en-vivo/en-vivo.module';
+import { EnVivoService } from '../en-vivo/en-vivo.service';
 import { CheckInService } from '../puerta/check-in.service';
 import { PuertaModule } from '../puerta/puerta.module';
 import { AccesoSistema, PROVEEDOR_ACCESO_SISTEMA } from './acceso-sistema';
@@ -11,6 +12,7 @@ import { AccesoController, AppAsistenteController } from './acceso.controller';
 import { AccesoService } from './acceso.service';
 import { AsistenteGuard } from './asistente.guard';
 import { DispositivoAppService } from './dispositivo-app';
+import { EventoAppCache } from './evento-app.cache';
 import { RegistroTecnicoService } from './registro-tecnico';
 import { RegistroTecnicoInterceptor } from './registro-tecnico.interceptor';
 import { SesionesAsistenteService } from './sesiones-asistente';
@@ -30,6 +32,11 @@ import { SesionesAsistenteService } from './sesiones-asistente';
       provide: RegistroTecnicoService,
       inject: [DbService],
       useFactory: (db: DbService) => new RegistroTecnicoService(db.db),
+    },
+    {
+      provide: EventoAppCache,
+      inject: [DbService, EnVivoService],
+      useFactory: (db: DbService, enVivo: EnVivoService) => new EventoAppCache(db.db, enVivo),
     },
     {
       provide: DispositivoAppService,
