@@ -1,16 +1,34 @@
-import { eq } from 'drizzle-orm';
-import { asistentes, eventos, saldos, type Tx } from '@pasitos/db';
-import { AppError } from '@pasitos/dominio';
+import { createHash } from 'node:crypto';
+import { and, count, desc, eq, max, sql } from 'drizzle-orm';
+import {
+  asistentes,
+  eventos,
+  lotes,
+  movimientos,
+  movimientosLote,
+  participaciones,
+  premios,
+  retos,
+  saldos,
+  type Tx,
+} from '@pasitos/db';
+import { AppError, getEstadoReto, type EstadoRetoAsistente } from '@pasitos/dominio';
+import { isPocosDisponibles } from '@pasitos/dominio/esquemas';
 
 /**
- * Lo que la app pide al abrir (`GET /app/estado`, API §5.2). Esta es la base de HU-306: quién es,
- * su saldo y el estado del evento. HU-308 suma los retos, los premios y los últimos movimientos.
+ * Lo que la app pide al abrir (`GET /app/estado`, HU-308 §1, API §5.2): una sola llamada de 2 a
+ * 4 KB con lo que cambia. La definición de los retos y los premios (nombre, imagen, precio) viene
+ * de `GET /app/evento`.
  */
 export interface EstadoApp {
   readonly asistente: {
     readonly codigo: string;
     readonly nombre: string;
     readonly estado: string;
+    /** HU-325. */
+    readonly grupos: readonly string[];
+    /** HU-320 y HU-321. */
+    readonly ci: { readonly cargado: boolean; readonly verificado: boolean };
   };
   readonly saldo: number;
   readonly evento: {
@@ -21,10 +39,63 @@ export interface EstadoApp {
     readonly finAt: string;
     readonly nombrePuntos: string;
     readonly requiereCheckIn: boolean;
+    readonly zonaHoraria: string;
   };
+  readonly retos: readonly EstadoRetoApp[];
+  readonly premios: readonly StockPremioApp[];
+  readonly ultimosMovimientos: readonly MovimientoApp[];
 }
 
-export async function getEstadoApp(tx: Tx, asistenteId: string): Promise<EstadoApp> {
+export interface EstadoRetoApp {
+  readonly id: string;
+  readonly estado: EstadoRetoAsistente;
+  readonly completadas: number;
+  readonly desde: string | null;
+  readonly completadoAt: string | null;
+}
+
+export interface StockPremioApp {
+  readonly id: string;
+  readonly disponible: number;
+  readonly pocos: boolean;
+}
+
+export interface MovimientoApp {
+  readonly id: string;
+  readonly tipo: string;
+  readonly puntos: number;
+  readonly detalle: string;
+  readonly hora: string;
+  readonly enStellar: boolean;
+}
+
+const ULTIMOS = 5;
+
+/** Lo que dice cada movimiento en la app, sin el motivo interno del equipo. */
+export function getDetalleMovimiento(tipo: string, reto: string | null): string {
+  switch (tipo) {
+    case 'reto':
+      return reto ?? 'Reto';
+    case 'checkin':
+      return 'Bienvenida';
+    case 'canje':
+      return 'Canje';
+    case 'anulacion':
+      return 'Anulación';
+    case 'ajuste':
+      return 'Ajuste del organizador';
+    case 'vencimiento':
+      return 'Vencimiento de los puntos';
+    default:
+      return 'Movimiento';
+  }
+}
+
+export async function getEstadoApp(
+  tx: Tx,
+  asistenteId: string,
+  ahora: Date = new Date(),
+): Promise<EstadoApp> {
   const [fila] = await tx
     .select({
       codigo: asistentes.codigoAsistente,
@@ -38,6 +109,7 @@ export async function getEstadoApp(tx: Tx, asistenteId: string): Promise<EstadoA
       finAt: eventos.finAt,
       nombrePuntos: eventos.nombrePuntos,
       requiereCheckIn: eventos.retosRequierenCheckIn,
+      zonaHoraria: eventos.zonaHoraria,
     })
     .from(asistentes)
     .innerJoin(eventos, eq(eventos.id, asistentes.eventoId))
@@ -46,8 +118,72 @@ export async function getEstadoApp(tx: Tx, asistenteId: string): Promise<EstadoA
   if (!fila) {
     throw new AppError('NO_ENCONTRADO');
   }
+
+  // Un bloque por consulta (HU-308 §1): retos con lo que hizo la persona, stock y movimientos.
+  const deLaPersona = tx
+    .select({
+      retoId: participaciones.retoId,
+      completadas: count().as('completadas'),
+      ultimaAt: max(participaciones.createdAt).as('ultima_at'),
+    })
+    .from(participaciones)
+    .where(eq(participaciones.asistenteId, asistenteId))
+    .groupBy(participaciones.retoId)
+    .as('de_la_persona');
+  const [filasRetos, filasPremios, filasMovimientos] = await Promise.all([
+    tx
+      .select({
+        id: retos.id,
+        estado: retos.estado,
+        topeTotal: retos.topeTotal,
+        entregados: retos.entregados,
+        vecesPorPersona: retos.vecesPorPersona,
+        disponibleDesde: retos.disponibleDesde,
+        disponibleHasta: retos.disponibleHasta,
+        completadas: deLaPersona.completadas,
+        ultimaAt: deLaPersona.ultimaAt,
+      })
+      .from(retos)
+      .leftJoin(deLaPersona, eq(deLaPersona.retoId, retos.id))
+      .where(eq(retos.eventoId, fila.eventoId))
+      .orderBy(retos.numero),
+    tx
+      .select({
+        id: premios.id,
+        total: premios.stockTotal,
+        reservado: premios.stockReservado,
+        entregado: premios.stockEntregado,
+      })
+      .from(premios)
+      .where(and(eq(premios.eventoId, fila.eventoId), eq(premios.estado, 'activo')))
+      .orderBy(premios.orden, premios.id),
+    tx
+      .select({
+        id: movimientos.id,
+        tipo: movimientos.tipo,
+        puntos: movimientos.puntos,
+        reto: retos.nombre,
+        hora: movimientos.createdAt,
+        enStellar: sql<boolean>`coalesce(${lotes.estado} = 'confirmado', false)`,
+      })
+      .from(movimientos)
+      .leftJoin(retos, eq(retos.id, movimientos.retoId))
+      .leftJoin(movimientosLote, eq(movimientosLote.movimientoId, movimientos.id))
+      .leftJoin(lotes, eq(lotes.id, movimientosLote.loteId))
+      .where(eq(movimientos.asistenteId, asistenteId))
+      .orderBy(desc(movimientos.id))
+      .limit(ULTIMOS),
+  ]);
+
+  const evento = { estado: fila.eventoEstado, inicioAt: fila.inicioAt };
   return {
-    asistente: { codigo: fila.codigo, nombre: fila.nombre, estado: fila.estado },
+    asistente: {
+      codigo: fila.codigo,
+      nombre: fila.nombre,
+      estado: fila.estado,
+      grupos: [],
+      ci: { cargado: false, verificado: false },
+    },
     saldo: fila.saldo ?? 0,
     evento: {
       id: fila.eventoId,
@@ -57,6 +193,50 @@ export async function getEstadoApp(tx: Tx, asistenteId: string): Promise<EstadoA
       finAt: fila.finAt.toISOString(),
       nombrePuntos: fila.nombrePuntos,
       requiereCheckIn: fila.requiereCheckIn,
+      zonaHoraria: fila.zonaHoraria,
     },
+    retos: filasRetos.map((reto) => {
+      const calculado = getEstadoReto(
+        reto,
+        { completadas: Number(reto.completadas ?? 0), ultimaAt: toFecha(reto.ultimaAt) },
+        evento,
+        ahora,
+      );
+      return {
+        id: reto.id,
+        estado: calculado.estado,
+        completadas: calculado.completadas,
+        desde: calculado.desde?.toISOString() ?? null,
+        completadoAt: calculado.completadoAt?.toISOString() ?? null,
+      };
+    }),
+    premios: filasPremios.map((premio) => {
+      const disponible = Math.max(0, premio.total - premio.reservado - premio.entregado);
+      return {
+        id: premio.id,
+        disponible,
+        pocos: disponible > 0 && isPocosDisponibles(disponible, premio.total),
+      };
+    }),
+    ultimosMovimientos: filasMovimientos.map((movimiento) => ({
+      id: movimiento.id,
+      tipo: movimiento.tipo,
+      puntos: movimiento.puntos,
+      detalle: getDetalleMovimiento(movimiento.tipo, movimiento.reto),
+      hora: movimiento.hora.toISOString(),
+      enStellar: movimiento.enStellar,
+    })),
   };
+}
+
+/** El `max()` de una subconsulta llega como texto: se vuelve fecha. */
+function toFecha(valor: Date | string | null): Date | null {
+  if (valor === null) return null;
+  return valor instanceof Date ? valor : new Date(valor);
+}
+
+/** `ETag` del contenido (HU-308 §1): si no cambió, `304`. */
+export function getEtag(contenido: unknown): string {
+  const hash = createHash('sha256').update(JSON.stringify(contenido)).digest('base64url');
+  return `"${hash.slice(0, 22)}"`;
 }

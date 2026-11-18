@@ -13,3 +13,5 @@ export * from './terminales/conexion';
 export * from './acceso/navegador';
 export * from './acceso/tipos';
 export * from './acceso/senales';
+export * from './app/estado-reto';
+export * from './app/agenda';

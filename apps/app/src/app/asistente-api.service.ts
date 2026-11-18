@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { TipoAcceso } from '@pasitos/dominio';
+import type { EstadoRetoAsistente, TipoAcceso } from '@pasitos/dominio';
 import type { LlavePublicaEc } from '@pasitos/firmas';
 import { firstValueFrom } from 'rxjs';
 
@@ -19,9 +19,15 @@ export interface AccesoVisto {
   readonly yaVinculado: boolean;
 }
 
-/** `GET /app/estado` (HU-306; HU-308 lo completa). */
+/** `GET /app/estado` (HU-308 §1): lo que cambia. */
 export interface EstadoApp {
-  readonly asistente: { readonly codigo: string; readonly nombre: string; readonly estado: string };
+  readonly asistente: {
+    readonly codigo: string;
+    readonly nombre: string;
+    readonly estado: string;
+    readonly grupos: readonly string[];
+    readonly ci: { readonly cargado: boolean; readonly verificado: boolean };
+  };
   readonly saldo: number;
   readonly evento: {
     readonly id: string;
@@ -31,7 +37,68 @@ export interface EstadoApp {
     readonly finAt: string;
     readonly nombrePuntos: string;
     readonly requiereCheckIn: boolean;
+    readonly zonaHoraria: string;
   };
+  readonly retos: readonly EstadoRetoApp[];
+  readonly premios: readonly {
+    readonly id: string;
+    readonly disponible: number;
+    readonly pocos: boolean;
+  }[];
+  readonly ultimosMovimientos: readonly {
+    readonly id: string;
+    readonly tipo: string;
+    readonly puntos: number;
+    readonly detalle: string;
+    readonly hora: string;
+    readonly enStellar: boolean;
+  }[];
+}
+
+export interface EstadoRetoApp {
+  readonly id: string;
+  readonly estado: EstadoRetoAsistente;
+  readonly completadas: number;
+  readonly desde: string | null;
+  readonly completadoAt: string | null;
+}
+
+/** `GET /app/evento`: lo que casi no cambia (la base de HU-309). */
+export interface EventoApp {
+  readonly id: string;
+  readonly nombre: string;
+  readonly logoUrl: string | null;
+  readonly retos: readonly DefinicionReto[];
+  readonly premios: readonly {
+    readonly id: string;
+    readonly nombre: string;
+    readonly descripcion: string | null;
+    readonly imagenUrl: string | null;
+    readonly puntos: number;
+    readonly maxPorPersona: number | null;
+  }[];
+  readonly agenda: readonly ActividadApp[];
+}
+
+export interface DefinicionReto {
+  readonly id: string;
+  readonly nombre: string;
+  readonly descripcion: string | null;
+  readonly puntos: number;
+  readonly tipo: string;
+  readonly lugar: string | null;
+  readonly disponibleDesde: string | null;
+  readonly disponibleHasta: string | null;
+}
+
+export interface ActividadApp {
+  readonly id: string;
+  readonly titulo: string;
+  readonly inicioAt: string;
+  readonly finAt: string;
+  readonly lugar: string | null;
+  readonly expositor: string | null;
+  readonly retoId: string | null;
 }
 
 export interface DatosVincular {
@@ -60,7 +127,12 @@ export class AsistenteApi {
     return firstValueFrom(this.http.post<EstadoApp>(`${BASE}/acceso/vincular`, datos));
   }
 
+  /** El navegador revalida solo con `If-None-Match` (`Cache-Control: no-cache`) y usa el 304. */
   getEstado(): Promise<EstadoApp> {
     return firstValueFrom(this.http.get<EstadoApp>(`${BASE}/app/estado`));
+  }
+
+  getEvento(): Promise<EventoApp> {
+    return firstValueFrom(this.http.get<EventoApp>(`${BASE}/app/evento`));
   }
 }

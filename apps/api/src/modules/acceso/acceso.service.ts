@@ -302,7 +302,7 @@ export class AccesoService {
         modelo,
       });
       return {
-        vinculado: { sesion, expiraAt, estado: await getEstadoApp(tx, asistente.id) },
+        vinculado: { sesion, expiraAt, estado: await getEstadoApp(tx, asistente.id, ahora) },
         dispositivoId,
       };
     }

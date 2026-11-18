@@ -9,7 +9,9 @@ import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { DbService } from '../../infra/db/db.module';
 import { EnVivoService } from '../en-vivo/en-vivo.service';
 import { AccesoService } from './acceso.service';
-import { getEstadoApp } from './estado-app';
+import { RELOJ, type Reloj } from '../auth/sesiones.service';
+import { getEstadoApp, getEtag } from './estado-app';
+import { getEventoApp } from './evento-app';
 import { COOKIE_ASISTENTE, COOKIE_DISPOSITIVO } from './sesiones-asistente';
 
 function toTipo(valor: string): TipoAcceso {
@@ -17,6 +19,20 @@ function toTipo(valor: string): TipoAcceso {
     throw new AppError('NO_ENCONTRADO');
   }
   return valor as TipoAcceso;
+}
+
+/**
+ * `ETag` y `Cache-Control: private, no-cache`: el celular revalida con `If-None-Match` y, si
+ * nada cambió, recibe `304` sin cuerpo.
+ */
+function sendConEtag<T>(request: FastifyRequest, reply: FastifyReply, contenido: T): T | undefined {
+  const etag = getEtag(contenido);
+  void reply.header('ETag', etag).header('Cache-Control', 'private, no-cache');
+  if (request.headers['if-none-match'] === etag) {
+    void reply.status(304);
+    return undefined;
+  }
+  return contenido;
 }
 
 /** Antes de vincular (API §5.1): ver el enlace y vincular el navegador (HU-306). */
@@ -71,15 +87,35 @@ export class AppAsistenteController {
   constructor(
     private readonly db: DbService,
     private readonly enVivo: EnVivoService,
+    @Inject(RELOJ) private readonly reloj: Reloj,
   ) {}
 
-  /** La base de HU-306; HU-308 suma retos, premios, movimientos y el `ETag`. */
+  /** HU-308 §1: la llamada al abrir. Con `If-None-Match`, `304` si nada cambió. */
   @Get('estado')
   @Asistente()
-  getEstado(@AsistenteActual() asistente: ContextoAsistente) {
-    return withOrganizacion(this.db.db, asistente.organizacionId, (tx) =>
-      getEstadoApp(tx, asistente.asistenteId),
+  async getEstado(
+    @AsistenteActual() asistente: ContextoAsistente,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const estado = await withOrganizacion(this.db.db, asistente.organizacionId, (tx) =>
+      getEstadoApp(tx, asistente.asistenteId, this.reloj.now()),
     );
+    return sendConEtag(request, reply, estado);
+  }
+
+  /** La definición de retos y premios y la agenda (la base de HU-309). */
+  @Get('evento')
+  @Asistente()
+  async getEvento(
+    @AsistenteActual() asistente: ContextoAsistente,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const evento = await withOrganizacion(this.db.db, asistente.organizacionId, (tx) =>
+      getEventoApp(tx, asistente.eventoId),
+    );
+    return sendConEtag(request, reply, evento);
   }
 
   /** T-301: saldo, pausa, cierre y dispositivo anulado, en vivo. */

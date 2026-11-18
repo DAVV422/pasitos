@@ -1,7 +1,13 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Router, type CanActivateFn } from '@angular/router';
-import { COOKIE_DISPOSITIVO, ErrorApi } from '@pasitos/web-core';
-import { AsistenteApi, type EstadoApp } from './asistente-api.service';
+import {
+  COOKIE_DISPOSITIVO,
+  EnVivoService,
+  ErrorApi,
+  type ConexionEnVivo,
+} from '@pasitos/web-core';
+import { AsistenteApi, type EstadoApp, type EventoApp } from './asistente-api.service';
+import { clearCopias, loadCopia, saveCopia } from './copia-local';
 
 /** Cómo se anuló este celular (`DISPOSITIVO_NO_VINCULADO`), para la pantalla de *anulado*. */
 export interface Anulacion {
@@ -9,19 +15,50 @@ export interface Anulacion {
   readonly metodo: string | null;
 }
 
+const SIN_EN_VIVO_MS = 60_000;
+
+/** Los avisos que cambian lo que se ve (HU-308 §5). */
+const AVISOS = [
+  'saldo.actualizado',
+  'dispositivo.anulado',
+  'foto.revisada',
+  'evento.abierto',
+  'evento.pausado',
+  'evento.reanudado',
+  'evento.cerrado',
+  'aviso.publicado',
+] as const;
+
 /**
- * La sesión del asistente en la app (HU-306 §6): el último estado del servidor y, si este celular
- * perdió la entrada, cuándo. La sesión vive en la cookie `px_asistente` (`HttpOnly`).
+ * La sesión del asistente en la app (HU-306 §6, HU-308 §5): el último estado del servidor, el
+ * contenido del evento y, si este celular perdió la entrada, cuándo. La sesión vive en la cookie
+ * `px_asistente` (`HttpOnly`). Sin conexión, muestra la última copia guardada.
  */
 @Injectable({ providedIn: 'root' })
 export class SesionAsistente {
   private readonly api = inject(AsistenteApi);
+  private readonly enVivo = inject(EnVivoService);
+  private readonly router = inject(Router);
+
   readonly estado = signal<EstadoApp | null>(null);
+  readonly evento = signal<EventoApp | null>(null);
   readonly anulacion = signal<Anulacion | null>(null);
+  /** La última foto es la guardada: no hay red. */
+  readonly sinConexion = signal(false);
+  /** Cuándo llegó lo que se ve (para *"actualizado hace 3 min"*). */
+  readonly actualizadoAt = signal<number | null>(null);
+  /** El último aviso del organizador (P2; si llega, se muestra). */
+  readonly aviso = signal<string | null>(null);
+
+  private conexion: ConexionEnVivo | null = null;
+  private sondeo: ReturnType<typeof setInterval> | null = null;
 
   set(estado: EstadoApp): void {
     this.anulacion.set(null);
     this.estado.set(estado);
+    this.sinConexion.set(false);
+    this.actualizadoAt.set(Date.now());
+    void saveCopia('estado', estado);
   }
 
   /** Pide el estado. `sin_sesion` y `anulado` los decide el guard. */
@@ -35,16 +72,109 @@ export class SesionAsistente {
           anuladaAt: typeof error.meta['anuladaAt'] === 'string' ? error.meta['anuladaAt'] : null,
           metodo: typeof error.meta['metodo'] === 'string' ? error.meta['metodo'] : null,
         });
+        this.forget();
         return 'anulado';
       }
       if (
         error instanceof ErrorApi &&
         (error.code === 'NO_AUTENTICADO' || error.code === 'SESION_VENCIDA')
       ) {
+        this.forget();
         return 'sin_sesion';
+      }
+      if (error instanceof ErrorApi && error.code === 'SIN_CONEXION') {
+        const copia = await loadCopia<EstadoApp>('estado');
+        if (copia) {
+          this.estado.set(copia.valor);
+          this.actualizadoAt.set(copia.guardadaAt);
+          this.sinConexion.set(true);
+          return 'ok';
+        }
       }
       throw error;
     }
+  }
+
+  /** El contenido del evento; sin red, la copia. Un error aquí no tira la pantalla. */
+  async loadEvento(): Promise<void> {
+    try {
+      const evento = await this.api.getEvento();
+      this.evento.set(evento);
+      void saveCopia('evento', evento);
+    } catch {
+      const copia = await loadCopia<EventoApp>('evento');
+      if (copia && !this.evento()) {
+        this.evento.set(copia.valor);
+      }
+    }
+  }
+
+  /**
+   * Los avisos en vivo de toda la app (T-301) y, si el canal no está abierto, un pedido cada
+   * 60 s. Al volver a la pestaña, el estado se vuelve a pedir (el navegador revalida el `ETag`).
+   */
+  start(): void {
+    if (this.conexion) return;
+    const conexion = this.enVivo.connect('/api/v1/app/en-vivo', [...AVISOS]);
+    this.conexion = conexion;
+    conexion.on('saldo.actualizado', (aviso) => {
+      const saldo = (aviso.datos as { saldo?: unknown } | null)?.saldo;
+      const estado = this.estado();
+      if (estado && typeof saldo === 'number') {
+        this.set({ ...estado, saldo });
+      }
+    });
+    conexion.on('dispositivo.anulado', () => {
+      void this.load().then((resultado) => {
+        if (resultado !== 'ok')
+          void this.router.navigate([`/${resultado === 'anulado' ? 'anulado' : 'sin-acceso'}`]);
+      });
+    });
+    conexion.on('aviso.publicado', (aviso) => {
+      const texto = (aviso.datos as { texto?: unknown } | null)?.texto;
+      if (typeof texto === 'string') this.aviso.set(texto);
+    });
+    for (const tipo of [
+      'foto.revisada',
+      'evento.abierto',
+      'evento.pausado',
+      'evento.reanudado',
+      'evento.cerrado',
+      'reiniciar',
+    ]) {
+      conexion.on(tipo, () => void this.refresh());
+    }
+    this.sondeo = setInterval(() => {
+      if (conexion.estado() !== 'abierta' && document.visibilityState === 'visible') {
+        void this.refresh();
+      }
+    }, SIN_EN_VIVO_MS);
+    document.addEventListener('visibilitychange', this.alVolver);
+    addEventListener('online', this.alVolver);
+  }
+
+  private readonly alVolver = (): void => {
+    if (document.visibilityState === 'visible') void this.refresh();
+  };
+
+  /** Vuelve a pedir el estado; si la sesión ya no sirve, lleva a su aviso. */
+  async refresh(): Promise<void> {
+    const resultado = await this.load().catch(() => 'ok' as const);
+    if (resultado === 'anulado') await this.router.navigate(['/anulado']);
+    if (resultado === 'sin_sesion') await this.router.navigate(['/sin-acceso']);
+  }
+
+  /** Cierra el canal y borra lo guardado: este celular ya no tiene la entrada. */
+  private forget(): void {
+    this.conexion?.close();
+    this.conexion = null;
+    if (this.sondeo) clearInterval(this.sondeo);
+    this.sondeo = null;
+    document.removeEventListener('visibilitychange', this.alVolver);
+    removeEventListener('online', this.alVolver);
+    this.estado.set(null);
+    this.evento.set(null);
+    void clearCopias();
   }
 }
 
@@ -52,14 +182,17 @@ export class SesionAsistente {
 export const sesionGuard: CanActivateFn = async () => {
   const sesion = inject(SesionAsistente);
   const router = inject(Router);
-  if (sesion.estado()) {
-    return true;
+  if (!sesion.estado()) {
+    // Un navegador que nunca se vinculó no tiene su id: no hace falta preguntar al servidor.
+    if (!document.cookie.split('; ').some((c) => c.startsWith(`${COOKIE_DISPOSITIVO}=`))) {
+      return router.parseUrl('/sin-acceso');
+    }
+    const resultado = await sesion.load().catch(() => 'error' as const);
+    if (resultado === 'anulado') return router.parseUrl('/anulado');
+    if (resultado === 'sin_sesion') return router.parseUrl('/sin-acceso');
+    if (resultado === 'error') return router.parseUrl('/sin-conexion');
   }
-  // Un navegador que nunca se vinculó no tiene su id: no hace falta preguntar al servidor.
-  if (!document.cookie.split('; ').some((c) => c.startsWith(`${COOKIE_DISPOSITIVO}=`))) {
-    return router.parseUrl('/sin-acceso');
-  }
-  const resultado = await sesion.load();
-  if (resultado === 'ok') return true;
-  return router.parseUrl(resultado === 'anulado' ? '/anulado' : '/sin-acceso');
+  sesion.start();
+  if (!sesion.evento()) void sesion.loadEvento();
+  return true;
 };

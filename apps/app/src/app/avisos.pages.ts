@@ -1,5 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { BotonDirective } from '@pasitos/ui';
 import { SesionAsistente } from './sesion-asistente';
 
 /** Sin sesión en este navegador (HU-306 §6). */
@@ -41,4 +43,25 @@ export class SinAccesoPage {}
 })
 export class AnuladoPage {
   protected readonly sesion = inject(SesionAsistente);
+}
+
+/** Sin red y sin copia guardada: la primera vez que se abre la app sin conexión (HU-308 §4). */
+@Component({
+  selector: 'app-sin-conexion-page',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [BotonDirective],
+  template: `
+    <section class="flex flex-col gap-4">
+      <h1 class="text-2xl font-extrabold">Sin conexión</h1>
+      <p>No pudimos abrir tu entrada. Tus puntos están a salvo.</p>
+      <button pxBoton type="button" (click)="retry()">Intentar de nuevo</button>
+    </section>
+  `,
+})
+export class SinConexionPage {
+  private readonly router = inject(Router);
+
+  protected retry(): void {
+    void this.router.navigate(['/inicio']);
+  }
 }
