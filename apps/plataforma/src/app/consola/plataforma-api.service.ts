@@ -139,6 +139,23 @@ export class PlataformaApi {
     );
   }
 
+  /** HU-324: el ZIP de las fotos autorizadas; el enlace sale de `getOperacion`. */
+  createDescargaFotos(eventoId: string) {
+    return firstValueFrom(
+      this.http.post<{ operacionId: string }>(`${BASE}/eventos/${eventoId}/fotos/descargas`, {}),
+    );
+  }
+
+  getOperacion(eventoId: string, id: string) {
+    return firstValueFrom(
+      this.http.get<{
+        readonly estado: 'en_cola' | 'procesando' | 'lista' | 'fallida' | 'confirmada';
+        readonly error: string | null;
+        readonly descarga: { readonly url: string } | null;
+      }>(`${BASE}/eventos/${eventoId}/operaciones/${id}`),
+    );
+  }
+
   updateIntervalo(id: string, intervaloAnclajeMin: number | null, motivo: string) {
     return firstValueFrom(
       this.http.patch<void>(`${BASE}/eventos/${id}`, { intervaloAnclajeMin, motivo }),

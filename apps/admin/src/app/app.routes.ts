@@ -101,6 +101,13 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/fotos-revisar.page').then((m) => m.FotosRevisarPage),
       },
       {
+        // HU-324: todas las fotos; D y C ven todas, los responsables las de sus retos.
+        path: 'fotos',
+        canActivate: [canDoActivate('evento.read')],
+        title: 'Fotos · Pasitos',
+        loadComponent: () => import('./eventos/fotos.page').then((m) => m.FotosPage),
+      },
+      {
         path: 'carnets',
         canActivate: [canDoActivate('ci.verify')],
         title: 'Verificar carnet · Pasitos',

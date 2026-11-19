@@ -74,6 +74,10 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./cuenta/mis-datos.page').then((m) => m.MisDatosPage),
       },
       {
+        path: 'cuenta/fotos',
+        loadComponent: () => import('./cuenta/mis-fotos.page').then((m) => m.MisFotosPage),
+      },
+      {
         path: 'cuenta/dispositivo',
         loadComponent: () => import('./cuenta/dispositivo.page').then((m) => m.DispositivoPage),
       },

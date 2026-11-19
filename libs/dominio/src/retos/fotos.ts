@@ -58,3 +58,25 @@ export function getMedidasAchicadas(
 export function getIntentosRestantes(intentosMax: number, rechazadas: number): number {
   return Math.max(0, intentosMax - rechazadas);
 }
+
+/** Cuándo se borran las fotos después del cierre (HU-324 §3). */
+export const DIAS_BORRADO_FOTOS = {
+  /** Sin autorización, o con la autorización retirada. */
+  sinAutorizacion: 30,
+  /** Con la autorización vigente. */
+  autorizadas: 90,
+  /** Rechazadas como inapropiadas. */
+  inapropiadas: 7,
+} as const;
+
+/** Qué plazo le toca a una foto. */
+export function getDiasBorradoFoto(foto: {
+  readonly motivoRechazo: string | null;
+  readonly autorizaUso: boolean;
+  readonly autorizaUsoRetiradaAt: Date | string | null;
+}): number {
+  if (foto.motivoRechazo === 'inapropiada') return DIAS_BORRADO_FOTOS.inapropiadas;
+  return foto.autorizaUso && !foto.autorizaUsoRetiradaAt
+    ? DIAS_BORRADO_FOTOS.autorizadas
+    : DIAS_BORRADO_FOTOS.sinAutorizacion;
+}

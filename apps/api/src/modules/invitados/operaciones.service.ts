@@ -13,7 +13,7 @@ import type { ContextoEvento } from '../../common/permisos/marcas';
 import { createTokenAleatorio, hashToken } from '../auth/auth.repository';
 import type { Reloj } from '../auth/sesiones.service';
 import { toActor } from '../bitacora/actores';
-import { BitacoraService } from '../bitacora/bitacora.service';
+import { BitacoraService, type ActorBitacora } from '../bitacora/bitacora.service';
 
 type Operacion = typeof operaciones.$inferSelect;
 
@@ -30,6 +30,9 @@ export interface Confirmacion {
 }
 
 const LOTE = 500;
+
+/** Las operaciones que terminan en un archivo para descargar. */
+const EXPORTACIONES = new Set(['export-asistentes', 'export-fotos']);
 
 /**
  * Importar y exportar la lista de invitados (HU-210 §4 y §5). Crear la operación y confirmarla
@@ -52,13 +55,29 @@ export class OperacionesService {
     return this.create(contexto, 'export-asistentes', estado ? { estado } : {});
   }
 
-  /** El estado para el panel. Una exportación lista trae un enlace nuevo (10 min, un solo uso). */
-  async get(contexto: ContextoEvento, id: string) {
+  /** HU-324: el ZIP de las fotos autorizadas (lo arma el trabajador). */
+  createExportacionFotos(
+    evento: { readonly organizacionId: string; readonly eventoId: string },
+    usuarioId: string,
+    desde: 'panel' | 'consola',
+  ) {
+    return this.create({ ...evento, usuarioId }, 'export-fotos', { desde });
+  }
+
+  /**
+   * El estado para el panel (o la consola, HU-324). Una exportación lista trae un enlace nuevo
+   * (10 min, un solo uso).
+   */
+  async get(
+    contexto: Pick<ContextoEvento, 'organizacionId' | 'eventoId'>,
+    id: string,
+    base = '/api/v1',
+  ) {
     return withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
       const operacion = await this.getOperacion(tx, contexto, id);
       let descarga: { url: string; expiraAt: string } | null = null;
       if (
-        operacion.tipo === 'export-asistentes' &&
+        EXPORTACIONES.has(operacion.tipo) &&
         operacion.estado === 'lista' &&
         !operacion.descargadaAt
       ) {
@@ -69,7 +88,7 @@ export class OperacionesService {
           .set({ descargaTokenHash: hash, descargaExpiraAt: expiraAt })
           .where(eq(operaciones.id, id));
         descarga = {
-          url: `/api/v1/operaciones/${id}/descarga?token=${token}`,
+          url: `${base}/operaciones/${id}/descarga?token=${token}`,
           expiraAt: expiraAt.toISOString(),
         };
       }
@@ -186,13 +205,26 @@ export class OperacionesService {
     return resultado.confirmacion;
   }
 
-  /** La descarga de la exportación: un solo uso, 10 min. Queda en la bitácora (Flujos §4.4). */
-  async download(contexto: ContextoEvento, id: string, token: string): Promise<Buffer> {
-    const ruta = join(this.archivosDir, 'exportaciones', `${id}.csv`);
+  /**
+   * La descarga de la exportación: un solo uso, 10 min. Queda en la bitácora (Flujos §4.4). Las
+   * fotos (HU-324) dicen desde dónde: el panel o la consola.
+   */
+  async download(
+    contexto: Pick<ContextoEvento, 'organizacionId' | 'eventoId'>,
+    id: string,
+    token: string,
+    actor: ActorBitacora,
+  ): Promise<{ datos: Buffer; tipo: string; fotos: number }> {
+    let ruta = '';
     const contenido = await withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
       const operacion = await this.getOperacion(tx, contexto, id, true);
+      ruta = join(
+        this.archivosDir,
+        'exportaciones',
+        `${id}.${operacion.tipo === 'export-fotos' ? 'zip' : 'csv'}`,
+      );
       const valido =
-        operacion.tipo === 'export-asistentes' &&
+        EXPORTACIONES.has(operacion.tipo) &&
         operacion.estado === 'lista' &&
         !operacion.descargadaAt &&
         operacion.descargaTokenHash !== null &&
@@ -206,15 +238,34 @@ export class OperacionesService {
         .update(operaciones)
         .set({ descargadaAt: this.reloj.now(), descargaTokenHash: null })
         .where(eq(operaciones.id, id));
-      await this.bitacora.record(tx, {
-        actor: toActor(contexto),
-        accion: 'invitados.export',
-        organizacionId: contexto.organizacionId,
-        eventoId: contexto.eventoId,
-        objeto: { tipo: 'operacion', id, nombre: 'Lista de invitados' },
-        despues: { filas: (operacion.resultado as { filas?: number } | null)?.filas ?? 0 },
-      });
-      return datos;
+      if (operacion.tipo === 'export-fotos') {
+        const desde = (operacion.parametros as { desde?: string }).desde ?? 'panel';
+        const entrada = {
+          actor,
+          accion: 'foto.descargar' as const,
+          objeto: { tipo: 'operacion', id, nombre: 'Fotos para redes' },
+          despues: { fotos: (operacion.resultado as { fotos?: number } | null)?.fotos ?? 0, desde },
+        };
+        await this.bitacora.record(tx, {
+          ...entrada,
+          organizacionId: contexto.organizacionId,
+          eventoId: contexto.eventoId,
+        });
+      } else {
+        await this.bitacora.record(tx, {
+          actor,
+          accion: 'invitados.export',
+          organizacionId: contexto.organizacionId,
+          eventoId: contexto.eventoId,
+          objeto: { tipo: 'operacion', id, nombre: 'Lista de invitados' },
+          despues: { filas: (operacion.resultado as { filas?: number } | null)?.filas ?? 0 },
+        });
+      }
+      return {
+        datos,
+        tipo: operacion.tipo,
+        fotos: (operacion.resultado as { fotos?: number } | null)?.fotos ?? 0,
+      };
     });
     await rm(ruta, { force: true });
     return contenido;
@@ -223,8 +274,8 @@ export class OperacionesService {
   // ── Ayudantes ──────────────────────────────────────────────────────────────
 
   private create(
-    contexto: ContextoEvento,
-    tipo: 'import-asistentes' | 'export-asistentes',
+    contexto: Pick<ContextoEvento, 'organizacionId' | 'eventoId' | 'usuarioId'>,
+    tipo: 'import-asistentes' | 'export-asistentes' | 'export-fotos',
     parametros: Record<string, unknown>,
   ) {
     return withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
@@ -275,7 +326,7 @@ export class OperacionesService {
 
   private async getOperacion(
     tx: Tx,
-    contexto: ContextoEvento,
+    contexto: Pick<ContextoEvento, 'eventoId'>,
     id: string,
     bloquear = false,
   ): Promise<Operacion> {

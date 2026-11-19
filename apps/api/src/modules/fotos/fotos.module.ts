@@ -9,14 +9,25 @@ import { FotosAppController } from './fotos-app.controller';
 import { FotosAppService } from './fotos-app.service';
 import { FotosRevisionController } from './fotos-revision.controller';
 import { FotosRevisionService } from './fotos-revision.service';
+import {
+  FotosAppSeguimientoController,
+  FotosSeguimientoController,
+} from './fotos-seguimiento.controller';
+import { FotosSeguimientoService } from './fotos-seguimiento.service';
+import { InvitadosModule } from '../invitados/invitados.module';
 import { LibroService } from '@pasitos/libro';
 import { MovimientosModule } from '../movimientos/movimientos.module';
 import { AnulacionesService } from '../movimientos/anulaciones.service';
 
 /** Los retos con foto: enviar desde la app (HU-322; el trabajador la procesa) y revisar (HU-323). */
 @Module({
-  imports: [AuthModule, ArchivosModule, MovimientosModule],
-  controllers: [FotosAppController, FotosRevisionController],
+  imports: [AuthModule, ArchivosModule, MovimientosModule, InvitadosModule],
+  controllers: [
+    FotosAppController,
+    FotosRevisionController,
+    FotosSeguimientoController,
+    FotosAppSeguimientoController,
+  ],
   providers: [
     {
       provide: FotosAppService,
@@ -34,6 +45,16 @@ import { AnulacionesService } from '../movimientos/anulaciones.service';
         config: AppConfig,
         reloj: Reloj,
       ) => new FotosRevisionService(db.db, libro, anulaciones, config.ARCHIVOS_DIR, reloj),
+    },
+    {
+      provide: FotosSeguimientoService,
+      inject: [DbService, FotosRevisionService, APP_CONFIG, RELOJ],
+      useFactory: (
+        db: DbService,
+        revision: FotosRevisionService,
+        config: AppConfig,
+        reloj: Reloj,
+      ) => new FotosSeguimientoService(db.db, revision, config.ARCHIVOS_DIR, reloj),
     },
   ],
 })

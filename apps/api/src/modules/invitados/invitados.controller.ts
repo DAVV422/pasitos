@@ -28,6 +28,7 @@ import { ArchivosService } from '../archivos/archivos.service';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
 import { AsistentesService } from './asistentes.service';
 import { InvitacionesAsistentesService } from './invitaciones.service';
+import { toActor } from '../bitacora/actores';
 import { OperacionesService } from './operaciones.service';
 
 function pick<T extends object>(datos: T, cuerpo: unknown): Partial<T> {
@@ -201,11 +202,20 @@ export class InvitadosController {
     @Query('token') token: string | undefined,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const csv = await this.operaciones.download(contexto, id, token ?? '');
+    const { datos, tipo } = await this.operaciones.download(
+      contexto,
+      id,
+      token ?? '',
+      toActor(contexto),
+    );
+    const zip = tipo === 'export-fotos';
     await reply
-      .header('Content-Type', 'text/csv; charset=utf-8')
-      .header('Content-Disposition', 'attachment; filename="invitados.csv"')
+      .header('Content-Type', zip ? 'application/zip' : 'text/csv; charset=utf-8')
+      .header(
+        'Content-Disposition',
+        `attachment; filename="${zip ? 'fotos-para-redes.zip' : 'invitados.csv'}"`,
+      )
       .header('Cache-Control', 'no-store')
-      .send(csv);
+      .send(datos);
   }
 }

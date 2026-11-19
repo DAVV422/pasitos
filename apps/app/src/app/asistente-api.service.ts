@@ -280,6 +280,17 @@ export interface DatosRegistro {
 }
 
 /** *Mis datos* (HU-320 §4). */
+/** Una foto de la persona (HU-324). */
+export interface MiFoto {
+  readonly id: string;
+  readonly reto: string;
+  readonly estado: string;
+  readonly motivo: string | null;
+  readonly autorizaUso: boolean;
+  readonly miniatura: string | null;
+  readonly enviadaAt: string;
+}
+
 export interface MisDatos {
   readonly nombre: string;
   readonly email: string | null;
@@ -319,6 +330,24 @@ export class AsistenteApi {
       this.http.post<EstadoApp & { yaRegistrado: boolean }>(`${BASE}/app/registro`, datos, {
         headers: new HttpHeaders({ 'Idempotency-Key': clave }),
       }),
+    );
+  }
+
+  /** *Mis fotos* (HU-324). */
+  listMisFotos(): Promise<{ readonly items: readonly MiFoto[] }> {
+    return firstValueFrom(
+      this.http.get<{ readonly items: readonly MiFoto[] }>(`${BASE}/app/fotos`),
+    );
+  }
+
+  /** Firmado: la foto sale de las descargas siguientes; los puntos no cambian. */
+  withdrawAutorizacionFoto(id: string): Promise<{ readonly autorizaUso: false }> {
+    return firstValueFrom(
+      this.http.post<{ readonly autorizaUso: false }>(
+        `${BASE}/app/fotos/${id}/retirar-autorizacion`,
+        {},
+        { context: new HttpContext().set(FIRMAR, true) },
+      ),
     );
   }
 

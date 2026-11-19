@@ -188,7 +188,7 @@ export interface VistaPreviaImportacion {
 
 export interface Operacion {
   readonly id: string;
-  readonly tipo: 'import-asistentes' | 'export-asistentes' | 'send-invitaciones';
+  readonly tipo: 'import-asistentes' | 'export-asistentes' | 'send-invitaciones' | 'export-fotos';
   readonly estado: 'en_cola' | 'procesando' | 'lista' | 'fallida' | 'confirmada';
   readonly progreso: number;
   readonly resultado: unknown;

@@ -61,6 +61,8 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: 'retos', texto: 'Retos', grupo: 'Juego', accion: 'contenido.read' },
   // HU-323: aparece si a la persona le toca revisar (lo dice el servidor).
   { ruta: 'fotos/revisar', texto: 'Fotos por revisar', grupo: 'Juego', accion: 'evento.read' },
+  // HU-324: todas las fotos, para quien revisa.
+  { ruta: 'fotos', texto: 'Fotos', grupo: 'Juego', exacto: true, accion: 'evento.read' },
   { ruta: 'catalogo', texto: 'Catálogo', grupo: 'Juego', accion: 'contenido.read' },
   { ruta: 'ajustes', texto: 'Ajustes', grupo: 'Juego', accion: 'puntos.ajustar' },
   { ruta: 'pantallas', texto: 'Pantallas', grupo: 'Dispositivos', accion: 'terminales.read' },
@@ -119,7 +121,7 @@ export class EventoLayout {
     return MENU_EVENTO.filter(
       (item) =>
         canDo(evento.miRol, item.accion) &&
-        (item.ruta !== 'fotos/revisar' || fotos?.puedeRevisar === true),
+        (!item.ruta.startsWith('fotos') || fotos?.puedeRevisar === true),
     ).map((item): ItemMenu => ({
       texto: item.texto,
       ruta: `/eventos/${evento.id}${item.ruta ? `/${item.ruta}` : ''}`,

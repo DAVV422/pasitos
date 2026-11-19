@@ -80,6 +80,8 @@ export const ACCIONES_BITACORA = {
   'ci.verify': 'Verificó un carnet',
   'ci.reject': 'Marcó que un carnet no coincide',
   'ci.unverify': 'Deshizo la verificación de un carnet',
+  'foto.descargar': 'Descargó las fotos para redes',
+  'foto.retirar_autorizacion': 'Retiró la autorización de uso de su foto',
   'foto.aprobar': 'Aprobó una foto',
   'foto.rechazar': 'Rechazó una foto',
   'foto.anular': 'Deshizo la aprobación de una foto',

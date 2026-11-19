@@ -146,7 +146,7 @@ export const operaciones = pgTable(
   (t) => [
     check(
       'operaciones_tipo',
-      sql`${t.tipo} in ('import-asistentes', 'export-asistentes', 'send-invitaciones')`,
+      sql`${t.tipo} in ('import-asistentes', 'export-asistentes', 'send-invitaciones', 'export-fotos')`,
     ),
     check(
       'operaciones_estado',

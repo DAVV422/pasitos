@@ -129,6 +129,12 @@ export class CuentaPage {
       detalle: 'Lo que ganaste y canjeaste',
     },
     {
+      ruta: '/cuenta/fotos',
+      icono: 'image',
+      texto: 'Mis fotos',
+      detalle: 'Las fotos de tus retos y su autorización',
+    },
+    {
       ruta: '/cuenta/dispositivo',
       icono: 'lock',
       texto: 'Mi dispositivo',

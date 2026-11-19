@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { EnVivoService, type ConexionEnVivo } from '@pasitos/web-core';
 import { firstValueFrom } from 'rxjs';
@@ -31,6 +31,32 @@ export interface FotoParaRevisar {
 export type ResultadoRevision =
   | { readonly estado: 'aprobada'; readonly puntos: number; readonly asistente: string }
   | { readonly estado: 'rechazada'; readonly motivo: string; readonly asistente: string };
+
+/** Una foto en la lista (HU-324). */
+export interface FotoPanel {
+  readonly id: string;
+  readonly miniatura: string | null;
+  readonly reto: { readonly id: string; readonly nombre: string };
+  readonly asistente: { readonly id: string; readonly nombre: string; readonly codigo: string };
+  readonly intento: number;
+  readonly estado: string;
+  readonly enviadaAt: string;
+  readonly revisor: string | null;
+  readonly revisorId: string | null;
+  readonly revisadaAt: string | null;
+  readonly motivo: string | null;
+  readonly origen: 'camara' | 'galeria';
+  readonly autorizaUso: boolean;
+  readonly autorizaUsoRetiradaAt: string | null;
+  readonly retiradaDespuesDe: string | null;
+}
+
+export interface ListaFotos {
+  readonly items: readonly FotoPanel[];
+  readonly pagination: { readonly nextCursor: string | null };
+  readonly contadores: { readonly aprobadas: number; readonly conAutorizacion: number } | null;
+  readonly borradoAutorizadas: string | null;
+}
 
 export type MotivoRechazo = 'no_corresponde' | 'no_se_ve' | 'repetida' | 'inapropiada' | 'otro';
 
@@ -71,6 +97,32 @@ export class FotosApi {
         motivo,
         ...(nota ? { nota } : {}),
       }),
+    );
+  }
+
+  list(eventoId: string, filtros: Record<string, string | undefined>): Promise<ListaFotos> {
+    let params = new HttpParams();
+    for (const [clave, valor] of Object.entries(filtros)) {
+      if (valor) params = params.set(clave, valor);
+    }
+    return firstValueFrom(
+      this.http.get<ListaFotos>(`${BASE}/eventos/${eventoId}/fotos`, { params }),
+    );
+  }
+
+  createDescarga(eventoId: string): Promise<{ operacionId: string }> {
+    return firstValueFrom(
+      this.http.post<{ operacionId: string }>(`${BASE}/eventos/${eventoId}/fotos/descargas`, {}),
+    );
+  }
+
+  cancel(id: string, motivo: string): Promise<{ estado: 'anulada' }> {
+    return firstValueFrom(
+      this.http.post<{ estado: 'anulada' }>(
+        `${BASE}/fotos/${id}/anular`,
+        { motivo },
+        { headers: new HttpHeaders({ 'Idempotency-Key': crypto.randomUUID() }) },
+      ),
     );
   }
 

@@ -1,4 +1,4 @@
-import { getIntentosRestantes, getMedidasAchicadas } from './fotos';
+import { getDiasBorradoFoto, getIntentosRestantes, getMedidasAchicadas } from './fotos';
 
 describe('retos con foto (HU-322)', () => {
   it('achica el lado mayor a 1600 px sin agrandar nunca', () => {
@@ -11,5 +11,13 @@ describe('retos con foto (HU-322)', () => {
     expect(getIntentosRestantes(3, 0)).toBe(3);
     expect(getIntentosRestantes(3, 2)).toBe(1);
     expect(getIntentosRestantes(3, 5)).toBe(0);
+  });
+
+  it('el plazo de borrado: 7 las inapropiadas, 90 las autorizadas y 30 las demás', () => {
+    const base = { motivoRechazo: null, autorizaUso: true, autorizaUsoRetiradaAt: null };
+    expect(getDiasBorradoFoto(base)).toBe(90);
+    expect(getDiasBorradoFoto({ ...base, autorizaUsoRetiradaAt: new Date() })).toBe(30);
+    expect(getDiasBorradoFoto({ ...base, autorizaUso: false })).toBe(30);
+    expect(getDiasBorradoFoto({ ...base, motivoRechazo: 'inapropiada' })).toBe(7);
   });
 });

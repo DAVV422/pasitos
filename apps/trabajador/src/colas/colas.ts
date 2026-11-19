@@ -13,6 +13,7 @@ import type { CostoRedService } from '../costo/costo-red.service';
 import type { OperacionesTrabajoService } from '../invitados/operaciones.service';
 import type { SelladorService } from '../sellador/sellador.service';
 import { PROCESAR_FOTOS_CADA_MS, type ProcesarFotosService } from '../fotos/procesar-fotos.service';
+import type { ExportarFotosService } from '../fotos/exportar-fotos.service';
 
 /** Colas del trabajador (HU-103 §3). Nombres de trabajos en kebab-case (Backend §1.3). */
 export const COLA_TICK = 'tick-sellador';
@@ -24,6 +25,8 @@ export const COLA_PURGA_ARCHIVOS = 'purge-archivos';
 export const COLA_PURGA_OUTBOX = 'purge-outbox';
 export const COLA_BORRADO_DISPOSITIVOS = 'borrar-dispositivos';
 export const COLA_ALERTAS_DIFERIDAS = 'alertas-diferidas';
+/** HU-324: borrar las fotos vencidas, una vez por día. */
+export const COLA_BORRAR_FOTOS = 'borrar-fotos';
 /** El procesador de outbox corre cada 5 s (pg-boss programa por minuto: va con un intervalo). */
 export const OUTBOX_CADA_MS = 5_000;
 /** Importar y exportar invitados (HU-210): la vista previa tiene que llegar en segundos. */
@@ -109,6 +112,7 @@ export interface DependenciasColas {
   readonly vencerCobros: VencerCobrosService;
   readonly operaciones: OperacionesTrabajoService;
   readonly fotos: ProcesarFotosService;
+  readonly exportarFotos: ExportarFotosService;
 }
 
 export async function startColas({
@@ -126,6 +130,7 @@ export async function startColas({
   vencerCobros,
   operaciones,
   fotos,
+  exportarFotos,
 }: DependenciasColas): Promise<() => void> {
   const logger = new Logger('Colas');
   await boss.createQueue(COLA_TICK);
@@ -137,6 +142,7 @@ export async function startColas({
   await boss.createQueue(COLA_PURGA_OUTBOX);
   await boss.createQueue(COLA_BORRADO_DISPOSITIVOS);
   await boss.createQueue(COLA_ALERTAS_DIFERIDAS);
+  await boss.createQueue(COLA_BORRAR_FOTOS);
 
   // HU-305 §2: los No fui yo sin atender suben de prioridad a los 10 minutos.
   await boss.schedule(COLA_ALERTAS_DIFERIDAS, '* * * * *');
@@ -155,6 +161,12 @@ export async function startColas({
   });
 
   // HU-214 §7: cada día a las 04:00 de Bolivia (08:00 UTC; Bolivia no tiene horario de verano).
+  await boss.schedule(COLA_BORRAR_FOTOS, '30 8 * * *');
+  await boss.work(COLA_BORRAR_FOTOS, { localConcurrency: 1 }, async () => {
+    const borradas = await withCandado(pool, 'borrar-fotos', () => exportarFotos.deleteVencidas());
+    if (borradas) logger.log({ borradas }, 'Fotos vencidas borradas');
+  });
+
   await boss.schedule(COLA_PURGA_ARCHIVOS, '0 8 * * *');
   await boss.work(COLA_PURGA_ARCHIVOS, { localConcurrency: 1 }, async () => {
     logger.log(await purga.purgeCuarentena(), 'Cuarentena de archivos limpiada');
@@ -222,7 +234,11 @@ export async function startColas({
   const intervaloFotos = setInterval(() => {
     if (procesando) return;
     procesando = true;
-    void withCandado(pool, 'procesar-fotos', () => fotos.processPendientes())
+    void withCandado(pool, 'procesar-fotos', async () => {
+      await fotos.processPendientes();
+      // HU-324: el ZIP de *Descargar para redes*.
+      await exportarFotos.processPendientes();
+    })
       .catch((error: unknown) =>
         logger.error(
           { err: error instanceof Error ? error.message : String(error) },

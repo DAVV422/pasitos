@@ -76,3 +76,15 @@ export const esquemaRechazarFoto = z
   });
 
 export const esquemaAnularFoto = z.object({ motivo: z.string().trim().min(5).max(300) });
+
+/** HU-324: la lista de fotos, con sus filtros. */
+export const esquemaListarFotos = z.object({
+  reto: z.uuid().optional(),
+  estado: z
+    .enum(['recibida', 'en_revision', 'rechazada_sistema', 'aprobada', 'rechazada', 'anulada'])
+    .optional(),
+  revisor: z.uuid().optional(),
+  origen: z.enum(['camara', 'galeria']).optional(),
+  autoriza: z.enum(['si', 'no']).optional(),
+  cursor: z.string().max(60).optional(),
+});

@@ -16,15 +16,18 @@ import { createTipoEquipo } from '../equipo/equipo.service';
 import { EventosPlataformaService } from './eventos-plataforma.service';
 import { OrganizacionesPlataformaService } from './organizaciones-plataforma.service';
 import { PersonasPlataformaService } from './personas-plataforma.service';
+import { FotosPlataformaController } from './fotos-plataforma.controller';
 import { PlataformaController } from './plataforma.controller';
+import { InvitadosModule } from '../invitados/invitados.module';
 
 /**
  * Consola de plataforma (HU-202) y las invitaciones por enlace. Usa **solo** la conexión de
  * sistema: trabaja sobre todas las organizaciones, y cada escritura queda en la bitácora.
  */
 @Module({
-  imports: [AuthModule],
-  controllers: [PlataformaController, InvitacionesController],
+  imports: [AuthModule, InvitadosModule],
+  // HU-324: la descarga de fotos para redes desde la consola.
+  controllers: [PlataformaController, InvitacionesController, FotosPlataformaController],
   providers: [
     {
       provide: InvitacionesService,

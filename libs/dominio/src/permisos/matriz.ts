@@ -71,6 +71,8 @@ export const PERMISOS = {
    * de sus retos (lo revisa el servicio: la matriz es por rol).
    */
   'fotos.review': DC,
+  /** HU-324: descargar las fotos aprobadas con autorización, para redes. */
+  'fotos.descargar': DC,
   /** HU-325: crear grupos y agregar o quitar personas. */
   'grupos.update': DC,
   /** HU-319: ver los QR de registro. */
@@ -104,6 +106,7 @@ export const ACCIONES_ESCRITURA: ReadonlySet<AccionEvento> = new Set<AccionEvent
   'grupos.update',
   'ci.verify',
   'fotos.review',
+  'fotos.descargar',
 ]);
 
 /** Acciones que, para los operadores, valen solo en sus terminales asignadas (²). */

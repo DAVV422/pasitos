@@ -36,6 +36,7 @@ const FLUJOS_2_4: Readonly<Record<AccionEvento, string>> = {
   'grupos.update': 'DC', // Crear grupos y agregar personas
   'ci.verify': 'DCR', // Verificar el carnet (y quien tenga «Verifica carnets»)
   'fotos.review': 'DC', // Revisar las fotos (y los responsables de cada reto, las suyas)
+  'fotos.descargar': 'DC', // Descargar las fotos autorizadas para redes
   'qr_registro.read': 'DC',
   'qr_registro.update': 'DC', // Crear y administrar los QR de registro
   'puerta.activar': 'DCR', // Mostrar el QR de registro asignado (Activar cuentas)

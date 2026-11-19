@@ -111,6 +111,7 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 | Crear grupos y agregar personas a un grupo | ✅ | ✅ | — | — | — | — |
 | Verificar el carnet de un asistente ³ | ✅ | ✅ | ✅ | — | — | — |
 | Revisar las fotos de los retos ⁴ | ✅ | ✅ | — | — | — | — |
+| Descargar las fotos autorizadas para redes | ✅ | ✅ | — | — | — | — |
 | Mostrar el QR de registro asignado (*Activar cuentas*) | ✅ | ✅ | ✅ | — | — | — |
 | Cobrar canjes | ✅ | ✅ | — | ✅ ² | — | — |
 | Controlar pantallas (pausar, generar otro QR, mostrar QR) | ✅ | ✅ | — | — | ✅ ² | — |

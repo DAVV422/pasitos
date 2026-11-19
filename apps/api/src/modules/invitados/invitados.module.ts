@@ -40,6 +40,6 @@ import { OperacionesService } from './operaciones.service';
         new OperacionesService(db.db, reloj, config.ARCHIVOS_DIR),
     },
   ],
-  exports: [AsistentesService],
+  exports: [AsistentesService, OperacionesService],
 })
 export class InvitadosModule {}

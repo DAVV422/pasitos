@@ -1,0 +1,2 @@
+ALTER TABLE "operaciones" DROP CONSTRAINT "operaciones_tipo";--> statement-breakpoint
+ALTER TABLE "operaciones" ADD CONSTRAINT "operaciones_tipo" CHECK ("operaciones"."tipo" in ('import-asistentes', 'export-asistentes', 'send-invitaciones', 'export-fotos'));

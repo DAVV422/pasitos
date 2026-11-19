@@ -68,6 +68,15 @@ import { PlataformaApi, type CostoRed, type EventoFila } from './plataforma-api.
                 >
                   Cambiar el intervalo
                 </button>
+                <button
+                  type="button"
+                  pxBoton="secundario"
+                  [chico]="true"
+                  [cargando]="descargando() === e.id"
+                  (click)="downloadFotos(e)"
+                >
+                  Descargar fotos para redes
+                </button>
               }
             </div>
             @if (costos()[e.id]; as costo) {
@@ -142,6 +151,7 @@ export class EventosPage implements OnInit {
   protected readonly intervalo = signal('');
   protected readonly motivo = signal('');
   protected readonly enviando = signal(false);
+  protected readonly descargando = signal<string | null>(null);
   protected readonly mensaje = signal<{ variante: 'ok' | 'peligro'; texto: string } | null>(null);
   protected readonly valorDe = valorDe;
 
@@ -164,6 +174,40 @@ export class EventosPage implements OnInit {
   protected async loadCosto(evento: EventoFila): Promise<void> {
     const costo = await this.api.getCostoRed({ eventoId: evento.id });
     this.costos.set({ ...this.costos(), [evento.id]: costo });
+  }
+
+  /** HU-324: solo las aprobadas con autorización vigente; queda en las dos bitácoras. */
+  protected async downloadFotos(evento: EventoFila): Promise<void> {
+    if (
+      !window.confirm(
+        `Se descargan las fotos aprobadas de ${evento.nombre} que autorizan su uso. Queda en la bitácora del evento y en la de plataforma. ¿Seguir?`,
+      )
+    ) {
+      return;
+    }
+    this.descargando.set(evento.id);
+    this.mensaje.set(null);
+    try {
+      const { operacionId } = await this.api.createDescargaFotos(evento.id);
+      for (let intento = 0; intento < 120; intento++) {
+        const operacion = await this.api.getOperacion(evento.id, operacionId);
+        if (operacion.descarga) {
+          window.location.href = operacion.descarga.url;
+          this.avisos.ok('Descargamos las fotos.');
+          return;
+        }
+        if (operacion.estado === 'fallida') throw new Error(operacion.error ?? 'Falló');
+        await new Promise((r) => setTimeout(r, 1_000));
+      }
+      this.mensaje.set({
+        variante: 'peligro',
+        texto: 'El ZIP sigue armándose. Intenta en un rato.',
+      });
+    } catch (error) {
+      this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
+    } finally {
+      this.descargando.set(null);
+    }
   }
 
   protected async submitIntervalo(evento: Event, fila: EventoFila): Promise<void> {
