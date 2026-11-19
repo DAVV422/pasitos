@@ -159,6 +159,21 @@ describe('Eventos (HU-205)', () => {
     expect(fila?.publicadoPor).toBeTruthy();
   });
 
+  it('con muchos eventos del mismo nombre, el slug lleva un sufijo al azar en vez de fallar', async () => {
+    const nombre = { ...datos, nombre: 'Encuentro repetido' };
+    for (let i = 0; i < 19; i++) {
+      await pedir('POST', `/organizaciones/${organizacionId}/eventos`, dueno, nombre);
+    }
+    const respuesta = await pedir(
+      'POST',
+      `/organizaciones/${organizacionId}/eventos`,
+      dueno,
+      nombre,
+    );
+    expect(respuesta.statusCode).toBe(201);
+    expect(respuesta.json().slug).toMatch(/^encuentro-repetido-[0-9a-f]{6}$/);
+  });
+
   it('abrir sin contrato: EVENTO_SIN_CONTRATO; con contrato, en curso; pausar y reanudar', async () => {
     const evento = await createEventoDePrueba(base, { organizacionId });
     await pedir('POST', `/eventos/${evento.eventoId}/publicar`, dueno);

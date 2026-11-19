@@ -25,13 +25,32 @@ describe('sitio', () => {
     const html = fixture.nativeElement as HTMLElement;
     expect(html.textContent).toContain('Testnet');
     const enlaces = [...html.querySelectorAll('footer a')].map((a) => a.getAttribute('href'));
-    expect(enlaces).toEqual(['/terminos', '/privacidad']);
+    expect(enlaces).toEqual(['/terminos', '/privacidad', '/#contacto']);
   });
 
-  it('la portada', async () => {
+  it('la landing: portada, secciones y contacto pendiente sin correo (HU-404)', async () => {
     const harness = await RouterTestingHarness.create('/');
+    const pagina = harness.routeNativeElement as HTMLElement;
+    expect(pagina.querySelector('h1')?.textContent).toContain('Cada paso cuenta.');
+    const titulos = [...pagina.querySelectorAll('h2')].map((h) => h.textContent?.trim());
+    expect(titulos).toEqual([
+      'Lo que pasa en muchos eventos',
+      'Cómo funciona',
+      'Números que nadie puede inflar',
+      'Preguntas frecuentes',
+      '¿Quieres usar Pasitos en tu evento?',
+    ]);
+    expect(pagina.querySelector('a[href="/#contacto"]')?.textContent).toContain(
+      'Quiero usar Pasitos en mi evento',
+    );
+    expect(pagina.querySelectorAll('details')).toHaveLength(5);
+    expect(pagina.querySelector('[data-testid="contacto-pronto"]')).not.toBeNull();
+  });
+
+  it('una dirección que no existe', async () => {
+    const harness = await RouterTestingHarness.create('/no-existe');
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain(
-      'Cada paso cuenta.',
+      'Página no encontrada',
     );
   });
 

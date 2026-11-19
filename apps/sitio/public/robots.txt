@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /plataforma/
+Disallow: /sala/
+Disallow: /mesa/
+Disallow: /reporte/
+Disallow: /api/
+Disallow: /correos/
+
+Sitemap: https://pasitos.com.bo/sitemap.xml

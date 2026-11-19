@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { ne, and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import {
   asistentes,
@@ -365,9 +366,11 @@ export class EventosService {
     valores: Omit<typeof eventos.$inferInsert, 'slug'>,
   ): Promise<string> {
     // El slug es único entre todas las organizaciones y RLS no deja ver las demás: se prueba y,
-    // si choca, se suma un sufijo (en un savepoint, para no perder la transacción).
-    for (let n = 1; n < 50; n++) {
-      const slug = n === 1 ? base : `${base}-${n}`;
+    // si choca, se suma un sufijo (en un savepoint, para no perder la transacción). Con muchos
+    // eventos del mismo nombre ("meetup"), después de los números va un sufijo al azar.
+    for (let n = 1; n < 30; n++) {
+      const slug =
+        n === 1 ? base : n < 20 ? `${base}-${n}` : `${base}-${randomBytes(3).toString('hex')}`;
       try {
         await tx.transaction((sub) => sub.insert(eventos).values({ ...valores, slug }));
         return slug;
