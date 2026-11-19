@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   index,
   integer,
@@ -39,6 +40,8 @@ export const miembrosEvento = pgTable(
     revocadoAt: timestamp('revocado_at', { withTimezone: true }),
     // Solo registradores. null = el del evento.
     topeRegistrosPuerta: integer('tope_registros_puerta'),
+    // HU-321: verifica carnets aunque no sea registrador (por ejemplo, el stand de Pasitos).
+    verificaCi: boolean('verifica_ci').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

@@ -77,6 +77,10 @@ export const esquemaEditarEvento = z
     // Reglas y puerta (HU-212).
     registroPuertaActivo: z.boolean(),
     autoregistroActivo: z.boolean(),
+    // HU-321: el carnet en el autorregistro y su verificación (los puntos son los de su reto).
+    pedirCi: z.enum(['no', 'opcional']),
+    verificacionCiActiva: z.boolean(),
+    puntosVerificacionCi: z.number().int().min(1).max(1_000),
     topeRegistrosPuerta: z.number().int().min(1).max(10_000).nullable(),
     puntosCheckIn: z.number().int().min(0).max(1_000),
     retosRequierenCheckIn: z.boolean(),
@@ -91,6 +95,9 @@ export const esquemaEditarEvento = z
 export const CAMPOS_REGLAS = [
   'registroPuertaActivo',
   'autoregistroActivo',
+  'pedirCi',
+  'verificacionCiActiva',
+  'puntosVerificacionCi',
   'topeRegistrosPuerta',
   'puntosCheckIn',
   'retosRequierenCheckIn',

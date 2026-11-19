@@ -28,7 +28,12 @@ export class MisDatosService {
   get(asistente: ContextoAsistente): Promise<MisDatosApi> {
     return withOrganizacion(this.db, asistente.organizacionId, async (tx) => {
       const [fila] = await tx
-        .select({ nombre: asistentes.nombre, email: asistentes.email, ci: asistentes.ciCifrado })
+        .select({
+          nombre: asistentes.nombre,
+          email: asistentes.email,
+          ci: asistentes.ciCifrado,
+          verificadoAt: asistentes.ciVerificadoAt,
+        })
         .from(asistentes)
         .where(eq(asistentes.id, asistente.asistenteId));
       if (!fila) throw new AppError('NO_ENCONTRADO');
@@ -44,6 +49,7 @@ export class MisDatosService {
           email: asistentes.email,
           ci: asistentes.ciCifrado,
           origen: asistentes.origen,
+          verificadoAt: asistentes.ciVerificadoAt,
         })
         .from(asistentes)
         .where(
@@ -67,6 +73,10 @@ export class MisDatosService {
         });
       }
       const ciAntes = actual.ci ? this.cifrador.decryptTexto(actual.ci) : null;
+      // HU-321: verificado, el carnet queda fijo.
+      if (datos.ci !== undefined && datos.ci !== ciAntes && actual.verificadoAt) {
+        throw new AppError('CI_YA_VERIFICADO');
+      }
       const cambios = {
         ...(datos.nombre !== undefined && datos.nombre !== actual.nombre
           ? { nombre: datos.nombre }
@@ -106,7 +116,12 @@ export class MisDatosService {
         });
       }
       const [despues] = await tx
-        .select({ nombre: asistentes.nombre, email: asistentes.email, ci: asistentes.ciCifrado })
+        .select({
+          nombre: asistentes.nombre,
+          email: asistentes.email,
+          ci: asistentes.ciCifrado,
+          verificadoAt: asistentes.ciVerificadoAt,
+        })
         .from(asistentes)
         .where(eq(asistentes.id, asistente.asistenteId));
       if (!despues) throw new AppError('NO_ENCONTRADO');
@@ -114,12 +129,17 @@ export class MisDatosService {
     });
   }
 
-  private toApi(fila: { nombre: string; email: string | null; ci: Buffer | null }): MisDatosApi {
+  private toApi(fila: {
+    nombre: string;
+    email: string | null;
+    ci: Buffer | null;
+    verificadoAt: Date | null;
+  }): MisDatosApi {
     return {
       nombre: fila.nombre,
       email: fila.email,
       ci: fila.ci ? this.cifrador.decryptTexto(fila.ci) : null,
-      ciVerificado: false,
+      ciVerificado: fila.verificadoAt !== null,
     };
   }
 }

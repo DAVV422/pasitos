@@ -53,6 +53,9 @@ import { SesionAsistente } from '../sesion-asistente';
               @if (p.maxPorPersona) {
                 <p class="text-muted text-xs">Hasta {{ p.maxPorPersona }} por persona</p>
               }
+              @if (p.requiereCi) {
+                <p class="text-muted text-xs">Lleva tu carnet</p>
+              }
             </li>
           }
         </ul>

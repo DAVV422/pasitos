@@ -109,6 +109,7 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 | Ajustes manuales de puntos y anular canjes | ✅ | ✅ | — | — | — | — |
 | Crear y administrar los QR de registro | ✅ | ✅ | — | — | — | — |
 | Crear grupos y agregar personas a un grupo | ✅ | ✅ | — | — | — | — |
+| Verificar el carnet de un asistente ³ | ✅ | ✅ | ✅ | — | — | — |
 | Mostrar el QR de registro asignado (*Activar cuentas*) | ✅ | ✅ | ✅ | — | — | — |
 | Cobrar canjes | ✅ | ✅ | — | ✅ ² | — | — |
 | Controlar pantallas (pausar, generar otro QR, mostrar QR) | ✅ | ✅ | — | — | ✅ ² | — |
@@ -119,6 +120,7 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 
 ¹ Un coorganizador no puede nombrar ni quitar a otro coorganizador ni al dueño.
 ² Solo en las mesas o pantallas que tiene asignadas.
+³ Y cualquier persona del equipo marcada con *Verifica carnets* (por ejemplo, el stand de Pasitos).
 
 **Reglas:**
 - **Nadie puede darse puntos a sí mismo.** Los ajustes manuales a la propia cuenta están bloqueados, aunque la persona también sea asistente.

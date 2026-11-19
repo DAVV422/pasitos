@@ -61,6 +61,11 @@ export const asistentes = pgTable(
     qrRegistroId: uuid('qr_registro_id'),
     ciCifrado: bytea('ci_cifrado'),
     ciUltimos: text('ci_ultimos'),
+    // HU-321: la verificación. El hash (HMAC con la llave de carnets del evento, sobre el número
+    // normalizado) no se repite en el evento: el mismo carnet no se verifica en dos cuentas.
+    ciVerificadoAt: timestamp('ci_verificado_at', { withTimezone: true }),
+    ciVerificadoPor: uuid('ci_verificado_por').references(() => usuarios.id),
+    ciHashVerificado: bytea('ci_hash_verificado'),
     // Lo reemplaza siempre el trigger `asignar_id_anonimo` (0002_libro.sql).
     idAnonimo: bytea('id_anonimo')
       .notNull()
@@ -87,6 +92,9 @@ export const asistentes = pgTable(
       .on(t.eventoId, t.email)
       .where(sql`${t.email} is not null and ${t.origen} <> 'autoregistro'`),
     index('asistentes_qr_registro').on(t.qrRegistroId, t.createdAt),
+    uniqueIndex('asistentes_ci_verificado')
+      .on(t.eventoId, t.ciHashVerificado)
+      .where(sql`${t.ciHashVerificado} is not null`),
     uniqueIndex('asistentes_codigo_externo')
       .on(t.eventoId, t.codigoExterno)
       .where(sql`${t.codigoExterno} is not null`),
@@ -127,7 +135,7 @@ export const retos = pgTable(
   },
   (t) => [
     unique('retos_numero').on(t.eventoId, t.numero),
-    check('retos_tipo', sql`${t.tipo} in ('qr', 'otorgado', 'encuesta')`),
+    check('retos_tipo', sql`${t.tipo} in ('qr', 'otorgado', 'encuesta', 'verificacion_ci')`),
     check('retos_estado', sql`${t.estado} in ('activo', 'desactivado')`),
     check('retos_puntos', sql`${t.puntos} > 0`),
     check('retos_tope_total', sql`${t.topeTotal} > 0`),

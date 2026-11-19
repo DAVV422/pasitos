@@ -87,6 +87,18 @@ const VOLVER_MS = 10_000;
                 </li>
               }
             </ul>
+            @if (e.requiereCi) {
+              <p class="text-xl font-bold" data-testid="carnet">
+                Pide el carnet:
+                @if (e.carnet; as c) {
+                  @if (c.ci) {
+                    {{ c.ci }} · {{ c.verificado ? 'verificado ✓' : 'sin verificar' }}
+                  } @else {
+                    no lo escribió
+                  }
+                }
+              </p>
+            }
             <p class="text-muted">Entrega solo si el celular muestra el mismo comprobante.</p>
             <button pxBoton type="button" class="min-h-14 text-xl" (click)="next()">
               Siguiente

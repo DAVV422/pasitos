@@ -25,6 +25,9 @@ function buildEvento(miRol: RolEvento): EventoDetalle {
     reglas: {
       registroPuertaActivo: true,
       autoregistroActivo: false,
+      pedirCi: 'no',
+      verificacionCiActiva: false,
+      puntosVerificacionCi: 30,
       topeRegistrosPuerta: null,
       puntosCheckIn: 0,
       retosRequierenCheckIn: true,
@@ -79,6 +82,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Puerta',
         'Invitados',
         'QR de registro',
+        'Verificar carnet',
         'Equipo',
       ],
     ],
@@ -103,6 +107,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Puerta',
         'Invitados',
         'QR de registro',
+        'Verificar carnet',
         'Equipo',
       ],
     ],
@@ -118,6 +123,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Retos',
         'Catálogo',
         'Puerta',
+        'Verificar carnet',
       ],
     ],
     [

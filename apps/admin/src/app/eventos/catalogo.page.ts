@@ -42,6 +42,7 @@ interface FormularioPremio {
   stockTotal: string;
   maxPorPersona: string;
   grupoId: string;
+  requiereCi: boolean;
 }
 
 const VACIO: FormularioPremio = {
@@ -52,6 +53,7 @@ const VACIO: FormularioPremio = {
   stockTotal: '20',
   maxPorPersona: '',
   grupoId: '',
+  requiereCi: false,
 };
 
 const CAMPOS = [
@@ -196,7 +198,19 @@ const CAMPOS = [
             />
           </px-campo>
         </div>
-        <pnl-seccion titulo="Avanzado" [plegable]="true" [abierta]="!!form().grupoId">
+        <pnl-seccion
+          titulo="Avanzado"
+          [plegable]="true"
+          [abierta]="!!form().grupoId || form().requiereCi"
+        >
+          <label class="flex items-center gap-2">
+            <input
+              type="checkbox"
+              [checked]="form().requiereCi"
+              (change)="setRequiereCi(!form().requiereCi)"
+            />
+            Pide el carnet al entregar
+          </label>
           <px-campo
             etiqueta="Solo para el grupo"
             [opcional]="true"
@@ -364,8 +378,15 @@ export class CatalogoPage implements OnInit {
     return getUrlArchivo(id);
   }
 
-  protected set(campo: Exclude<keyof FormularioPremio, 'imagenArchivoId'>, valor: string): void {
+  protected set(
+    campo: Exclude<keyof FormularioPremio, 'imagenArchivoId' | 'requiereCi'>,
+    valor: string,
+  ): void {
     this.form.set({ ...this.form(), [campo]: valor });
+  }
+
+  protected setRequiereCi(valor: boolean): void {
+    this.form.set({ ...this.form(), requiereCi: valor });
   }
 
   protected setImagen(id: string | null): void {
@@ -385,6 +406,7 @@ export class CatalogoPage implements OnInit {
             stockTotal: String(premio.stockTotal),
             maxPorPersona: premio.maxPorPersona === null ? '' : String(premio.maxPorPersona),
             grupoId: premio.grupoId ?? '',
+            requiereCi: premio.requiereCi,
           }
         : VACIO,
     );
@@ -403,6 +425,7 @@ export class CatalogoPage implements OnInit {
       stockTotal: Number(f.stockTotal),
       maxPorPersona: f.maxPorPersona.trim() === '' ? null : Number(f.maxPorPersona),
       grupoId: f.grupoId || null,
+      requiereCi: f.requiereCi,
     };
     this.guardando.set(true);
     this.errores.set({});

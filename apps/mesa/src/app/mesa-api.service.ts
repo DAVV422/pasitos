@@ -46,6 +46,8 @@ export interface EstadoCobro {
   readonly asistente: { readonly nombre: string; readonly codigo: string } | null;
   readonly confirmadoAt: string | null;
   readonly requiereCi: boolean;
+  /** HU-321: el carnet de quien pagó, enmascarado, para compararlo antes de entregar. */
+  readonly carnet?: { readonly ci: string | null; readonly verificado: boolean } | null;
 }
 
 export interface CanjeDelDia {

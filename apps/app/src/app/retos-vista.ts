@@ -36,5 +36,9 @@ export function getComoSeCompleta(reto: DefinicionReto): string {
     return reto.lugar ? `Escanea el QR en ${reto.lugar}` : 'Escanea el QR del reto';
   }
   if (reto.tipo === 'encuesta') return 'Encuesta en la app';
+  // HU-321.
+  if (reto.tipo === 'verificacion_ci') {
+    return 'Pasa por la puerta o el stand de Pasitos con tu carnet';
+  }
   return reto.lugar ? `Te lo dan en ${reto.lugar}` : 'Te lo da el equipo del evento';
 }

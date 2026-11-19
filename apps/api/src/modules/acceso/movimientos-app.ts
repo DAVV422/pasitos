@@ -1,4 +1,4 @@
-import { and, desc, eq, lt } from 'drizzle-orm';
+import { sql, and, desc, eq, lt } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import {
   asistentes,
@@ -128,6 +128,8 @@ export async function getMiEntrada(tx: Tx, asistenteId: string, ahora: Date): Pr
       codigo: asistentes.codigoAsistente,
       nombre: asistentes.nombre,
       llave: eventos.llaveEntradas,
+      ciCargado: sql<boolean>`${asistentes.ciCifrado} is not null`,
+      ciVerificado: sql<boolean>`${asistentes.ciVerificadoAt} is not null`,
     })
     .from(asistentes)
     .innerJoin(eventos, eq(eventos.id, asistentes.eventoId))
@@ -142,6 +144,6 @@ export async function getMiEntrada(tx: Tx, asistenteId: string, ahora: Date): Pr
     nombre: fila.nombre,
     validoHasta: validoHasta.toISOString(),
     grupos: (await listGruposDe(tx, asistenteId)).map((g) => g.nombre),
-    ci: { cargado: false, verificado: false },
+    ci: { cargado: fila.ciCargado, verificado: fila.ciVerificado },
   };
 }

@@ -40,9 +40,15 @@ const esquemaEditar = z
     rol: esquemaRol.optional(),
     terminales: esquemaTerminales,
     topeRegistrosPuerta: esquemaTope,
+    // HU-321: verifica carnets aunque no sea registrador.
+    verificaCi: z.boolean().optional(),
   })
   .refine(
-    (d) => d.rol !== undefined || d.terminales !== undefined || d.topeRegistrosPuerta !== undefined,
+    (d) =>
+      d.rol !== undefined ||
+      d.terminales !== undefined ||
+      d.topeRegistrosPuerta !== undefined ||
+      d.verificaCi !== undefined,
     {
       error: 'Indica qué cambiar.',
     },

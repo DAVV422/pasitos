@@ -297,6 +297,26 @@ export const CATALOGO_ERRORES = {
     title: 'Solo para un grupo',
     mensaje: 'Esto es solo para las personas de un grupo.',
   },
+  CI_YA_VERIFICADO: {
+    status: 409,
+    title: 'Carnet ya verificado',
+    mensaje: 'Este carnet ya está verificado y no se puede cambiar.',
+  },
+  CI_VERIFICADO_EN_OTRA_CUENTA: {
+    status: 409,
+    title: 'Carnet en otra cuenta',
+    mensaje: 'Este carnet ya se verificó en otra cuenta del evento.',
+  },
+  NO_VERIFICA_CI: {
+    status: 403,
+    title: 'No verifica carnets',
+    mensaje: 'No tienes permiso para verificar carnets en este evento.',
+  },
+  VERIFICACION_CI_INACTIVA: {
+    status: 422,
+    title: 'Verificación apagada',
+    mensaje: 'La verificación de carnet no está activada en este evento.',
+  },
   CONFIRMAR_RIESGO: {
     status: 422,
     title: 'Falta confirmar el riesgo',

@@ -61,6 +61,11 @@ export const PERMISOS = {
   /** Buscar invitados, check-in, registrar en la puerta y vincular. */
   'puerta.use': [...DC, 'registrador'],
   'puntos.ajustar': DC,
+  /**
+   * HU-321: verificar el carnet. Además, cualquier miembro con *Verifica carnets* (lo revisa el
+   * servicio: la matriz es por rol).
+   */
+  'ci.verify': [...DC, 'registrador'],
   /** HU-325: crear grupos y agregar o quitar personas. */
   'grupos.update': DC,
   /** HU-319: ver los QR de registro. */
@@ -92,6 +97,7 @@ export const ACCIONES_ESCRITURA: ReadonlySet<AccionEvento> = new Set<AccionEvent
   'puntos.ajustar',
   'qr_registro.update',
   'grupos.update',
+  'ci.verify',
 ]);
 
 /** Acciones que, para los operadores, valen solo en sus terminales asignadas (²). */

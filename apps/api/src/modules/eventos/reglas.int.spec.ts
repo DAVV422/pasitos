@@ -51,6 +51,9 @@ describe('Configurar la puerta (HU-212)', () => {
     expect(respuesta.json().reglas).toEqual({
       registroPuertaActivo: true,
       autoregistroActivo: false,
+      pedirCi: 'no',
+      verificacionCiActiva: false,
+      puntosVerificacionCi: 30,
       topeRegistrosPuerta: null,
       puntosCheckIn: 0,
       retosRequierenCheckIn: true,

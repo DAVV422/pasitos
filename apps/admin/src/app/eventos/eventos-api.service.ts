@@ -22,6 +22,10 @@ export interface ReglasEvento {
   readonly registroPuertaActivo: boolean;
   /** HU-319: los QR de registro funcionan (apaga todos de una vez). */
   readonly autoregistroActivo: boolean;
+  /** HU-321: el carnet en el autorregistro y su verificación. */
+  readonly pedirCi: 'no' | 'opcional';
+  readonly verificacionCiActiva: boolean;
+  readonly puntosVerificacionCi: number;
   readonly topeRegistrosPuerta: number | null;
   readonly puntosCheckIn: number;
   readonly retosRequierenCheckIn: boolean;
@@ -94,6 +98,8 @@ export interface MiembroEquipo {
   readonly id: string;
   /** `null` mientras no aceptó la invitación. */
   readonly usuarioId: string | null;
+  /** HU-321: verifica carnets aunque no sea registrador. */
+  readonly verificaCi: boolean;
   readonly email: string;
   readonly nombre: string | null;
   readonly rol: Exclude<RolEvento, 'dueno'>;
@@ -230,6 +236,8 @@ export interface PremioPanel {
   readonly estado: 'activo' | 'oculto';
   /** HU-325: solo para un grupo. */
   readonly grupoId: string | null;
+  /** HU-321: la mesa pide el carnet para entregarlo. */
+  readonly requiereCi: boolean;
 }
 
 export interface RetoPanel {
@@ -603,6 +611,7 @@ export class EventosApi {
     datos: {
       rol?: string;
       topeRegistrosPuerta?: number | null;
+      verificaCi?: boolean;
       terminales?: { pantallas?: readonly string[]; mesas?: readonly string[] };
     },
   ): Promise<void> {

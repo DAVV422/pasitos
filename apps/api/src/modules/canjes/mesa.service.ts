@@ -12,7 +12,7 @@ import {
   type Db,
   type Tx,
 } from '@pasitos/db';
-import { AppError } from '@pasitos/dominio';
+import { maskCi, AppError } from '@pasitos/dominio';
 import { isPocosDisponibles } from '@pasitos/dominio/esquemas';
 import { uuidv7 } from 'uuidv7';
 import type { FirmaVerificada } from '../../common/sesion/asistente';
@@ -57,6 +57,8 @@ export interface EstadoCobro {
   readonly asistente: { readonly nombre: string; readonly codigo: string } | null;
   readonly confirmadoAt: string | null;
   readonly requiereCi: boolean;
+  /** HU-321: al confirmar un cobro que pide el carnet. */
+  readonly carnet: { readonly ci: string | null; readonly verificado: boolean } | null;
 }
 
 /** Libera lo reservado de un cobro que no se pagó (vencido o cancelado). */
@@ -177,6 +179,7 @@ export class MesaService {
             reservado: premios.stockReservado,
             entregado: premios.stockEntregado,
             grupoId: premios.grupoId,
+            requiereCi: premios.requiereCi,
           })
           .from(premios)
           .where(
@@ -239,6 +242,7 @@ export class MesaService {
           comprobante,
           totalPuntos: total,
           grupoId,
+          requiereCi: filas.some((p) => p.requiereCi),
           expiraAt,
         });
         await tx.insert(canjeItems).values(
@@ -277,6 +281,8 @@ export class MesaService {
           requiereCi: canjes.requiereCi,
           nombre: asistentes.nombre,
           codigo: asistentes.codigoAsistente,
+          ciUltimos: asistentes.ciUltimos,
+          ciVerificadoAt: asistentes.ciVerificadoAt,
         })
         .from(canjes)
         .leftJoin(asistentes, eq(asistentes.id, canjes.asistenteId))
@@ -297,6 +303,11 @@ export class MesaService {
         asistente: canje.nombre ? { nombre: canje.nombre, codigo: canje.codigo ?? '' } : null,
         confirmadoAt: canje.confirmadoAt?.toISOString() ?? null,
         requiereCi: canje.requiereCi,
+        // HU-321: *"Pide el carnet: •••567 · verificado ✓"* (o *"sin verificar"*).
+        carnet:
+          canje.requiereCi && canje.nombre
+            ? { ci: maskCi(canje.ciUltimos), verificado: canje.ciVerificadoAt !== null }
+            : null,
       };
     });
   }

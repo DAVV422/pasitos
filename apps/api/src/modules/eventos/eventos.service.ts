@@ -1,4 +1,4 @@
-import { and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
+import { ne, and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import {
   asistentes,
   eventos,
@@ -13,7 +13,13 @@ import {
   type Db,
   type Tx,
 } from '@pasitos/db';
-import { AppError, type RolEvento } from '@pasitos/dominio';
+import {
+  NOMBRE_RETO_VERIFICACION_CI,
+  PUNTOS_VERIFICACION_CI,
+  TOPE_VERIFICACION_CI,
+  AppError,
+  type RolEvento,
+} from '@pasitos/dominio';
 import {
   buildListaChequeo,
   CAMPOS_REGLAS,
@@ -191,6 +197,8 @@ export class EventosService {
       const resto: Omit<DatosEditarEvento, 'inicioAt' | 'finAt'> = { ...datos };
       delete (resto as DatosEditarEvento).inicioAt;
       delete (resto as DatosEditarEvento).finAt;
+      // HU-321: los puntos de la verificación son los de su reto, no una columna del evento.
+      delete (resto as DatosEditarEvento).puntosVerificacionCi;
       const cambios = {
         ...resto,
         ...(datos.inicioAt ? { inicioAt: inicio } : {}),
@@ -209,10 +217,24 @@ export class EventosService {
         }
         throw error;
       }
+      const puntosAntes = await this.syncRetoVerificacion(tx, actual, datos);
       const antes = Object.fromEntries(
         Object.keys(cambios).map((campo) => [campo, actual[campo as keyof typeof actual]]),
       );
-      const recortado = diff(antes, cambios);
+      const recortado = diff(
+        {
+          ...antes,
+          ...(datos.puntosVerificacionCi === undefined
+            ? {}
+            : { puntosVerificacionCi: puntosAntes }),
+        },
+        {
+          ...cambios,
+          ...(datos.puntosVerificacionCi === undefined
+            ? {}
+            : { puntosVerificacionCi: datos.puntosVerificacionCi }),
+        },
+      );
       // Las reglas de la puerta y de los puntos tienen su propia acción en la bitácora (HU-212).
       const reglas = new Set<string>(CAMPOS_REGLAS);
       const separar = (de: Record<string, unknown>, deReglas: boolean) =>
@@ -408,12 +430,78 @@ export class EventosService {
     });
   }
 
+  /**
+   * HU-321: al activar la verificación de carnet se crea su reto (`verificacion_ci`, una vez por
+   * persona, con tope) y, con el evento publicado, entra al contrato como cualquier reto
+   * (`reto.cambiado`). Cambiar los puntos vale para lo que viene; apagarla desactiva el reto.
+   * Devuelve los puntos que tenía, para la bitácora.
+   */
+  private async syncRetoVerificacion(
+    tx: Tx,
+    actual: typeof eventos.$inferSelect,
+    datos: DatosEditarEvento,
+  ): Promise<number | null> {
+    const activa = datos.verificacionCiActiva ?? actual.verificacionCiActiva;
+    const [reto] = actual.retoVerificacionId
+      ? await tx
+          .select({ id: retos.id, puntos: retos.puntos, estado: retos.estado })
+          .from(retos)
+          .where(eq(retos.id, actual.retoVerificacionId))
+          .for('update')
+      : [];
+    const notify = async (retoId: string) => {
+      if (actual.estado === 'borrador') return;
+      await tx.update(retos).set({ registradoEnStellarAt: null }).where(eq(retos.id, retoId));
+      await tx.insert(outbox).values({
+        id: uuidv7(),
+        tipo: 'reto.cambiado',
+        eventoId: actual.id,
+        payload: { eventoId: actual.id, retoId },
+      });
+    };
+    if (!reto) {
+      if (!activa) return null;
+      const id = uuidv7();
+      await tx.insert(retos).values({
+        id,
+        organizacionId: actual.organizacionId,
+        eventoId: actual.id,
+        nombre: NOMBRE_RETO_VERIFICACION_CI,
+        tipo: 'verificacion_ci',
+        puntos: datos.puntosVerificacionCi ?? PUNTOS_VERIFICACION_CI,
+        topeTotal: TOPE_VERIFICACION_CI,
+        vecesPorPersona: 1,
+        descripcion: 'Pasa por la puerta o el stand de Pasitos con tu carnet.',
+      });
+      await tx.update(eventos).set({ retoVerificacionId: id }).where(eq(eventos.id, actual.id));
+      await notify(id);
+      return null;
+    }
+    const estado = activa ? 'activo' : 'desactivado';
+    const puntos = datos.puntosVerificacionCi ?? reto.puntos;
+    if (estado !== reto.estado || puntos !== reto.puntos) {
+      await tx
+        .update(retos)
+        .set({ estado, puntos, updatedAt: this.reloj.now() })
+        .where(eq(retos.id, reto.id));
+      if (puntos !== reto.puntos) await notify(reto.id);
+    }
+    return reto.puntos;
+  }
+
   private async getContadores(tx: Tx, eventoId: string) {
     const [[retosActivos], [totalPantallas], [conectadas], [invitados]] = await Promise.all([
       tx
         .select({ total: count() })
         .from(retos)
-        .where(and(eq(retos.eventoId, eventoId), eq(retos.estado, 'activo'))),
+        // El reto de la verificación de carnet (HU-321) no cuenta para la lista de chequeo.
+        .where(
+          and(
+            eq(retos.eventoId, eventoId),
+            eq(retos.estado, 'activo'),
+            ne(retos.tipo, 'verificacion_ci'),
+          ),
+        ),
       tx
         .select({ total: count() })
         .from(pantallas)
@@ -427,7 +515,12 @@ export class EventosService {
         .from(asistentes)
         .where(eq(asistentes.eventoId, eventoId)),
     ]);
+    const [verificacion] = await tx
+      .select({ puntos: retos.puntos })
+      .from(retos)
+      .where(and(eq(retos.eventoId, eventoId), eq(retos.tipo, 'verificacion_ci')));
     return {
+      puntosVerificacionCi: verificacion?.puntos ?? PUNTOS_VERIFICACION_CI,
       retos: retosActivos?.total ?? 0,
       pantallas: totalPantallas?.total ?? 0,
       pantallasConectadas: conectadas?.total ?? 0,
@@ -463,6 +556,9 @@ export class EventosService {
       reglas: {
         registroPuertaActivo: evento.registroPuertaActivo,
         autoregistroActivo: evento.autoregistroActivo,
+        pedirCi: evento.pedirCi,
+        verificacionCiActiva: evento.verificacionCiActiva,
+        puntosVerificacionCi: contadores.puntosVerificacionCi,
         topeRegistrosPuerta: evento.topeRegistrosPuerta,
         puntosCheckIn: evento.puntosCheckIn,
         retosRequierenCheckIn: evento.retosRequierenCheckIn,

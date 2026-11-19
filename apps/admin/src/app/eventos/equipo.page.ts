@@ -225,6 +225,16 @@ const ESTADOS: Readonly<Record<MiembroEquipo['estado'], string>> = {
                   </select>
                 </label>
               </div>
+              @if (miembro.rol !== 'registrador' && miembro.rol !== 'coorganizador') {
+                <label class="mt-3 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    [checked]="miembro.verificaCi"
+                    (change)="setVerificaCi(miembro, !miembro.verificaCi)"
+                  />
+                  Verifica carnets
+                </label>
+              }
               @if (miembro.rol === 'operador_stand' || miembro.rol === 'operador_mesa') {
                 <fieldset class="mt-3 flex flex-wrap gap-3">
                   <legend class="mb-1 text-sm font-bold">
@@ -391,6 +401,16 @@ export class EquipoPage implements OnInit {
     await this.run(
       () => this.api.resendMiembro(miembro.id),
       `Reenviamos la invitación a ${miembro.email}.`,
+    );
+  }
+
+  /** HU-321: verifica carnets aunque no sea registrador (por ejemplo, el stand de Pasitos). */
+  protected async setVerificaCi(miembro: MiembroEquipo, verificaCi: boolean): Promise<void> {
+    await this.run(
+      () => this.api.updateMiembro(miembro.id, { verificaCi }),
+      verificaCi
+        ? `${miembro.nombre ?? miembro.email} ya verifica carnets.`
+        : `${miembro.nombre ?? miembro.email} ya no verifica carnets.`,
     );
   }
 

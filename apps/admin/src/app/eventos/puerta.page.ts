@@ -66,6 +66,9 @@ const ESPERA_BUSQUEDA_MS = 250;
           </p>
         }
       </header>
+      @if (verificaCi()) {
+        <a pxBoton="secundario" routerLink="../carnets">Verificar carnet</a>
+      }
       @if (autoregistro()) {
         <!-- HU-319: el QR rotativo asignado a esta persona. -->
         <a pxBoton="secundario" routerLink="activar">Activar cuentas con mi QR</a>
@@ -415,6 +418,9 @@ export class PuertaPage {
   private readonly actual = inject(EventoActualService);
   private readonly contexto = inject(ContextoEventoService);
 
+  protected readonly verificaCi = computed(
+    () => this.actual.evento()?.reglas.verificacionCiActiva === true,
+  );
   protected readonly autoregistro = computed(
     () => this.actual.evento()?.reglas.autoregistroActivo === true,
   );

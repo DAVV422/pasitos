@@ -273,7 +273,7 @@ export const checkIns = pgTable(
   (t) => [
     check(
       'check_ins_metodo',
-      sql`${t.metodo} in ('escaneo_entrada', 'busqueda', 'registro_puerta', 'vinculacion_puerta', 'autoregistro_equipo', 'autoregistro_tablet', 'autoregistro_impreso')`,
+      sql`${t.metodo} in ('escaneo_entrada', 'busqueda', 'registro_puerta', 'vinculacion_puerta', 'autoregistro_equipo', 'autoregistro_tablet', 'autoregistro_impreso', 'verificacion_ci')`,
     ),
     uniqueIndex('check_ins_activo')
       .on(t.asistenteId)

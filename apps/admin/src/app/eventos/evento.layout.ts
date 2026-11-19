@@ -71,6 +71,7 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: 'puerta', texto: 'Puerta', grupo: 'Personas', accion: 'puerta.use' },
   { ruta: 'invitados', texto: 'Invitados', grupo: 'Personas', accion: 'invitados.update' },
   { ruta: 'qr-registro', texto: 'QR de registro', grupo: 'Personas', accion: 'qr_registro.read' },
+  { ruta: 'carnets', texto: 'Verificar carnet', grupo: 'Personas', accion: 'ci.verify' },
   { ruta: 'equipo', texto: 'Equipo', grupo: 'Personas', accion: 'equipo.read' },
 ];
 

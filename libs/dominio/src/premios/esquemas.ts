@@ -16,6 +16,8 @@ export const esquemaPremio = z.object({
   stockTotal: z.number().int().min(0).max(100_000),
   maxPorPersona: z.number().int().min(1).max(100).nullable().default(null),
   grupoId: z.uuid().nullable().default(null),
+  // HU-321: la mesa pide el carnet para entregarlo.
+  requiereCi: z.boolean().default(false),
 });
 
 export type DatosPremio = z.infer<typeof esquemaPremio>;

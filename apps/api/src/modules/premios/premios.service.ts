@@ -175,6 +175,7 @@ export class PremiosService {
       stockTotal: p.stockTotal,
       maxPorPersona: p.maxPorPersona,
       grupoId: p.grupoId,
+      requiereCi: p.requiereCi,
     };
   }
 

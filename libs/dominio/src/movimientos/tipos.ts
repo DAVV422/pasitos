@@ -19,7 +19,7 @@ export type OrigenMovimiento = (typeof ORIGENES_MOVIMIENTO)[number];
 export const ESTADOS_ASISTENTE = ['invitado', 'registrado', 'presente', 'cancelado'] as const;
 export type EstadoAsistente = (typeof ESTADOS_ASISTENTE)[number];
 
-export const TIPOS_RETO = ['qr', 'otorgado', 'encuesta'] as const;
+export const TIPOS_RETO = ['qr', 'otorgado', 'encuesta', 'verificacion_ci'] as const;
 export type TipoReto = (typeof TIPOS_RETO)[number];
 
 export const ESTADOS_RETO = ['activo', 'desactivado'] as const;

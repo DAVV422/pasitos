@@ -83,6 +83,7 @@ export class RegistroAppService {
             logoArchivoId: eventos.logoArchivoId,
             estado: eventos.estado,
             autoregistroActivo: eventos.autoregistroActivo,
+            pedirCi: eventos.pedirCi,
           },
         })
         .from(qrRegistro)
@@ -142,7 +143,7 @@ export class RegistroAppService {
         qr: { nombre: qr.nombre },
         terminos: { version: VERSION_TERMINOS, privacidad: VERSION_TERMINOS },
         permisoHasta: new Date(exp).toISOString(),
-        pideCarnet: false,
+        pideCarnet: evento.pedirCi === 'opcional',
       },
       permiso: valor,
       expira: new Date(exp),

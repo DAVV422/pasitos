@@ -12,7 +12,7 @@ import {
   type Db,
   type Tx,
 } from '@pasitos/db';
-import { AppError, describeMotivoAnulacion } from '@pasitos/dominio';
+import { maskCi, AppError, describeMotivoAnulacion } from '@pasitos/dominio';
 import { maskEmail } from '@pasitos/dominio/esquemas';
 import type { ContextoEvento } from '../../common/permisos/marcas';
 import type { FirmaVerificada } from '../../common/sesion/asistente';
@@ -50,8 +50,21 @@ export interface FichaPuerta {
   readonly checkIn: { readonly at: string; readonly por: string | null } | null;
   /** HU-325. */
   readonly grupos: readonly string[];
-  /** HU-321: el carnet enmascarado. */
-  readonly carnet: null;
+  /** HU-321: el carnet enmascarado (`•••890`) y si está verificado. */
+  readonly carnet: { readonly ci: string; readonly verificado: boolean } | null;
+}
+
+/** HU-321: el carnet de la ficha, siempre enmascarado (el completo, solo en *Verificar carnet*). */
+async function getCarnet(
+  tx: Tx,
+  asistenteId: string,
+): Promise<{ ci: string; verificado: boolean } | null> {
+  const [fila] = await tx
+    .select({ ultimos: asistentes.ciUltimos, at: asistentes.ciVerificadoAt })
+    .from(asistentes)
+    .where(eq(asistentes.id, asistenteId));
+  const ci = maskCi(fila?.ultimos ?? null);
+  return ci ? { ci, verificado: !!fila?.at } : null;
 }
 
 /** La vista Puerta (HU-301 §2): resumen, escanear *Mi entrada*, la ficha y marcar presente. */
@@ -301,7 +314,7 @@ export class PuertaService {
       ),
       checkIn: activo ? { at: activo.at.toISOString(), por: getNombreCorto(activo.por) } : null,
       grupos: (await listGruposDe(tx, asistenteId)).map((g) => g.nombre),
-      carnet: null,
+      carnet: await getCarnet(tx, asistenteId),
     };
   }
 }

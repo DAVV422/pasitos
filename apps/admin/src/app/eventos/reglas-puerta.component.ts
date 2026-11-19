@@ -13,11 +13,20 @@ import { EventoActualService } from './evento.layout';
 import { EventosApi, type MiembroEquipo, type ReglasEvento } from './eventos-api.service';
 
 const EN_MARCHA = new Set(['en_curso', 'pausado']);
-const CAMPOS = ['topeRegistrosPuerta', 'puntosCheckIn', 'topePuntosPersona', 'topeAjuste'] as const;
+const CAMPOS = [
+  'topeRegistrosPuerta',
+  'puntosCheckIn',
+  'topePuntosPersona',
+  'topeAjuste',
+  'puntosVerificacionCi',
+] as const;
 
 interface Formulario {
   registroPuertaActivo: boolean;
   autoregistroActivo: boolean;
+  pedirCi: 'no' | 'opcional';
+  verificacionCiActiva: boolean;
+  puntosVerificacionCi: string;
   topeRegistrosPuerta: string;
   puntosCheckIn: string;
   retosRequierenCheckIn: boolean;
@@ -69,6 +78,47 @@ const toNumero = (t: string) => (t.trim() === '' ? null : Number(t));
             (change)="set('autoregistroActivo', !form().autoregistroActivo)"
           />
         </label>
+        <h2 class="mt-2 text-xl font-bold">Carnet de identidad</h2>
+        <px-campo etiqueta="Pedir el carnet al registrarse" #cci="pxCampo">
+          <select [id]="cci.idControl" (change)="set('pedirCi', $any(valorDe($event)))">
+            <option value="no" [selected]="form().pedirCi === 'no'">No</option>
+            <option value="opcional" [selected]="form().pedirCi === 'opcional'">Opcional</option>
+          </select>
+        </px-campo>
+        <label class="pnl-interruptor">
+          <span class="pnl-interruptor__texto">
+            Verificación de carnet
+            <span class="pnl-interruptor__ayuda">
+              El equipo compara el carnet físico con el que escribió la persona y le da puntos.
+              Verifican los registradores y quienes marques en Equipo.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            [checked]="form().verificacionCiActiva"
+            (change)="set('verificacionCiActiva', !form().verificacionCiActiva)"
+          />
+        </label>
+        @if (form().verificacionCiActiva) {
+          <px-campo
+            etiqueta="Puntos por verificar"
+            ayuda="De 1 a 1000. Un cambio vale para lo que viene."
+            [error]="errores()['puntosVerificacionCi'] ?? null"
+            #cpv="pxCampo"
+          >
+            <input
+              [id]="cpv.idControl"
+              [attr.aria-describedby]="cpv.idDescripcion"
+              type="number"
+              min="1"
+              max="1000"
+              [value]="form().puntosVerificacionCi"
+              (input)="set('puntosVerificacionCi', valorDe($event))"
+            />
+          </px-campo>
+        }
+        <h2 class="mt-2 text-xl font-bold">Puerta</h2>
         <px-campo
           etiqueta="Tope de registros del evento"
           [opcional]="true"
@@ -225,6 +275,9 @@ export class ReglasPuertaComponent implements OnInit {
     const cambios = {
       registroPuertaActivo: f.registroPuertaActivo,
       autoregistroActivo: f.autoregistroActivo,
+      pedirCi: f.pedirCi,
+      verificacionCiActiva: f.verificacionCiActiva,
+      ...(f.verificacionCiActiva ? { puntosVerificacionCi: Number(f.puntosVerificacionCi) } : {}),
       topeRegistrosPuerta: toNumero(f.topeRegistrosPuerta),
       puntosCheckIn: Number(f.puntosCheckIn),
       retosRequierenCheckIn: f.retosRequierenCheckIn,
@@ -299,6 +352,9 @@ export class ReglasPuertaComponent implements OnInit {
     return {
       registroPuertaActivo: reglas?.registroPuertaActivo ?? true,
       autoregistroActivo: reglas?.autoregistroActivo ?? false,
+      pedirCi: reglas?.pedirCi ?? 'no',
+      verificacionCiActiva: reglas?.verificacionCiActiva ?? false,
+      puntosVerificacionCi: String(reglas?.puntosVerificacionCi ?? 30),
       topeRegistrosPuerta: toTexto(reglas?.topeRegistrosPuerta ?? null),
       puntosCheckIn: String(reglas?.puntosCheckIn ?? 0),
       retosRequierenCheckIn: reglas?.retosRequierenCheckIn ?? true,

@@ -305,6 +305,12 @@ export class RetosService {
       .where(and(eq(retos.id, id), eq(retos.eventoId, contexto.eventoId)));
     const [reto] = bloquear ? await consulta.for('update') : await consulta;
     if (!reto) throw new AppError('NO_ENCONTRADO');
+    // HU-321: el reto de la verificación de carnet se maneja en *Reglas y puerta*.
+    if (bloquear && reto.tipo === 'verificacion_ci') {
+      throw new AppError('VALIDACION', {
+        detail: 'Este reto se configura en Configuración → Reglas y puerta.',
+      });
+    }
     return reto;
   }
 

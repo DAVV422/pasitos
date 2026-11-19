@@ -99,3 +99,18 @@ export const esquemaMisDatos = z
   .strict()
   .refine((d) => Object.keys(d).length > 0, { error: 'Indica qué cambiar.' });
 export type MisDatos = z.infer<typeof esquemaMisDatos>;
+
+/** Buscar a quién verificar (HU-321 §3): por *Mi entrada* o por nombre o código. */
+export const esquemaBuscarCarnet = z
+  .object({
+    qr: z.string().trim().min(1).max(200).optional(),
+    q: z.string().trim().min(1).max(120).optional(),
+  })
+  .refine((d) => !!d.qr !== !!d.q, { error: 'Escanea Mi entrada o busca por nombre o código.' });
+
+/** Verificar; con `ci`, primero se corrige (o se escribe desde el documento). */
+export const esquemaVerificarCi = z.object({ ci: carnetLibre.optional() });
+
+export const esquemaRechazarCi = z.object({ nota: z.string().trim().min(3).max(300) });
+
+export const esquemaAnularCi = z.object({ motivo: z.string().trim().min(5).max(300) });

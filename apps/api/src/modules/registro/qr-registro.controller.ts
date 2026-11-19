@@ -14,7 +14,11 @@ import {
 } from '@nestjs/common';
 type RequestConCuerpo = FastifyRequest & { rawBody?: Buffer };
 import {
+  esquemaAnularCi,
   esquemaAutoregistro,
+  esquemaBuscarCarnet,
+  esquemaRechazarCi,
+  esquemaVerificarCi,
   esquemaCrearQrRegistro,
   esquemaMisDatos,
   esquemaEditarQrRegistro,
@@ -27,6 +31,7 @@ import { Asistente, AsistenteActual, type ContextoAsistente } from '../../common
 import { getPedidoIdempotente } from '../acceso/idempotencia';
 import { COOKIE_ASISTENTE } from '../acceso/sesiones-asistente';
 import { AutoregistroService } from './autoregistro.service';
+import { CarnetsService } from './carnets.service';
 import { MisDatosService } from './mis-datos.service';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
@@ -217,5 +222,68 @@ export class MisDatosController {
   @Asistente({ firmado: true })
   update(@AsistenteActual() asistente: ContextoAsistente, @Body() cuerpo: unknown) {
     return this.misDatos.update(asistente, esquemaMisDatos.parse(cuerpo));
+  }
+}
+
+/**
+ * Verificar el carnet (HU-321 §3). La matriz da `ci.verify` a D, C y R, y además lo tiene quien
+ * esté marcado con *Verifica carnets*: por eso la ruta pide solo ser del evento y el servicio
+ * decide (`403 NO_VERIFICA_CI`). Deshacer es de D y C.
+ */
+@Controller()
+export class CarnetsController {
+  constructor(private readonly carnets: CarnetsService) {}
+
+  @Post('eventos/:eventoId/carnets/buscar')
+  @Permiso('evento.read')
+  @HttpCode(200)
+  search(@Contexto() contexto: ContextoEvento, @Body() cuerpo: unknown) {
+    return this.carnets.search(contexto, esquemaBuscarCarnet.parse(cuerpo));
+  }
+
+  @Post('asistentes/:id/carnet/verificar')
+  @Permiso('evento.read', { recurso: 'asistentes' })
+  @HttpCode(200)
+  verify(
+    @Contexto() contexto: ContextoEvento,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() cuerpo: unknown,
+    @Req() request: RequestConCuerpo,
+  ) {
+    return this.carnets.verify(
+      contexto,
+      id,
+      esquemaVerificarCi.parse(cuerpo ?? {}),
+      getPedidoIdempotente(request),
+    );
+  }
+
+  @Post('asistentes/:id/carnet/rechazar')
+  @Permiso('evento.read', { recurso: 'asistentes' })
+  @HttpCode(200)
+  reject(
+    @Contexto() contexto: ContextoEvento,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() cuerpo: unknown,
+  ) {
+    return this.carnets.reject(contexto, id, esquemaRechazarCi.parse(cuerpo).nota);
+  }
+
+  @Post('asistentes/:id/carnet/anular')
+  @Permiso('puntos.ajustar', { recurso: 'asistentes' })
+  @AccionBitacoraDe('ci.unverify')
+  @HttpCode(200)
+  cancel(
+    @Contexto() contexto: ContextoEvento,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() cuerpo: unknown,
+    @Req() request: RequestConCuerpo,
+  ) {
+    return this.carnets.cancel(
+      contexto,
+      id,
+      esquemaAnularCi.parse(cuerpo).motivo,
+      getPedidoIdempotente(request),
+    );
   }
 }

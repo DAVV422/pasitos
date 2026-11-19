@@ -94,6 +94,12 @@ export const appRoutes: Route[] = [
           import('./eventos/activar-cuentas.page').then((m) => m.ActivarCuentasPage),
       },
       {
+        path: 'carnets',
+        canActivate: [canDoActivate('ci.verify')],
+        title: 'Verificar carnet · Pasitos',
+        loadComponent: () => import('./eventos/carnets.page').then((m) => m.CarnetsPage),
+      },
+      {
         path: 'qr-registro',
         canActivate: [canDoActivate('qr_registro.read')],
         title: 'QR de registro · Pasitos',

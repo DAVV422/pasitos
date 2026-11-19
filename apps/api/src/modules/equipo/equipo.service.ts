@@ -42,6 +42,7 @@ export interface DatosInvitar {
 
 export interface DatosEditarMiembro {
   readonly rol?: RolInvitable | undefined;
+  readonly verificaCi?: boolean | undefined;
   readonly terminales?:
     | {
         readonly pantallas?: readonly string[] | undefined;
@@ -80,6 +81,7 @@ export class EquipoService {
           id: miembrosEvento.id,
           // HU-319: para asignarle un QR de registro.
           usuarioId: miembrosEvento.usuarioId,
+          verificaCi: miembrosEvento.verificaCi,
           email: miembrosEvento.emailInvitado,
           rol: miembrosEvento.rol,
           estado: miembrosEvento.estado,
@@ -243,7 +245,12 @@ export class EquipoService {
           : null;
       await tx
         .update(miembrosEvento)
-        .set({ rol: rolNuevo, topeRegistrosPuerta: tope, updatedAt: this.reloj.now() })
+        .set({
+          rol: rolNuevo,
+          topeRegistrosPuerta: tope,
+          verificaCi: datos.verificaCi ?? miembro.verificaCi,
+          updatedAt: this.reloj.now(),
+        })
         .where(eq(miembrosEvento.id, miembroId));
       if (datos.terminales !== undefined || rolNuevo !== rolActual) {
         await tx.delete(miembroTerminales).where(eq(miembroTerminales.miembroEventoId, miembroId));
@@ -259,10 +266,15 @@ export class EquipoService {
           id: miembroId,
           nombre: miembro.nombre ?? NOMBRES_ROL[rolActual],
         },
-        antes: { rol: rolActual, topeRegistrosPuerta: miembro.topeRegistrosPuerta },
+        antes: {
+          rol: rolActual,
+          topeRegistrosPuerta: miembro.topeRegistrosPuerta,
+          verificaCi: miembro.verificaCi,
+        },
         despues: {
           rol: rolNuevo,
           topeRegistrosPuerta: tope,
+          verificaCi: datos.verificaCi ?? miembro.verificaCi,
           ...(datos.terminales ? { terminales: datos.terminales } : {}),
         },
       });
@@ -336,6 +348,7 @@ export class EquipoService {
         usuarioId: miembrosEvento.usuarioId,
         emailInvitado: miembrosEvento.emailInvitado,
         topeRegistrosPuerta: miembrosEvento.topeRegistrosPuerta,
+        verificaCi: miembrosEvento.verificaCi,
         nombre: usuarios.nombre,
       })
       .from(miembrosEvento)

@@ -77,6 +77,8 @@ export interface EventoApp {
     readonly puntos: number;
     readonly maxPorPersona: number | null;
     readonly grupo: GrupoApp | null;
+    /** HU-321: *"Lleva tu carnet"*. */
+    readonly requiereCi: boolean;
   }[];
   readonly agenda: readonly {
     readonly id: string;
@@ -148,6 +150,7 @@ export async function getEventoApp(
           puntos: premios.puntos,
           maxPorPersona: premios.maxPorPersona,
           grupoId: premios.grupoId,
+          requiereCi: premios.requiereCi,
         })
         .from(premios)
         .where(

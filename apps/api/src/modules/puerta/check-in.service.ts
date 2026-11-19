@@ -14,6 +14,7 @@ export const METODOS_CHECK_IN = [
   'autoregistro_equipo',
   'autoregistro_tablet',
   'autoregistro_impreso',
+  'verificacion_ci',
 ] as const;
 export type MetodoCheckIn = (typeof METODOS_CHECK_IN)[number];
 

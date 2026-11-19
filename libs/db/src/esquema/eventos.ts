@@ -54,6 +54,12 @@ export const eventos = pgTable(
     registroPuertaActivo: boolean('registro_puerta_activo').notNull().default(true),
     // HU-319: apaga de una vez todos los QR de registro.
     autoregistroActivo: boolean('autoregistro_activo').notNull().default(false),
+    // HU-321: pedir el carnet en el autorregistro, la verificación con su reto y la llave del
+    // HMAC de los carnets verificados (cifrada con la llave de datos). Sin FK a `retos`: ciclo.
+    pedirCi: text('pedir_ci').notNull().default('no'),
+    verificacionCiActiva: boolean('verificacion_ci_activa').notNull().default(false),
+    retoVerificacionId: uuid('reto_verificacion_id'),
+    llaveCarnetsCifrada: bytea('llave_carnets_cifrada'),
     // HU-212: tope del evento para registrar en la puerta; null = sin límite.
     topeRegistrosPuerta: integer('tope_registros_puerta'),
     puntosCheckIn: integer('puntos_check_in').notNull().default(0),
@@ -100,6 +106,7 @@ export const eventos = pgTable(
     check('eventos_secciones_sin_wifi', sql`not ('wifi' = any(${t.seccionesPublicas}))`),
     check('eventos_modo_registro', sql`${t.modoRegistro} in ('lista')`),
     check('eventos_puntos_check_in', sql`${t.puntosCheckIn} between 0 and 1000`),
+    check('eventos_pedir_ci', sql`${t.pedirCi} in ('no', 'opcional')`),
     check('eventos_tope_ajuste', sql`${t.topeAjuste} between 1 and 10000`),
     check('eventos_nombre_puntos', sql`char_length(${t.nombrePuntos}) between 2 and 20`),
     check(

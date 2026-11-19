@@ -111,6 +111,8 @@ export async function getEstadoApp(
       nombrePuntos: eventos.nombrePuntos,
       requiereCheckIn: eventos.retosRequierenCheckIn,
       zonaHoraria: eventos.zonaHoraria,
+      ciCargado: sql<boolean>`${asistentes.ciCifrado} is not null`,
+      ciVerificado: sql<boolean>`${asistentes.ciVerificadoAt} is not null`,
     })
     .from(asistentes)
     .innerJoin(eventos, eq(eventos.id, asistentes.eventoId))
@@ -193,7 +195,7 @@ export async function getEstadoApp(
       nombre: fila.nombre,
       estado: fila.estado,
       grupos: gruposDeLaPersona.map((g) => g.nombre),
-      ci: { cargado: false, verificado: false },
+      ci: { cargado: fila.ciCargado, verificado: fila.ciVerificado },
     },
     saldo: fila.saldo ?? 0,
     evento: {

@@ -83,6 +83,8 @@ export interface EventoApp {
     readonly maxPorPersona: number | null;
     /** HU-325: solo para un grupo (*VIP*). */
     readonly grupo: GrupoApp | null;
+    /** HU-321: *"Lleva tu carnet"*. */
+    readonly requiereCi: boolean;
   }[];
   readonly agenda: readonly ActividadApp[];
 }

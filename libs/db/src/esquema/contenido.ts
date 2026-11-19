@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   index,
   integer,
@@ -116,6 +117,8 @@ export const premios = pgTable(
     orden: integer('orden').notNull().default(0),
     // HU-325: solo para un grupo; solo así el precio puede ser 0 (un souvenir).
     grupoId: uuid('grupo_id').references(() => grupos.id),
+    // HU-321: la mesa pide el carnet para entregarlo (no bloquea el canje).
+    requiereCi: boolean('requiere_ci').notNull().default(false),
   },
   (t) => [
     check(
