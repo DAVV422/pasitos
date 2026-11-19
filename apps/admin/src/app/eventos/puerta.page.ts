@@ -20,6 +20,7 @@ import { EnVivoService, ErrorApi } from '@pasitos/web-core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AccesoPuertaComponent, type AvisoVinculado } from './acceso-puerta.component';
 import { EventoActualService } from './evento.layout';
+import { FotosAsistenteComponent } from './fotos-asistente.component';
 import { RegistroPuertaComponent } from './registro-puerta.component';
 import {
   PuertaApi,
@@ -44,6 +45,7 @@ const ESPERA_BUSQUEDA_MS = 250;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AccesoPuertaComponent,
+    FotosAsistenteComponent,
     RegistroPuertaComponent,
     RouterLink,
     AvisoComponent,
@@ -206,6 +208,9 @@ const ESPERA_BUSQUEDA_MS = 250;
                     }
                   </ul>
                 </details>
+              }
+              @if (puedeVerFotos()) {
+                <adm-fotos-asistente [asistenteId]="f.id" />
               }
               @if (f.checkIn; as c) {
                 <px-aviso variante="ok"
@@ -450,6 +455,8 @@ export class PuertaPage {
   private leyendo = false;
 
   protected readonly puedeDeshacer = computed(() => this.contexto.canDo('puntos.ajustar'));
+  /** HU-324: la sección *Fotos* de la ficha, para dueño y coorganizador. */
+  protected readonly puedeVerFotos = computed(() => this.contexto.canDo('bitacora.read'));
   /** HU-303: con el registro activo y cupo. */
   protected readonly registroAbierto = computed(
     () =>

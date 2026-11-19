@@ -20,6 +20,7 @@
     "db:generar": "drizzle-kit generate --config libs/db/drizzle.config.ts",
     "db:migrar": "tsx --env-file=.env libs/db/src/cli/migrar.ts",
     "semilla": "tsx --env-file=.env libs/db/src/cli/semilla.ts",
+    "fotos:procesar": "tsx --env-file=.env --tsconfig tsconfig.base.json apps/trabajador/src/cli/procesar-fotos.ts",
     "correos:vista": "tsx --env-file=.env --tsconfig tsconfig.base.json apps/trabajador/src/cli/correos-vista.ts",
     "stellar:levantar": "docker compose -f infra/compose.dev.yml --env-file .env --profile stellar up -d --wait stellar",
     "stellar:bajar": "docker compose -f infra/compose.dev.yml --env-file .env --profile stellar stop stellar",

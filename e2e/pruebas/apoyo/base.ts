@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process';
+import { createHash, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Algorithm, hash } from '@node-rs/argon2';
@@ -103,4 +105,91 @@ export function setEstadoEvento(eventoId: string, estado: 'publicado' | 'en_curs
   return withCliente(async (cliente) => {
     await cliente.query('update eventos set estado = $1 where id = $2', [estado, eventoId]);
   });
+}
+
+/** Lo que arma `seedEventoConFoto` para la prueba de las fotos. */
+export interface EventoConFoto {
+  readonly eventoId: string;
+  readonly retoId: string;
+  readonly asistenteId: string;
+  /** El enlace de invitación del asistente: `/app/acceso/invitacion/<token>`. */
+  readonly token: string;
+}
+
+/**
+ * Un evento en curso con un reto de foto (20 puntos, 3 intentos), un asistente presente con su
+ * invitación y un registrador responsable del reto (HU-322 a HU-324). Los datos son inventados.
+ */
+export function seedEventoConFoto(responsable: { email: string }): Promise<EventoConFoto> {
+  return withCliente(async (cliente) => {
+    const organizacionId = uuidv7();
+    const eventoId = uuidv7();
+    const retoId = uuidv7();
+    const asistenteId = uuidv7();
+    const miembroId = uuidv7();
+    await cliente.query('insert into organizaciones (id, nombre, slug) values ($1, $2, $3)', [
+      organizacionId,
+      'Organización fotos e2e',
+      `e2e-fotos-${organizacionId}`,
+    ]);
+    await cliente.query(
+      `insert into eventos (id, organizacion_id, slug, nombre, tipo, estado, inicio_at, fin_at)
+       values ($1, $2, $3, 'Feria de fotos e2e', 'prueba', 'en_curso', now() - interval '1 hour',
+               now() + interval '8 hours')`,
+      [eventoId, organizacionId, `fotos-e2e-${eventoId.slice(-12)}`],
+    );
+    await cliente.query(
+      `insert into retos (id, organizacion_id, evento_id, nombre, tipo, puntos, tope_total,
+                          instruccion_foto, autorizacion_uso, intentos_max)
+       values ($1, $2, $3, 'Foto con la mascota', 'foto', 20, 100,
+               'Una foto con la mascota del evento', 'opcional', 3)`,
+      [retoId, organizacionId, eventoId],
+    );
+    await cliente.query(
+      `insert into asistentes (id, organizacion_id, evento_id, codigo_asistente, nombre, estado)
+       values ($1, $2, $3, 'A-0001', 'Valeria Quispe', 'presente')`,
+      [asistenteId, organizacionId, eventoId],
+    );
+    const token = randomBytes(32).toString('base64url');
+    await cliente.query(
+      `insert into invitaciones (id, organizacion_id, evento_id, asistente_id, token_hash,
+                                 token_cifrado, estado)
+       values ($1, $2, $3, $4, $5, $6, 'enviada')`,
+      [
+        uuidv7(),
+        organizacionId,
+        eventoId,
+        asistenteId,
+        createHash('sha256').update(token, 'utf8').digest(),
+        Buffer.from('cifrado-de-prueba'),
+      ],
+    );
+    const { rows } = await cliente.query<{ id: string }>(
+      'select id from usuarios where email = $1',
+      [responsable.email],
+    );
+    await cliente.query(
+      `insert into miembros_evento (id, organizacion_id, evento_id, usuario_id, email_invitado, rol,
+                                    estado, aceptado_at)
+       values ($1, $2, $3, $4, $5, 'registrador', 'activo', now())`,
+      [miembroId, organizacionId, eventoId, rows[0]?.id, responsable.email],
+    );
+    await cliente.query(
+      `insert into reto_responsables (reto_id, miembro_id, organizacion_id, evento_id)
+       values ($1, $2, $3, $4)`,
+      [retoId, miembroId, organizacionId, eventoId],
+    );
+    return { eventoId, retoId, asistenteId, token };
+  });
+}
+
+/**
+ * Procesa una vez las fotos recibidas, como el trabajador (que en estas pruebas no corre). Corre
+ * desde `e2e/`, igual que el API: los dos ven la misma carpeta de archivos.
+ */
+export function processFotos(): void {
+  execSync(
+    'npx tsx --env-file=../.env --tsconfig ../tsconfig.base.json ../apps/trabajador/src/cli/procesar-fotos.ts',
+    { cwd: resolve(__dirname, '../..'), stdio: 'pipe' },
+  );
 }

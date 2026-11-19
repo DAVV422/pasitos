@@ -110,6 +110,15 @@ export class FotosApi {
     );
   }
 
+  /** Las fotos de una persona, para su ficha (D y C). */
+  listDeAsistente(asistenteId: string): Promise<{ readonly items: readonly FotoPanel[] }> {
+    return firstValueFrom(
+      this.http.get<{ readonly items: readonly FotoPanel[] }>(
+        `${BASE}/asistentes/${asistenteId}/fotos`,
+      ),
+    );
+  }
+
   createDescarga(eventoId: string): Promise<{ operacionId: string }> {
     return firstValueFrom(
       this.http.post<{ operacionId: string }>(`${BASE}/eventos/${eventoId}/fotos/descargas`, {}),

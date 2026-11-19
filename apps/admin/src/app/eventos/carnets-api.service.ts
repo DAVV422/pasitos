@@ -47,6 +47,17 @@ export class CarnetsApi {
     );
   }
 
+  /** Deshacer la verificación (D y C): resta los puntos y desbloquea el carnet. */
+  cancel(asistenteId: string, motivo: string): Promise<FichaCarnet> {
+    return firstValueFrom(
+      this.http.post<FichaCarnet>(
+        `${BASE}/asistentes/${asistenteId}/carnet/anular`,
+        { motivo },
+        conClave(),
+      ),
+    );
+  }
+
   reject(asistenteId: string, nota: string): Promise<FichaCarnet> {
     return firstValueFrom(
       this.http.post<FichaCarnet>(`${BASE}/asistentes/${asistenteId}/carnet/rechazar`, { nota }),

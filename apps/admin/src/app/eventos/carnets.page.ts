@@ -1,3 +1,4 @@
+import { canDo } from '@pasitos/dominio';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { getMensajeError, valorDe } from '@pasitos/panel';
 import {
@@ -101,6 +102,32 @@ type Modo = 'inicio' | 'escanear' | 'buscar' | 'ficha';
                 <p class="text-muted">Compáralo con el carnet físico.</p>
               }
             </article>
+            @if (f.verificacion && puedeDeshacer()) {
+              @if (!deshaciendo()) {
+                <button type="button" pxBoton="peligro-contorno" (click)="deshaciendo.set(true)">
+                  Deshacer la verificación
+                </button>
+              } @else {
+                <form class="flex flex-col gap-3" (submit)="cancel($event)" novalidate>
+                  <px-campo
+                    etiqueta="Motivo"
+                    ayuda="Por ejemplo: Me equivoqué de persona. Se restan los puntos del reto."
+                    #cd="pxCampo"
+                  >
+                    <input
+                      [id]="cd.idControl"
+                      [attr.aria-describedby]="cd.idDescripcion"
+                      maxlength="300"
+                      [value]="motivo()"
+                      (input)="motivo.set(valorDe($event))"
+                    />
+                  </px-campo>
+                  <button type="submit" pxBoton="peligro" [cargando]="cargando()">
+                    Deshacer y restar los puntos
+                  </button>
+                </form>
+              }
+            }
             @if (!f.verificacion) {
               @if (f.ci && !corrigiendo()) {
                 <button
@@ -197,6 +224,8 @@ export class CarnetsPage {
   protected readonly corrigiendo = signal(false);
   protected readonly rechazando = signal(false);
   protected readonly nota = signal('');
+  protected readonly deshaciendo = signal(false);
+  protected readonly motivo = signal('');
   protected readonly cargando = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly resultado = signal<string | null>(null);
@@ -206,6 +235,11 @@ export class CarnetsPage {
   protected readonly activa = computed(
     () => this.actual.evento()?.reglas.verificacionCiActiva === true,
   );
+  /** Deshacer mueve puntos: solo dueño y coorganizador (`puntos.ajustar`). */
+  protected readonly puedeDeshacer = computed(() => {
+    const evento = this.actual.evento();
+    return !!evento && canDo(evento.miRol, 'puntos.ajustar');
+  });
   private readonly nombrePuntos = computed(() => this.actual.evento()?.nombrePuntos ?? 'puntos');
 
   protected async onLeido(qr: string): Promise<void> {
@@ -229,6 +263,7 @@ export class CarnetsPage {
     this.ficha.set(ficha);
     this.corrigiendo.set(false);
     this.rechazando.set(false);
+    this.deshaciendo.set(false);
     this.resultado.set(null);
     this.modo.set('ficha');
   }
@@ -298,7 +333,27 @@ export class CarnetsPage {
     });
   }
 
+  protected async cancel(evento: Event): Promise<void> {
+    evento.preventDefault();
+    const ficha = this.ficha();
+    const motivo = this.motivo().trim();
+    if (!ficha || motivo.length < 5) {
+      this.error.set('Cuenta el motivo (al menos 5 letras).');
+      return;
+    }
+    await this.run(async () => {
+      this.ficha.set(await this.api.cancel(ficha.id, motivo));
+      this.deshaciendo.set(false);
+      this.motivo.set('');
+      this.resultado.set(
+        `Deshicimos la verificación y restamos los ${this.nombrePuntos()} del reto. El carnet se puede volver a verificar.`,
+      );
+    });
+  }
+
   protected reset(): void {
+    this.deshaciendo.set(false);
+    this.motivo.set('');
     this.ficha.set(null);
     this.resultados.set([]);
     this.buscado.set(false);
