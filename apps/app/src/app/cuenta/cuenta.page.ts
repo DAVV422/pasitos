@@ -98,6 +98,10 @@ interface Opcion {
         Tus puntos valen solo durante {{ e.evento.nombre }} y vencen al cierre. No son dinero.
       </p>
     }
+    <nav aria-label="Información legal" class="text-muted flex gap-4 text-sm">
+      <a href="/terminos" target="_blank" rel="noopener" class="underline">Términos</a>
+      <a href="/privacidad" target="_blank" rel="noopener" class="underline">Privacidad</a>
+    </nav>
   `,
 })
 export class CuentaPage {

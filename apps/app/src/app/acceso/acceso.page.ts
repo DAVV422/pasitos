@@ -108,9 +108,14 @@ const TEXTOS_ERROR: Readonly<Record<string, string>> = {
               <px-aviso variante="peligro">{{ mensaje }}</px-aviso>
             }
             <p class="text-muted text-sm">
-              Al entrar aceptas los términos del piloto de Pasitos y su política de privacidad. Para
-              evitar trampas registramos datos técnicos de este celular; no se comparten ni van a
-              Stellar.
+              Al entrar aceptas los
+              <a href="/terminos" target="_blank" rel="noopener" class="underline">Términos</a>
+              y la
+              <a href="/privacidad" target="_blank" rel="noopener" class="underline"
+                >Política de privacidad</a
+              >. Tus puntos no son dinero, son solo tuyos y vencen al cerrar el evento. Registramos
+              datos técnicos de tu celular solo para evitar trampas, y los borramos 30 días después
+              del evento.
             </p>
             <button type="button" pxBoton [bloque]="true" [cargando]="entrando()" (click)="enter()">
               Entrar

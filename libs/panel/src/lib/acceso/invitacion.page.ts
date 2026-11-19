@@ -108,10 +108,18 @@ type Estado =
                     [checked]="acepta()"
                     (change)="acepta.set(!acepta())"
                   />
-                  <span
-                    >Acepto los términos del piloto de Pasitos y el uso de mis datos para organizar
-                    el evento.</span
-                  >
+                  <span>
+                    Acepto los
+                    <a href="/terminos" target="_blank" rel="noopener" class="underline"
+                      >Términos</a
+                    >
+                    y la
+                    <a href="/privacidad" target="_blank" rel="noopener" class="underline"
+                      >Política de privacidad</a
+                    >
+                    de Pasitos. Me comprometo a usar los datos de los asistentes solo para el
+                    evento.
+                  </span>
                 </label>
                 <button
                   type="submit"

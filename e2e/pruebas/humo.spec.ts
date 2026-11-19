@@ -7,6 +7,9 @@ import { expect, test, type Page } from '@playwright/test';
  */
 const APPS = [
   { ruta: '/', titulo: 'Cada paso cuenta.' },
+  // HU-407: los textos aprobados, con su versión.
+  { ruta: '/terminos', titulo: 'Términos y condiciones de Pasitos' },
+  { ruta: '/privacidad', titulo: 'Política de privacidad de Pasitos' },
   { ruta: '/app/', titulo: 'Tu entrada a Pasitos' },
   { ruta: '/sala/', titulo: 'Pantalla de sala' },
   { ruta: '/mesa/', titulo: 'Mesa de canje' },
@@ -37,7 +40,7 @@ for (const { ruta, titulo } of APPS) {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(titulo);
     await expect(page.locator('html')).toHaveAttribute('data-tema', 'claro');
     await expect(page.locator('html')).toHaveAttribute('lang', 'es');
-    await expect(page.getByText('Testnet')).toBeVisible();
+    await expect(page.getByText('Testnet', { exact: true })).toBeVisible();
 
     const accesibilidad = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
     const graves = accesibilidad.violations.filter((v) =>

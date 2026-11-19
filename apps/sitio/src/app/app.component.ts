@@ -1,20 +1,24 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { BotonDirective, EncabezadoComponent } from '@pasitos/ui';
+import { EncabezadoComponent } from '@pasitos/ui';
 
-/** Sitio público (D37). En la fase 0, solo la portada; la landing completa es HU-404. */
+/** Sitio público (D37): el encabezado, la página y el pie con los términos y la privacidad. */
 @Component({
   selector: 'sit-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, EncabezadoComponent, BotonDirective],
+  imports: [RouterOutlet, EncabezadoComponent],
   template: `
     <px-encabezado />
     <main class="mx-auto flex max-w-3xl flex-col gap-5 px-5 py-12">
-      <h1 class="text-5xl font-extrabold tracking-tight">Cada paso cuenta.</h1>
-      <p class="text-xl text-muted">Puntos por quedarse, reportes que se pueden comprobar.</p>
-      <div><a pxBoton="secundario" [chico]="true" href="/app/">Ir a la app del asistente</a></div>
       <router-outlet />
     </main>
+    <footer class="border-line text-muted mx-auto max-w-3xl border-t px-5 py-6 text-sm">
+      <nav aria-label="Información legal" class="flex flex-wrap gap-4">
+        <a href="/terminos" class="underline">Términos</a>
+        <a href="/privacidad" class="underline">Privacidad</a>
+      </nav>
+      <p class="mt-2">Piloto en la red de pruebas de Stellar.</p>
+    </footer>
   `,
 })
 export class AppComponent {}
