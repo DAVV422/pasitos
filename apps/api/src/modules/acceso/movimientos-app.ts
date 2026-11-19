@@ -12,6 +12,7 @@ import {
 import { AppError } from '@pasitos/dominio';
 import { buildQrEntrada } from './entrada';
 import { getDetalleMovimiento } from './estado-app';
+import { listGruposDe } from '../grupos/grupos-de';
 
 const POR_PAGINA = 50;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -140,7 +141,7 @@ export async function getMiEntrada(tx: Tx, asistenteId: string, ahora: Date): Pr
     codigo: fila.codigo,
     nombre: fila.nombre,
     validoHasta: validoHasta.toISOString(),
-    grupos: [],
+    grupos: (await listGruposDe(tx, asistenteId)).map((g) => g.nombre),
     ci: { cargado: false, verificado: false },
   };
 }

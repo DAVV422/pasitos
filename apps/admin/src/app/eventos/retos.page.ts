@@ -30,6 +30,7 @@ import {
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
+import { GruposApi, type GrupoPanel } from './grupos-api.service';
 import { EventosApi, type FilaContenido, type RetoPanel } from './eventos-api.service';
 
 const PUBLICADOS = new Set(['publicado', 'en_curso', 'pausado']);
@@ -47,6 +48,7 @@ interface FormularioReto {
   desde: string;
   hasta: string;
   sponsorId: string;
+  grupoId: string;
 }
 
 const VACIO: FormularioReto = {
@@ -62,6 +64,7 @@ const VACIO: FormularioReto = {
   desde: '',
   hasta: '',
   sponsorId: '',
+  grupoId: '',
 };
 
 function toLocal(iso: string | null): string {
@@ -292,7 +295,11 @@ function toIso(local: string): string | null {
             </px-campo>
           </div>
         </pnl-seccion>
-        <pnl-seccion titulo="Avanzado" [plegable]="true" [abierta]="!!form().sponsorId">
+        <pnl-seccion
+          titulo="Avanzado"
+          [plegable]="true"
+          [abierta]="!!form().sponsorId || !!form().grupoId"
+        >
           <px-campo
             etiqueta="Sponsor"
             [opcional]="true"
@@ -309,6 +316,24 @@ function toIso(local: string): string | null {
                 <option [value]="s.id" [selected]="form().sponsorId === s.id">
                   {{ s['nombre'] }}
                 </option>
+              }
+            </select>
+          </px-campo>
+          <px-campo
+            etiqueta="Solo para el grupo"
+            [opcional]="true"
+            ayuda="Solo lo ven y lo usan las personas de ese grupo."
+            [error]="errores()['grupoId'] ?? null"
+            #fg="pxCampo"
+          >
+            <select
+              [id]="fg.idControl"
+              [attr.aria-describedby]="fg.idDescripcion"
+              (change)="set('grupoId', valorDe($event))"
+            >
+              <option value="">Todo el evento</option>
+              @for (g of grupos(); track g.id) {
+                <option [value]="g.id" [selected]="form().grupoId === g.id">{{ g.nombre }}</option>
               }
             </select>
           </px-campo>
@@ -329,6 +354,9 @@ function toIso(local: string): string | null {
             <div class="flex flex-wrap items-start justify-between gap-2">
               <span>
                 <b>{{ reto.nombre }}</b> · {{ reto.puntos }} {{ nombrePuntos() }}
+                @if (nombreGrupo(reto.grupoId); as g) {
+                  <px-chip variante="puntos">{{ g }}</px-chip>
+                }
                 <span class="text-muted block text-sm">
                   {{ reto.tipo === 'qr' ? (reto.lugar?.nombre ?? 'Sin lugar') : 'Otorgado' }}
                   @if (reto.disponibleDesde) {
@@ -407,6 +435,8 @@ export class RetosPage implements OnInit {
   protected readonly retos = signal<readonly RetoPanel[]>([]);
   protected readonly lugares = signal<readonly FilaContenido[]>([]);
   protected readonly sponsors = signal<readonly FilaContenido[]>([]);
+  protected readonly grupos = signal<readonly GrupoPanel[]>([]);
+  private readonly gruposApi = inject(GruposApi);
   protected readonly editando = signal<'nuevo' | RetoPanel | null>(null);
   protected readonly form = signal<FormularioReto>(VACIO);
   protected readonly guardando = signal(false);
@@ -450,6 +480,7 @@ export class RetosPage implements OnInit {
             desde: toLocal(reto.disponibleDesde),
             hasta: toLocal(reto.disponibleHasta),
             sponsorId: reto.sponsorId ?? '',
+            grupoId: reto.grupoId ?? '',
           }
         : VACIO,
     );
@@ -473,6 +504,7 @@ export class RetosPage implements OnInit {
       disponibleDesde: toIso(f.desde),
       disponibleHasta: toIso(f.hasta),
       sponsorId: f.sponsorId || null,
+      grupoId: f.grupoId || null,
     };
     this.guardando.set(true);
     this.errores.set({});
@@ -537,14 +569,20 @@ export class RetosPage implements OnInit {
     await this.load();
   }
 
+  protected nombreGrupo(id: string | null): string | null {
+    return id ? (this.grupos().find((g) => g.id === id)?.nombre ?? null) : null;
+  }
+
   private async load(): Promise<void> {
     if (!this.eventoId()) return;
     try {
-      const [retos, lugares, sponsors] = await Promise.all([
+      const [retos, lugares, sponsors, grupos] = await Promise.all([
         this.api.listRetos(this.eventoId()),
         this.api.listContenido(this.eventoId(), 'lugares'),
         this.api.listContenido(this.eventoId(), 'sponsors'),
+        this.gruposApi.list(this.eventoId()),
       ]);
+      this.grupos.set(grupos);
       this.retos.set(retos);
       this.lugares.set(lugares);
       this.sponsors.set(sponsors);

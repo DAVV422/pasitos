@@ -11,6 +11,13 @@ import {
 } from '@pasitos/db';
 import { AppError } from '@pasitos/dominio';
 import { getUrlArchivo } from '../archivos/archivos.service';
+import { mapGruposDelEvento, whereParaLaPersona } from '../grupos/grupos-de';
+
+/** HU-325: el grupo de un reto o premio exclusivo (*VIP*). */
+export interface GrupoApp {
+  readonly nombre: string;
+  readonly color: string;
+}
 
 /**
  * Lo que casi no cambia (`GET /app/evento`, API §5.2, HU-309 §1): la información, el plano, los
@@ -58,6 +65,7 @@ export interface EventoApp {
     readonly lugar: string | null;
     readonly lugarId: string | null;
     readonly sponsorId: string | null;
+    readonly grupo: GrupoApp | null;
     readonly disponibleDesde: string | null;
     readonly disponibleHasta: string | null;
   }[];
@@ -68,6 +76,7 @@ export interface EventoApp {
     readonly imagenUrl: string | null;
     readonly puntos: number;
     readonly maxPorPersona: number | null;
+    readonly grupo: GrupoApp | null;
   }[];
   readonly agenda: readonly {
     readonly id: string;
@@ -80,7 +89,15 @@ export interface EventoApp {
   }[];
 }
 
-export async function getEventoApp(tx: Tx, eventoId: string): Promise<EventoApp> {
+/**
+ * HU-325: solo los retos y premios sin grupo o de los grupos de la persona (`grupoIds`). La caché
+ * guarda una respuesta por combinación de grupos.
+ */
+export async function getEventoApp(
+  tx: Tx,
+  eventoId: string,
+  grupoIds: readonly string[] = [],
+): Promise<EventoApp> {
   const [evento] = await tx
     .select({
       id: eventos.id,
@@ -114,12 +131,13 @@ export async function getEventoApp(tx: Tx, eventoId: string): Promise<EventoApp>
           lugar: lugares.nombre,
           lugarId: retos.lugarId,
           sponsorId: retos.sponsorId,
+          grupoId: retos.grupoId,
           disponibleDesde: retos.disponibleDesde,
           disponibleHasta: retos.disponibleHasta,
         })
         .from(retos)
         .leftJoin(lugares, eq(lugares.id, retos.lugarId))
-        .where(eq(retos.eventoId, eventoId))
+        .where(and(eq(retos.eventoId, eventoId), whereParaLaPersona(retos.grupoId, grupoIds)))
         .orderBy(retos.numero),
       tx
         .select({
@@ -129,9 +147,16 @@ export async function getEventoApp(tx: Tx, eventoId: string): Promise<EventoApp>
           imagenArchivoId: premios.imagenArchivoId,
           puntos: premios.puntos,
           maxPorPersona: premios.maxPorPersona,
+          grupoId: premios.grupoId,
         })
         .from(premios)
-        .where(and(eq(premios.eventoId, eventoId), eq(premios.estado, 'activo')))
+        .where(
+          and(
+            eq(premios.eventoId, eventoId),
+            eq(premios.estado, 'activo'),
+            whereParaLaPersona(premios.grupoId, grupoIds),
+          ),
+        )
         .orderBy(premios.orden, premios.id),
       tx
         .select({
@@ -180,6 +205,11 @@ export async function getEventoApp(tx: Tx, eventoId: string): Promise<EventoApp>
         .where(eq(preguntasFrecuentes.eventoId, eventoId))
         .orderBy(preguntasFrecuentes.orden, preguntasFrecuentes.id),
     ]);
+  const delEvento = await mapGruposDelEvento(tx, eventoId);
+  const toGrupo = (id: string | null): GrupoApp | null => {
+    const grupo = id ? delEvento.get(id) : undefined;
+    return grupo ? { nombre: grupo.nombre, color: grupo.color } : null;
+  };
   return {
     id: evento.id,
     nombre: evento.nombre,
@@ -203,13 +233,15 @@ export async function getEventoApp(tx: Tx, eventoId: string): Promise<EventoApp>
       logoUrl: logoArchivoId ? getUrlArchivo(logoArchivoId, '400') : null,
     })),
     preguntas: filasPreguntas,
-    retos: filasRetos.map((reto) => ({
+    retos: filasRetos.map(({ grupoId, ...reto }) => ({
       ...reto,
+      grupo: toGrupo(grupoId),
       disponibleDesde: reto.disponibleDesde?.toISOString() ?? null,
       disponibleHasta: reto.disponibleHasta?.toISOString() ?? null,
     })),
-    premios: filasPremios.map(({ imagenArchivoId, ...premio }) => ({
+    premios: filasPremios.map(({ imagenArchivoId, grupoId, ...premio }) => ({
       ...premio,
+      grupo: toGrupo(grupoId),
       imagenUrl: imagenArchivoId ? getUrlArchivo(imagenArchivoId, '400') : null,
     })),
     agenda: filasAgenda.map((actividad) => ({

@@ -36,7 +36,9 @@ import {
   QrComponent,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
+import { canDo } from '@pasitos/dominio';
 import { EventoActualService } from './evento.layout';
+import { GruposApi, type GrupoPanel } from './grupos-api.service';
 import {
   EventosApi,
   type AsistentePanel,
@@ -224,6 +226,14 @@ interface Candidato {
         <option value="puerta">Origen: puerta</option>
         <option value="autoregistro">Origen: autorregistro</option>
       </select>
+      @if (grupos().length > 0) {
+        <select aria-label="Grupo" (change)="setFiltro('grupoId', valorDe($event))">
+          <option value="">Grupo: todos</option>
+          @for (g of grupos(); track g.id) {
+            <option [value]="g.id">Grupo: {{ g.nombre }}</option>
+          }
+        </select>
+      }
       @if (filtroQr(); as qr) {
         <button type="button" class="pnl-chip-filtro" aria-pressed="true" (click)="clearQr()">
           Solo un QR de registro ✕
@@ -277,6 +287,9 @@ interface Candidato {
                 <px-chip [variante]="a.estado === 'cancelado' ? 'atenuado' : 'ok'">
                   {{ nombreEstado(a.estado) }}
                 </px-chip>
+                @for (g of a.grupos ?? []; track g.id) {
+                  <px-chip [variante]="$any(g.color)">{{ g.nombre }}</px-chip>
+                }
                 @if (a.estado !== 'cancelado') {
                   <px-chip [variante]="varianteInvitacion(a)">{{ textoInvitacion(a) }}</px-chip>
                 }
@@ -292,6 +305,19 @@ interface Candidato {
                     }
                     @if (a.invitacion?.estado !== 'usada') {
                       <button type="button" (click)="view(a)">Ver enlace</button>
+                    }
+                    @if (puedeGrupos()) {
+                      @for (g of grupos(); track g.id) {
+                        @if (isEnGrupo(a, g.id)) {
+                          <button type="button" (click)="removeDeGrupo(a, g)">
+                            Quitar de {{ g.nombre }}
+                          </button>
+                        } @else {
+                          <button type="button" (click)="addAGrupo(a, g)">
+                            Agregar a {{ g.nombre }}
+                          </button>
+                        }
+                      }
                     }
                     <hr />
                     <button type="button" class="pnl-acciones__peligro" (click)="cancel(a)">
@@ -327,7 +353,14 @@ export class InvitadosPage implements OnInit {
     emailEstado?: string;
     origen?: string;
     qrRegistroId?: string;
+    grupoId?: string;
   }>({});
+  private readonly gruposApi = inject(GruposApi);
+  protected readonly grupos = signal<readonly GrupoPanel[]>([]);
+  protected readonly puedeGrupos = computed(() => {
+    const e = this.actual.evento();
+    return !!e && canDo(e.miRol, 'grupos.update') && e.estado !== 'cerrado';
+  });
   protected readonly filtroQr = computed(() => this.filtros().qrRegistroId);
   protected readonly filtroEstado = computed(() => this.filtros().estado);
   protected readonly filtroEmail = computed(() => this.filtros().emailEstado);
@@ -387,6 +420,10 @@ export class InvitadosPage implements OnInit {
     const qr = this.ruta.snapshot.queryParamMap.get('qr');
     if (qr) this.filtros.set({ ...this.filtros(), qrRegistroId: qr });
     void this.load();
+    void this.gruposApi
+      .list(this.eventoId())
+      .then((grupos) => this.grupos.set(grupos))
+      .catch(() => this.grupos.set([]));
   }
 
   protected clearQr(): void {
@@ -421,7 +458,32 @@ export class InvitadosPage implements OnInit {
     this.espera = setTimeout(() => void this.load(), 300);
   }
 
-  protected setFiltro(campo: 'estado' | 'emailEstado' | 'origen', valor: string): void {
+  protected isEnGrupo(a: AsistentePanel, grupoId: string): boolean {
+    return (a.grupos ?? []).some((g) => g.id === grupoId);
+  }
+
+  /** HU-325: agregar o quitar del grupo desde la fila. */
+  protected async addAGrupo(a: AsistentePanel, grupo: GrupoPanel): Promise<void> {
+    try {
+      await this.gruposApi.addMiembros(grupo.id, [a.codigo]);
+      this.avisos.ok(`${a.nombre} está en ${grupo.nombre}.`);
+      await this.load();
+    } catch (error) {
+      this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
+    }
+  }
+
+  protected async removeDeGrupo(a: AsistentePanel, grupo: GrupoPanel): Promise<void> {
+    try {
+      await this.gruposApi.removeMiembro(grupo.id, a.id);
+      this.avisos.ok(`${a.nombre} ya no está en ${grupo.nombre}.`);
+      await this.load();
+    } catch (error) {
+      this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });
+    }
+  }
+
+  protected setFiltro(campo: 'estado' | 'emailEstado' | 'origen' | 'grupoId', valor: string): void {
     this.filtros.set({ ...this.filtros(), [campo]: valor || undefined });
     void this.load();
   }

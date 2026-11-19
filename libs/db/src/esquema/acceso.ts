@@ -14,7 +14,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { eventos } from './eventos';
-import { asistentes, movimientos, pantallas, retos } from './libro';
+import { asistentes, grupos, movimientos, pantallas, retos } from './libro';
 import { organizaciones, tokens, usuarios } from './plataforma';
 import { enviosCorreo } from './soporte';
 import { bytea } from './tipos';
@@ -385,8 +385,8 @@ export const qrRegistro = pgTable(
     muestra: text('muestra').notNull(),
     usuarioId: uuid('usuario_id').references(() => usuarios.id),
     pantallaId: uuid('pantalla_id').references(() => pantallas.id),
-    // HU-325 agrega la clave foránea a `grupos`.
-    grupoId: uuid('grupo_id'),
+    // HU-325: quien entra por este QR queda en el grupo.
+    grupoId: uuid('grupo_id').references(() => grupos.id),
     marcaPresente: boolean('marca_presente').notNull().default(true),
     tope: integer('tope'),
     desde: timestamp('desde', { withTimezone: true }),

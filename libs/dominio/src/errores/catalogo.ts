@@ -287,6 +287,16 @@ export const CATALOGO_ERRORES = {
     title: 'Permiso de registro vencido',
     mensaje: 'Pasó mucho tiempo. Vuelve a escanear el QR.',
   },
+  GRUPO_EN_USO: {
+    status: 409,
+    title: 'Grupo en uso',
+    mensaje: 'Este grupo tiene personas, retos, premios o QR de registro. Quítalos primero.',
+  },
+  SOLO_PARA_GRUPO: {
+    status: 403,
+    title: 'Solo para un grupo',
+    mensaje: 'Esto es solo para las personas de un grupo.',
+  },
   CONFIRMAR_RIESGO: {
     status: 422,
     title: 'Falta confirmar el riesgo',

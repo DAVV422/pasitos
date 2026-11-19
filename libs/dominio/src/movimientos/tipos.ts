@@ -49,7 +49,9 @@ export function isSignoValido(tipo: TipoMovimiento, puntos: number): boolean {
       return puntos >= 0;
     case 'reto':
       return puntos > 0;
+    // HU-325: un souvenir de 0 puntos deja un canje de 0 en el libro.
     case 'canje':
+      return puntos <= 0;
     case 'vencimiento':
       return puntos < 0;
     case 'anulacion':

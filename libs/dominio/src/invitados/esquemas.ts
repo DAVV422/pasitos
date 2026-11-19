@@ -59,6 +59,8 @@ export const esquemaBuscarAsistentes = z.object({
   // HU-303: los registrados en la puerta; HU-320: los que se registraron con un QR.
   origen: z.enum(['lista', 'csv', 'puerta', 'autoregistro']).optional(),
   qrRegistroId: z.uuid().optional(),
+  // HU-325: las personas de un grupo.
+  grupoId: z.uuid().optional(),
   cursor: z.string().max(20).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });

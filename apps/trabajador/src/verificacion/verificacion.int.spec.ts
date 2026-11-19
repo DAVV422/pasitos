@@ -26,7 +26,7 @@ describe('intervalo, evidencia y verificación', () => {
   afterAll(async () => {
     await base?.stop();
     await rm(archivosDir, { recursive: true, force: true });
-  });
+  }, 60_000);
 
   async function listNumerosLote(eventoId: string): Promise<number[]> {
     const filas = await base.sistema.db

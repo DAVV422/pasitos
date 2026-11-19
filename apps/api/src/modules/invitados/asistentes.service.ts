@@ -1,5 +1,7 @@
 import { and, asc, count, eq, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
 import {
+  asistenteGrupos,
+  grupos,
   asistentes,
   qrRegistro,
   eventos,
@@ -39,6 +41,7 @@ export interface FiltrosAsistentes {
   readonly emailEstado?: (typeof ESTADOS_EMAIL)[number] | undefined;
   readonly origen?: 'lista' | 'csv' | 'puerta' | 'autoregistro' | undefined;
   readonly qrRegistroId?: string | undefined;
+  readonly grupoId?: string | undefined;
   readonly cursor?: string | undefined;
   readonly limit: number;
 }
@@ -70,6 +73,17 @@ export class AsistentesService {
       if (filtros.emailEstado) condiciones.push(eq(asistentes.emailEstado, filtros.emailEstado));
       if (filtros.origen) condiciones.push(eq(asistentes.origen, filtros.origen));
       if (filtros.qrRegistroId) condiciones.push(eq(asistentes.qrRegistroId, filtros.qrRegistroId));
+      if (filtros.grupoId) {
+        condiciones.push(
+          inArray(
+            asistentes.id,
+            tx
+              .select({ id: asistenteGrupos.asistenteId })
+              .from(asistenteGrupos)
+              .where(eq(asistenteGrupos.grupoId, filtros.grupoId)),
+          ),
+        );
+      }
       const q = filtros.q?.trim() ?? '';
       let orden: SQL[] = [
         sql`length(${asistentes.codigoAsistente})`,
@@ -374,8 +388,33 @@ export class AsistentesService {
               .where(inArray(qrRegistro.id, idsQr))
           ).map((q) => [q.id, q.nombre] as const),
     );
+    // HU-325: los grupos de cada persona, para el chip.
+    const deGrupos =
+      filas.length === 0
+        ? []
+        : await tx
+            .select({
+              asistenteId: asistenteGrupos.asistenteId,
+              id: grupos.id,
+              nombre: grupos.nombre,
+              color: grupos.color,
+            })
+            .from(asistenteGrupos)
+            .innerJoin(grupos, eq(grupos.id, asistenteGrupos.grupoId))
+            .where(
+              inArray(
+                asistenteGrupos.asistenteId,
+                filas.map((a) => a.id),
+              ),
+            )
+            .orderBy(grupos.nombre);
+    const gruposPorPersona = new Map<string, { id: string; nombre: string; color: string }[]>();
+    for (const { asistenteId, ...grupo } of deGrupos) {
+      gruposPorPersona.set(asistenteId, [...(gruposPorPersona.get(asistenteId) ?? []), grupo]);
+    }
     return filas.map((a) => ({
       ...this.toFila(a, contexto, invitaciones.get(a.id) ?? null),
+      grupos: gruposPorPersona.get(a.id) ?? [],
       registradoPor: a.registradoPor ? (registradores.get(a.registradoPor) ?? null) : null,
       qrRegistro: a.qrRegistroId ? (qrs.get(a.qrRegistroId) ?? null) : null,
     }));

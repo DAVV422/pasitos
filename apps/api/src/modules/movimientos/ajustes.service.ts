@@ -225,6 +225,7 @@ export class AjustesService {
               movimientoId: canjes.movimientoId,
               mesaId: canjes.mesaId,
               asistenteId: canjes.asistenteId,
+              totalPuntos: canjes.totalPuntos,
             })
             .from(canjes)
             .where(and(eq(canjes.id, canjeId), eq(canjes.eventoId, contexto.eventoId)))
@@ -234,13 +235,14 @@ export class AjustesService {
           if (canje.estado !== 'confirmado') {
             throw new AppError('VALIDACION', { detail: 'Solo se anula un canje confirmado.' });
           }
-          const anulacion = canje.movimientoId
-            ? await this.anulaciones.cancelMovimiento(tx, {
-                movimientoId: canje.movimientoId,
-                autorId: contexto.usuarioId,
-                motivo,
-              })
-            : null;
+          const anulacion =
+            canje.movimientoId && canje.totalPuntos > 0
+              ? await this.anulaciones.cancelMovimiento(tx, {
+                  movimientoId: canje.movimientoId,
+                  autorId: contexto.usuarioId,
+                  motivo,
+                })
+              : null;
           const items = await tx
             .select({ premioId: canjeItems.premioId, cantidad: canjeItems.cantidad })
             .from(canjeItems)

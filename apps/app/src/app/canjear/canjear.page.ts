@@ -36,8 +36,15 @@ import { SesionAsistente } from '../sesion-asistente';
               }
               <p class="leading-tight font-bold">{{ p.nombre }}</p>
               <p class="text-points font-display text-lg font-extrabold">
-                {{ p.puntos }} {{ nombrePuntos() }}
+                @if (p.puntos === 0) {
+                  Gratis
+                } @else {
+                  {{ p.puntos }} {{ nombrePuntos() }}
+                }
               </p>
+              @if (p.grupo) {
+                <px-chip [variante]="$any(p.grupo.color)">{{ p.grupo.nombre }}</px-chip>
+              }
               @if (p.agotado) {
                 <px-chip variante="peligro">Agotado</px-chip>
               } @else if (p.pocos) {

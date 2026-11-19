@@ -1,7 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 import {
   alertas,
+  asistenteGrupos,
   asistentes,
+  grupos,
   escaneos,
   eventos,
   invitaciones,
@@ -625,5 +627,36 @@ describe('Pantalla de sala y reclamos (HU-314, HU-310)', () => {
       .from(alertas)
       .where(and(eq(alertas.asistenteId, celular.asistenteId), eq(alertas.tipo, 'A5')));
     expect(a5).toHaveLength(1);
+  });
+  it('HU-325: el QR de un reto de un grupo solo suma a las personas del grupo', async () => {
+    const grupoId = uuidv7();
+    await base.sistema.db.insert(grupos).values({
+      id: grupoId,
+      organizacionId: evento.organizacionId,
+      eventoId: evento.eventoId,
+      nombre: 'VIP reclamos',
+    });
+    const reto = await newReto({ grupoId });
+    const [propia] = await base.sistema.db
+      .select({ epoca: pantallas.epoca })
+      .from(pantallas)
+      .where(eq(pantallas.id, pantallaId));
+    const epoca = propia?.epoca ?? 0;
+    const fuera = await newCelular();
+    const rechazo = await reclamar(fuera, await qrPorTiempo(reto.numero, { epoca }));
+    expect(rechazo.statusCode).toBe(403);
+    expect(rechazo.json().code).toBe('SOLO_PARA_GRUPO');
+    expect(await getResultados(fuera.asistenteId)).toContain('solo_para_grupo');
+    const dentro = await newCelular();
+    await base.sistema.db.insert(asistenteGrupos).values({
+      asistenteId: dentro.asistenteId,
+      grupoId,
+      organizacionId: evento.organizacionId,
+      eventoId: evento.eventoId,
+      via: 'manual',
+    });
+    expect((await reclamar(dentro, await qrPorTiempo(reto.numero, { epoca }))).statusCode).toBe(
+      201,
+    );
   });
 });

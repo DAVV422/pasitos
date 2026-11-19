@@ -36,6 +36,7 @@ import {
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
+import { GruposApi, type GrupoPanel } from './grupos-api.service';
 import { EventosApi, type MiembroEquipo, type TerminalPanel } from './eventos-api.service';
 import { QrRegistroApi, type QrRegistroPanel } from './qr-registro-api.service';
 
@@ -55,6 +56,7 @@ interface Formulario {
   usuarioId: string;
   pantallaId: string;
   marcaPresente: boolean;
+  grupoId: string;
   tope: string;
   desde: string;
   hasta: string;
@@ -68,6 +70,7 @@ const VACIO: Formulario = {
   usuarioId: '',
   pantallaId: '',
   marcaPresente: true,
+  grupoId: '',
   tope: '',
   desde: '',
   hasta: '',
@@ -83,7 +86,16 @@ const VARIANTE_ESTADO: Readonly<
   tope_lleno: 'peligro',
 };
 
-const CAMPOS = ['nombre', 'usuarioId', 'pantallaId', 'tope', 'desde', 'hasta', 'muestra'] as const;
+const CAMPOS = [
+  'nombre',
+  'usuarioId',
+  'pantallaId',
+  'grupoId',
+  'tope',
+  'desde',
+  'hasta',
+  'muestra',
+] as const;
 
 /**
  * QR de registro (HU-319 §5, grupo *Personas*): la gente crea su cuenta escaneándolos. Rotativos
@@ -307,6 +319,24 @@ const CAMPOS = ['nombre', 'usuarioId', 'pantallaId', 'tope', 'desde', 'hasta', '
             />
           </label>
           <px-campo
+            etiqueta="Grupo"
+            [opcional]="true"
+            ayuda="Quien entra por este QR queda en el grupo (por ejemplo, VIP)."
+            [error]="errores()['grupoId'] ?? null"
+            #fg="pxCampo"
+          >
+            <select
+              [id]="fg.idControl"
+              [attr.aria-describedby]="fg.idDescripcion"
+              (change)="set('grupoId', valorDe($event))"
+            >
+              <option value="">Sin grupo</option>
+              @for (g of grupos(); track g.id) {
+                <option [value]="g.id" [selected]="form().grupoId === g.id">{{ g.nombre }}</option>
+              }
+            </select>
+          </px-campo>
+          <px-campo
             etiqueta="Tope de cuentas"
             [opcional]="true"
             ayuda="Vacío: sin límite. De 1 a 100 000."
@@ -473,6 +503,8 @@ export class QrRegistroPage implements OnInit {
   protected readonly qrs = signal<readonly QrRegistroPanel[]>([]);
   private readonly miembros = signal<readonly MiembroEquipo[]>([]);
   protected readonly pantallas = signal<readonly TerminalPanel[]>([]);
+  protected readonly grupos = signal<readonly GrupoPanel[]>([]);
+  private readonly gruposApi = inject(GruposApi);
   protected readonly editando = signal<'nuevo' | QrRegistroPanel | null>(null);
   protected readonly form = signal<Formulario>(VACIO);
   protected readonly invalidando = signal<QrRegistroPanel | null>(null);
@@ -551,6 +583,7 @@ export class QrRegistroPage implements OnInit {
             usuarioId: qr.usuario?.id ?? '',
             pantallaId: qr.pantalla?.id ?? '',
             marcaPresente: qr.marcaPresente,
+            grupoId: qr.grupoId ?? '',
             tope: qr.tope === null ? '' : String(qr.tope),
             desde: toLocal(qr.desde),
             hasta: toLocal(qr.hasta),
@@ -581,6 +614,7 @@ export class QrRegistroPage implements OnInit {
       nombre: f.nombre.trim(),
       ...donde,
       marcaPresente: f.marcaPresente,
+      grupoId: f.grupoId || null,
       tope: f.tope.trim() === '' ? null : Number(f.tope),
       desde: toIso(f.desde),
       hasta: toIso(f.hasta),
@@ -669,11 +703,13 @@ export class QrRegistroPage implements OnInit {
     if (!id) return;
     this.mensaje.set(null);
     try {
-      const [qrs, miembros, pantallas] = await Promise.all([
+      const [qrs, miembros, pantallas, grupos] = await Promise.all([
         this.api.list(id),
         this.eventosApi.listMiembros(id),
         this.eventosApi.listTerminales(id, 'pantalla'),
+        this.gruposApi.list(id),
       ]);
+      this.grupos.set(grupos);
       this.qrs.set(qrs);
       this.miembros.set(miembros);
       this.pantallas.set(pantallas.filter((p) => !p.reemplazadaPor));

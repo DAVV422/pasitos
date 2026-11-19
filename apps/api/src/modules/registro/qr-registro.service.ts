@@ -3,6 +3,7 @@ import { and, asc, count, desc, eq, gte, inArray, type SQL } from 'drizzle-orm';
 import {
   asistentes,
   eventos,
+  grupos,
   miembrosEvento,
   miembrosOrganizacion,
   outbox,
@@ -153,6 +154,7 @@ export class QrRegistroService {
     this.checkOpciones(datos);
     return withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
       const quien = await this.checkQuienMuestra(tx, contexto, muestra, datos);
+      await this.checkGrupo(tx, contexto, datos.grupoId);
       const id = uuidv7();
       const token = datos.tipo === 'fijo' ? createTokenFijo() : null;
       await this.insertConNombre(tx, {
@@ -210,6 +212,7 @@ export class QrRegistroService {
         usuarioId: datos.usuarioId === undefined ? actual.usuarioId : datos.usuarioId,
         pantallaId: datos.pantallaId === undefined ? actual.pantallaId : datos.pantallaId,
       });
+      if (datos.grupoId !== undefined) await this.checkGrupo(tx, contexto, datos.grupoId);
       const [antes] = await this.select(tx, eq(qrRegistro.id, id));
       try {
         await tx.transaction((sub) =>
@@ -442,14 +445,26 @@ export class QrRegistroService {
     readonly desde: string | null;
     readonly hasta: string | null;
   }): void {
-    // Los grupos llegan con HU-325.
-    if (datos.grupoId) throw errorCampo('grupoId', 'Ese grupo no existe.');
     if (datos.desde && datos.hasta && Date.parse(datos.desde) >= Date.parse(datos.hasta)) {
       throw errorCampo('hasta', 'El fin tiene que ser después del inicio.');
     }
   }
 
   /** Quién lo muestra: una persona que puede activar cuentas, una tablet del evento o nadie. */
+  /** HU-325: el grupo del QR es del evento. */
+  private async checkGrupo(
+    tx: Tx,
+    contexto: ContextoEvento,
+    grupoId: string | null,
+  ): Promise<void> {
+    if (!grupoId) return;
+    const [grupo] = await tx
+      .select({ id: grupos.id })
+      .from(grupos)
+      .where(and(eq(grupos.id, grupoId), eq(grupos.eventoId, contexto.eventoId)));
+    if (!grupo) throw errorCampo('grupoId', 'Ese grupo no es de este evento.');
+  }
+
   private async checkQuienMuestra(
     tx: Tx,
     contexto: ContextoEvento,

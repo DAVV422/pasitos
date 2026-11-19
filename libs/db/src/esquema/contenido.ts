@@ -11,7 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { archivos } from './archivos';
 import { eventos } from './eventos';
-import { retos } from './libro';
+import { grupos, retos } from './libro';
 import { organizaciones } from './plataforma';
 
 /** Contenido del evento para asistentes y la página pública (HU-206 §2, Modelo §3). Con RLS. */
@@ -114,9 +114,14 @@ export const premios = pgTable(
     maxPorPersona: integer('max_por_persona'),
     estado: text('estado').notNull().default('activo'),
     orden: integer('orden').notNull().default(0),
+    // HU-325: solo para un grupo; solo así el precio puede ser 0 (un souvenir).
+    grupoId: uuid('grupo_id').references(() => grupos.id),
   },
   (t) => [
-    check('premios_puntos', sql`${t.puntos} between 1 and 100000`),
+    check(
+      'premios_puntos',
+      sql`${t.puntos} between 1 and 100000 or (${t.puntos} = 0 and ${t.grupoId} is not null)`,
+    ),
     check('premios_stock_total', sql`${t.stockTotal} between 0 and 100000`),
     check(
       'premios_stock',

@@ -81,8 +81,16 @@ export interface EventoApp {
     readonly imagenUrl: string | null;
     readonly puntos: number;
     readonly maxPorPersona: number | null;
+    /** HU-325: solo para un grupo (*VIP*). */
+    readonly grupo: GrupoApp | null;
   }[];
   readonly agenda: readonly ActividadApp[];
+}
+
+/** HU-325: el grupo de un reto o premio exclusivo. */
+export interface GrupoApp {
+  readonly nombre: string;
+  readonly color: string;
 }
 
 /** Lo de la pantalla *Información* (HU-309). El wifi va solo a la app del asistente. */
@@ -127,6 +135,8 @@ export interface DefinicionReto {
   readonly lugar: string | null;
   readonly lugarId: string | null;
   readonly sponsorId: string | null;
+  /** HU-325: solo para un grupo (*VIP*). */
+  readonly grupo: GrupoApp | null;
   readonly disponibleDesde: string | null;
   readonly disponibleHasta: string | null;
 }

@@ -61,6 +61,8 @@ export const PERMISOS = {
   /** Buscar invitados, check-in, registrar en la puerta y vincular. */
   'puerta.use': [...DC, 'registrador'],
   'puntos.ajustar': DC,
+  /** HU-325: crear grupos y agregar o quitar personas. */
+  'grupos.update': DC,
   /** HU-319: ver los QR de registro. */
   'qr_registro.read': DC,
   /** HU-319: crear, editar, invalidar y descargar los QR de registro. */
@@ -89,6 +91,7 @@ export const ACCIONES_ESCRITURA: ReadonlySet<AccionEvento> = new Set<AccionEvent
   'puerta.use',
   'puntos.ajustar',
   'qr_registro.update',
+  'grupos.update',
 ]);
 
 /** Acciones que, para los operadores, valen solo en sus terminales asignadas (²). */

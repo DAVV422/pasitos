@@ -21,6 +21,7 @@ import { hashToken } from '../auth/auth.repository';
 import { Limitador } from '../auth/limitador';
 import type { Reloj } from '../auth/sesiones.service';
 import { listItems, notifyCanje, type ItemCobro } from './mesa.service';
+import { listGruposDe, mapGruposDelEvento } from '../grupos/grupos-de';
 
 export interface VistaCobro {
   readonly id: string;
@@ -140,11 +141,27 @@ export class CobrosAppService {
             total: premios.stockTotal,
             reservado: premios.stockReservado,
             entregado: premios.stockEntregado,
+            grupoId: premios.grupoId,
           })
           .from(premios)
           .where(inArray(premios.id, premiosIds))
           .orderBy(asc(premios.id))
           .for('update');
+
+        // 4b. HU-325: un premio de un grupo, solo para las personas del grupo.
+        const deOtroGrupo = filas.filter((p) => p.grupoId !== null);
+        if (deOtroGrupo.length > 0) {
+          const mios = new Set((await listGruposDe(tx, asistente.asistenteId)).map((g) => g.id));
+          const ajeno = deOtroGrupo.find((p) => !mios.has(p.grupoId ?? ''));
+          if (ajeno) {
+            const delEvento = await mapGruposDelEvento(tx, asistente.eventoId);
+            const nombre = delEvento.get(ajeno.grupoId ?? '')?.nombre ?? 'un grupo';
+            throw new AppError('SOLO_PARA_GRUPO', {
+              detail: `Este premio es solo para ${nombre}.`,
+              meta: { premio: { id: ajeno.id, nombre: ajeno.nombre }, grupo: nombre },
+            });
+          }
+        }
 
         // 5. El máximo por persona: lo ya canjeado (sin anular) más lo de este cobro.
         for (const premio of filas) {
@@ -175,18 +192,16 @@ export class CobrosAppService {
         }
 
         // 7. El libro: el saldo no puede quedar negativo (`SALDO_INSUFICIENTE`).
-        const movimiento =
-          canje.total > 0
-            ? await this.libro.addMovimiento(tx, {
-                eventoId: asistente.eventoId,
-                asistenteId: asistente.asistenteId,
-                tipo: 'canje',
-                origen: 'asistente',
-                puntos: -canje.total,
-                canjeId: canje.id,
-                firmaDispositivo: firma.firma,
-              })
-            : null;
+        // HU-325: un souvenir de 0 puntos también deja su canje de 0 en el libro y en Stellar.
+        const movimiento = await this.libro.addMovimiento(tx, {
+          eventoId: asistente.eventoId,
+          asistenteId: asistente.asistenteId,
+          tipo: 'canje',
+          origen: 'asistente',
+          puntos: canje.total === 0 ? 0 : -canje.total,
+          canjeId: canje.id,
+          firmaDispositivo: firma.firma,
+        });
         // 8. Lo reservado pasa a entregado.
         for (const item of items) {
           await tx

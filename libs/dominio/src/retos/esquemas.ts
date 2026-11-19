@@ -40,6 +40,8 @@ export const esquemaReto = z.object({
   disponibleDesde: fecha.nullable().default(null),
   disponibleHasta: fecha.nullable().default(null),
   sponsorId: z.uuid().nullable().default(null),
+  // HU-325: solo para las personas de un grupo.
+  grupoId: z.uuid().nullable().default(null),
 });
 
 export type DatosReto = z.infer<typeof esquemaReto>;

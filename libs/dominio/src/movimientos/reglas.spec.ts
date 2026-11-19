@@ -78,6 +78,7 @@ describe('isSignoValido', () => {
     ['reto', 20, true],
     ['canje', -10, true],
     ['canje', 10, false],
+    ['canje', 0, true],
     ['vencimiento', -1, true],
     ['vencimiento', 0, false],
     ['ajuste', -5, true],

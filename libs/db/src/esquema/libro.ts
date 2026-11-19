@@ -7,6 +7,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -118,6 +119,8 @@ export const retos = pgTable(
     disponibleDesde: timestamp('disponible_desde', { withTimezone: true }),
     disponibleHasta: timestamp('disponible_hasta', { withTimezone: true }),
     sponsorId: uuid('sponsor_id'),
+    // HU-325: solo lo ven y lo usan las personas de este grupo.
+    grupoId: uuid('grupo_id').references((): AnyPgColumn => grupos.id),
     createdBy: uuid('created_by'),
     createdAt: creadoEn(),
     updatedAt: actualizadoEn(),
@@ -225,7 +228,8 @@ export const movimientos = pgTable(
       'movimientos_signo',
       sql`(${t.tipo} = 'checkin' and ${t.puntos} >= 0)
         or (${t.tipo} = 'reto' and ${t.puntos} > 0)
-        or (${t.tipo} in ('canje', 'vencimiento') and ${t.puntos} < 0)
+        or (${t.tipo} = 'canje' and ${t.puntos} <= 0)
+        or (${t.tipo} = 'vencimiento' and ${t.puntos} < 0)
         or (${t.tipo} in ('anulacion', 'ajuste') and ${t.puntos} <> 0)`,
     ),
     check('movimientos_reto', sql`${t.tipo} <> 'reto' or ${t.retoId} is not null`),
@@ -370,5 +374,51 @@ export const bitacora = pgTable(
   (t) => [
     check('bitacora_actor_tipo', sql`${t.actorTipo} in ('usuario', 'pantalla', 'mesa', 'sistema')`),
     index('bitacora_evento').on(t.eventoId, t.createdAt),
+  ],
+);
+
+/**
+ * Los grupos del evento (HU-325, D62): por ejemplo, *VIP*. Dan retos y premios exclusivos, sin otra
+ * moneda. El color es una de las variantes de los chips de `libs/ui`.
+ */
+export const grupos = pgTable(
+  'grupos',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: organizacion(),
+    eventoId: evento(),
+    nombre: text('nombre').notNull(),
+    color: text('color').notNull().default('puntos'),
+    createdBy: uuid('created_by').references(() => usuarios.id),
+    createdAt: creadoEn(),
+    updatedAt: actualizadoEn(),
+  },
+  (t) => [
+    unique('grupos_nombre').on(t.eventoId, t.nombre),
+    check('grupos_nombre_largo', sql`char_length(${t.nombre}) between 2 and 40`),
+    check('grupos_color', sql`${t.color} in ('puntos', 'ok', 'peligro', 'atenuado')`),
+  ],
+);
+
+/** Quién está en cada grupo (HU-325): por un QR de registro del grupo o a mano. */
+export const asistenteGrupos = pgTable(
+  'asistente_grupos',
+  {
+    asistenteId: uuid('asistente_id')
+      .notNull()
+      .references(() => asistentes.id),
+    grupoId: uuid('grupo_id')
+      .notNull()
+      .references(() => grupos.id),
+    organizacionId: organizacion(),
+    eventoId: evento(),
+    via: text('via').notNull(),
+    agregadoPor: uuid('agregado_por').references(() => usuarios.id),
+    createdAt: creadoEn(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.asistenteId, t.grupoId] }),
+    check('asistente_grupos_via', sql`${t.via} in ('qr', 'manual')`),
+    index('asistente_grupos_grupo').on(t.grupoId),
   ],
 );

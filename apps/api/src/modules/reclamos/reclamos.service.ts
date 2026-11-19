@@ -26,6 +26,7 @@ import { runIdempotente } from '../acceso/idempotencia';
 import { checkA5 } from '../acceso/reglas-alertas';
 import { Limitador } from '../auth/limitador';
 import type { Reloj } from '../auth/sesiones.service';
+import { isEnGrupo } from '../grupos/grupos-de';
 
 /** La franja anterior todavía vale 5 s (HU-310 §1, fila 5): el QR justo cambió al escanearlo. */
 export const GRACIA_FRANJA_MS = 5_000;
@@ -47,6 +48,7 @@ const RESULTADO_POR_CODIGO: Partial<Record<CodigoError, string>> = {
   SIN_CHECK_IN: 'sin_check_in',
   RETO_YA_COMPLETADO: 'ya_completado',
   TOPE_ALCANZADO: 'agotado',
+  SOLO_PARA_GRUPO: 'solo_para_grupo',
 };
 
 interface Contexto {
@@ -134,6 +136,7 @@ export class ReclamosService {
         rotacionSegundos: retos.rotacionSegundos,
         disponibleDesde: retos.disponibleDesde,
         disponibleHasta: retos.disponibleHasta,
+        grupoId: retos.grupoId,
       })
       .from(retos)
       .where(and(eq(retos.eventoId, asistente.eventoId), eq(retos.numero, leido.datos.r)));
@@ -192,6 +195,11 @@ export class ReclamosService {
       (reto.disponibleHasta && reto.disponibleHasta <= fecha)
     ) {
       throw new AppError('RETO_NO_DISPONIBLE');
+    }
+
+    // 7b. HU-325: un reto de un grupo, solo para las personas del grupo.
+    if (reto.grupoId && !(await isEnGrupo(tx, asistente.asistenteId, reto.grupoId))) {
+      throw new AppError('SOLO_PARA_GRUPO', { detail: 'Este reto es solo para un grupo.' });
     }
 
     // 8. El check-in, si el evento lo pide (D30).

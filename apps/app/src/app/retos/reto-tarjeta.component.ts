@@ -20,9 +20,14 @@ import { getComoSeCompleta, type RetoVista } from '../retos-vista';
             {{ r.nombre }}
           }
         </h3>
-        <px-chip [variante]="r.estadoPersona.estado === 'completado' ? 'ok' : 'puntos'"
-          >+{{ r.puntos }}</px-chip
-        >
+        <span class="flex shrink-0 gap-1">
+          @if (r.grupo) {
+            <px-chip [variante]="$any(r.grupo.color)">{{ r.grupo.nombre }}</px-chip>
+          }
+          <px-chip [variante]="r.estadoPersona.estado === 'completado' ? 'ok' : 'puntos'"
+            >+{{ r.puntos }}</px-chip
+          >
+        </span>
       </div>
       @switch (r.estadoPersona.estado) {
         @case ('disponible') {

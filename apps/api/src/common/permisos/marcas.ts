@@ -29,6 +29,7 @@ export const TABLAS_RECURSO = {
   alertas: 'alertas',
   canjes: 'canjes',
   qrRegistro: 'qr_registro',
+  grupos: 'grupos',
 } as const;
 export type RecursoEvento = keyof typeof TABLAS_RECURSO;
 

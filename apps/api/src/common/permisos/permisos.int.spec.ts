@@ -111,6 +111,7 @@ describe('Permisos por rol (HU-204)', () => {
     const { resultados, rutas } = await runV9(api.app, actores, {
       eventoId: eventoA.eventoId,
       recursos: { ...eventoA.recursos, miembros: await addInvitado(base, eventoA) },
+      parametros: { asistenteId: eventoA.recursos.asistentes },
       recrear: (recurso) => createRecursoDePrueba(base, eventoA, recurso),
     });
     expect(rutas).toBeGreaterThanOrEqual(ACCIONES_EVENTO.length);

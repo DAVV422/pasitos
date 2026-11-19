@@ -14,6 +14,8 @@ export interface PremioMesa {
   readonly disponible: number;
   readonly pocos: boolean;
   readonly maxPorPersona: number | null;
+  /** HU-325: solo para un grupo. */
+  readonly grupo: string | null;
 }
 
 export interface ItemCobro {
@@ -21,6 +23,8 @@ export interface ItemCobro {
   readonly nombre: string;
   readonly cantidad: number;
   readonly puntos: number;
+  /** HU-325: el grupo del premio; al confirmar, la persona es del grupo. */
+  readonly grupo: string | null;
 }
 
 export interface CobroGenerado {

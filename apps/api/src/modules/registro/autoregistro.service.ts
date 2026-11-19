@@ -1,5 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 import {
+  asistenteGrupos,
   asistentes,
   eventos,
   qrRegistro,
@@ -152,7 +153,16 @@ export class AutoregistroService {
           ciUltimos: datos.ci ? getCiUltimos(datos.ci) : null,
         });
 
-        // 4. El grupo del QR llega con HU-325.
+        // 4. El grupo del QR (HU-325).
+        if (qr.grupoId) {
+          await tx.insert(asistenteGrupos).values({
+            asistenteId,
+            grupoId: qr.grupoId,
+            organizacionId,
+            eventoId: evento.id,
+            via: 'qr',
+          });
+        }
         // 5. El celular: dispositivo, vinculación, términos y sesión.
         const vinculado = await this.acceso.linkAutoregistro(tx, {
           organizacionId,

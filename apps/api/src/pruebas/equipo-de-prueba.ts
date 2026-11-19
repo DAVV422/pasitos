@@ -1,4 +1,5 @@
 import {
+  grupos,
   actividades,
   alertas,
   asistentes,
@@ -53,6 +54,7 @@ export interface EventoDePrueba {
     readonly alertas: string;
     readonly canjes: string;
     readonly qrRegistro: string;
+    readonly grupos: string;
   };
 }
 
@@ -189,6 +191,11 @@ export async function createEventoDePrueba(
     tokenHash: createTokenAleatorio().hash,
     tokenCifrado: Buffer.from('sin-uso'),
   });
+  // HU-325: un grupo.
+  const grupoId = uuidv7();
+  await base.sistema.db
+    .insert(grupos)
+    .values({ id: grupoId, organizacionId, eventoId, nombre: 'Grupo de prueba' });
   // HU-305: un aviso No fui yo.
   const alertaId = uuidv7();
   await base.sistema.db.insert(alertas).values({
@@ -220,6 +227,7 @@ export async function createEventoDePrueba(
       alertas: alertaId,
       canjes: canjeId,
       qrRegistro: qrRegistroId,
+      grupos: grupoId,
     },
   };
 }
@@ -383,6 +391,11 @@ export async function createRecursoDePrueba(
       return id;
     case 'miembros':
       return addInvitado(base, evento);
+    case 'grupos':
+      await base.sistema.db
+        .insert(grupos)
+        .values({ id, organizacionId, eventoId, nombre: `Grupo V9 ${id.slice(-6)}` });
+      return id;
     default:
       throw new Error(`V9: no sé crear ${recurso}`);
   }

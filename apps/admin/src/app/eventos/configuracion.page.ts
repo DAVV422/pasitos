@@ -30,10 +30,11 @@ import {
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
+import { GruposComponent } from './grupos.component';
 import { EventosApi, type EventoDetalle } from './eventos-api.service';
 import { ReglasPuertaComponent } from './reglas-puerta.component';
 
-type Pestana = 'datos' | 'imagenes' | 'ubicacion' | 'visibilidad' | 'reglas';
+type Pestana = 'datos' | 'imagenes' | 'ubicacion' | 'visibilidad' | 'reglas' | 'grupos';
 
 const VISIBILIDADES = [
   {
@@ -75,6 +76,7 @@ function toIso(local: string): string {
     TarjetaComponent,
     SubidaImagenComponent,
     ReglasPuertaComponent,
+    GruposComponent,
     EncabezadoPaginaComponent,
     PestanasComponent,
   ],
@@ -340,6 +342,9 @@ function toIso(local: string): string {
           @case ('reglas') {
             <adm-reglas-puerta />
           }
+          @case ('grupos') {
+            <adm-grupos />
+          }
         }
       }
     </pnl-pestanas>
@@ -356,6 +361,7 @@ export class ConfiguracionPage implements OnInit {
     { clave: 'ubicacion', texto: 'Ubicación' },
     { clave: 'visibilidad', texto: 'Visibilidad' },
     { clave: 'reglas', texto: 'Reglas y puerta' },
+    { clave: 'grupos', texto: 'Grupos' },
   ];
   protected readonly visibilidades = VISIBILIDADES;
   protected readonly secciones = SECCIONES_PUBLICAS;

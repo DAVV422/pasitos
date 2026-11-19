@@ -1,5 +1,6 @@
 import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import {
+  grupos,
   actividades,
   eventos,
   lugares,
@@ -227,6 +228,7 @@ export class RetosService {
     for (const [campo, tabla] of [
       ['lugarId', lugares],
       ['sponsorId', sponsors],
+      ['grupoId', grupos],
     ] as const) {
       const id = datos[campo];
       if (!id) continue;
@@ -320,6 +322,7 @@ export class RetosService {
       disponibleDesde: datos.disponibleDesde ? new Date(datos.disponibleDesde) : null,
       disponibleHasta: datos.disponibleHasta ? new Date(datos.disponibleHasta) : null,
       sponsorId: datos.sponsorId,
+      grupoId: datos.grupoId,
     };
   }
 
@@ -337,6 +340,7 @@ export class RetosService {
       disponibleDesde: reto.disponibleDesde?.toISOString() ?? null,
       disponibleHasta: reto.disponibleHasta?.toISOString() ?? null,
       sponsorId: reto.sponsorId,
+      grupoId: reto.grupoId,
     };
   }
 

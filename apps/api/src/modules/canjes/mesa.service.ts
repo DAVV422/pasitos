@@ -1,6 +1,7 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import { and, asc, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import {
+  grupos,
   asistentes,
   canjeItems,
   canjes,
@@ -20,6 +21,7 @@ import { getUrlArchivo } from '../archivos/archivos.service';
 import { hashToken } from '../auth/auth.repository';
 import type { Reloj } from '../auth/sesiones.service';
 import type { TerminalConectada } from '../terminales/conexion.service';
+import { mapGruposDelEvento } from '../grupos/grupos-de';
 
 /** El cobro vale 2 minutos (HU-316 §2). */
 export const VIGENCIA_COBRO_MS = 2 * 60 * 1000;
@@ -40,6 +42,8 @@ export interface ItemCobro {
   readonly nombre: string;
   readonly cantidad: number;
   readonly puntos: number;
+  /** HU-325: el grupo del premio (*"Souvenir VIP · 0 puntos · VIP ✓"*). */
+  readonly grupo: string | null;
 }
 
 export interface EstadoCobro {
@@ -78,9 +82,11 @@ export async function listItems(tx: Tx, canjeId: string): Promise<ItemCobro[]> {
       nombre: premios.nombre,
       cantidad: canjeItems.cantidad,
       puntos: canjeItems.puntosUnitarios,
+      grupo: grupos.nombre,
     })
     .from(canjeItems)
     .innerJoin(premios, eq(premios.id, canjeItems.premioId))
+    .leftJoin(grupos, eq(grupos.id, premios.grupoId))
     .where(eq(canjeItems.canjeId, canjeId))
     .orderBy(asc(premios.nombre));
 }
@@ -114,19 +120,21 @@ export class MesaService {
           reservado: premios.stockReservado,
           entregado: premios.stockEntregado,
           maxPorPersona: premios.maxPorPersona,
+          grupoId: premios.grupoId,
         })
         .from(premios)
         .where(and(eq(premios.eventoId, terminal.evento.id), eq(premios.estado, 'activo')))
         .orderBy(premios.orden, premios.id);
+      const delEvento = await mapGruposDelEvento(tx, terminal.evento.id);
       return {
-        items: filas.map(({ imagenArchivoId, total, reservado, entregado, ...p }) => {
+        items: filas.map(({ imagenArchivoId, total, reservado, entregado, grupoId, ...p }) => {
           const disponible = Math.max(0, total - reservado - entregado);
           return {
             ...p,
             imagenUrl: imagenArchivoId ? getUrlArchivo(imagenArchivoId, '400') : null,
             disponible,
             pocos: isPocosDisponibles(disponible, total),
-            grupo: null,
+            grupo: grupoId ? (delEvento.get(grupoId)?.nombre ?? null) : null,
           };
         }),
         pagination: { nextCursor: null },
@@ -168,6 +176,7 @@ export class MesaService {
             total: premios.stockTotal,
             reservado: premios.stockReservado,
             entregado: premios.stockEntregado,
+            grupoId: premios.grupoId,
           })
           .from(premios)
           .where(
@@ -182,6 +191,7 @@ export class MesaService {
           .orderBy(asc(premios.id))
           .for('update');
         const porId = new Map(filas.map((p) => [p.id, p]));
+        const delEvento = await mapGruposDelEvento(tx, terminal.evento.id);
         const lineas: ItemCobro[] = [];
         for (const item of ordenados) {
           const premio = porId.get(item.premioId);
@@ -204,8 +214,11 @@ export class MesaService {
             nombre: premio.nombre,
             cantidad: item.cantidad,
             puntos: premio.puntos,
+            grupo: premio.grupoId ? (delEvento.get(premio.grupoId)?.nombre ?? null) : null,
           });
         }
+        // HU-325: el cobro guarda el grupo de sus premios exclusivos (el primero).
+        const grupoId = filas.find((p) => p.grupoId)?.grupoId ?? null;
         for (const linea of lineas) {
           await tx
             .update(premios)
@@ -225,6 +238,7 @@ export class MesaService {
           tokenHash: hashToken(token),
           comprobante,
           totalPuntos: total,
+          grupoId,
           expiraAt,
         });
         await tx.insert(canjeItems).values(

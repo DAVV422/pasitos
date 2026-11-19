@@ -108,6 +108,7 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 | Vincular o revincular el celular de un asistente | ✅ | ✅ | ✅ | — | — | — |
 | Ajustes manuales de puntos y anular canjes | ✅ | ✅ | — | — | — | — |
 | Crear y administrar los QR de registro | ✅ | ✅ | — | — | — | — |
+| Crear grupos y agregar personas a un grupo | ✅ | ✅ | — | — | — | — |
 | Mostrar el QR de registro asignado (*Activar cuentas*) | ✅ | ✅ | ✅ | — | — | — |
 | Cobrar canjes | ✅ | ✅ | — | ✅ ² | — | — |
 | Controlar pantallas (pausar, generar otro QR, mostrar QR) | ✅ | ✅ | — | — | ✅ ² | — |

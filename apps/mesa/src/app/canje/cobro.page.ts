@@ -79,7 +79,12 @@ const VOLVER_MS = 10_000;
             }
             <ul>
               @for (i of e.items; track i.premioId) {
-                <li class="text-xl">{{ i.cantidad }} × {{ i.nombre }}</li>
+                <li class="text-xl">
+                  {{ i.cantidad }} × {{ i.nombre }}
+                  @if (i.grupo) {
+                    · {{ i.puntos * i.cantidad }} puntos · {{ i.grupo }} ✓
+                  }
+                </li>
               }
             </ul>
             <p class="text-muted">Entrega solo si el celular muestra el mismo comprobante.</p>

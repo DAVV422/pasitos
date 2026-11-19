@@ -11,9 +11,11 @@ export const esquemaPremio = z.object({
     .nullable()
     .default(null),
   imagenArchivoId: z.uuid().nullable().default(null),
-  puntos: z.number().int().min(1).max(100_000),
+  // HU-325: 0 solo con grupo (un souvenir); lo revisa el servicio al combinar los cambios.
+  puntos: z.number().int().min(0).max(100_000),
   stockTotal: z.number().int().min(0).max(100_000),
   maxPorPersona: z.number().int().min(1).max(100).nullable().default(null),
+  grupoId: z.uuid().nullable().default(null),
 });
 
 export type DatosPremio = z.infer<typeof esquemaPremio>;

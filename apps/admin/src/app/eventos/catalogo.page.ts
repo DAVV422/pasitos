@@ -17,6 +17,7 @@ import {
   getUrlArchivo,
   MenuAccionesComponent,
   PanelLateralComponent,
+  SeccionComponent,
   SubidaImagenComponent,
   valorDe,
 } from '@pasitos/panel';
@@ -30,6 +31,7 @@ import {
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
+import { GruposApi, type GrupoPanel } from './grupos-api.service';
 import { EventosApi, type PremioPanel } from './eventos-api.service';
 
 interface FormularioPremio {
@@ -39,6 +41,7 @@ interface FormularioPremio {
   puntos: string;
   stockTotal: string;
   maxPorPersona: string;
+  grupoId: string;
 }
 
 const VACIO: FormularioPremio = {
@@ -48,9 +51,17 @@ const VACIO: FormularioPremio = {
   puntos: '100',
   stockTotal: '20',
   maxPorPersona: '',
+  grupoId: '',
 };
 
-const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'] as const;
+const CAMPOS = [
+  'nombre',
+  'descripcion',
+  'puntos',
+  'stockTotal',
+  'maxPorPersona',
+  'grupoId',
+] as const;
 
 /** Catálogo de canje (O5, HU-208 §3): grilla de premios y crear o editar en un panel. */
 @Component({
@@ -68,6 +79,7 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
     IconoComponent,
     MenuAccionesComponent,
     PanelLateralComponent,
+    SeccionComponent,
   ],
   template: `
     <pnl-encabezado-pagina
@@ -130,7 +142,13 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
         <div class="grid gap-4 @sm:grid-cols-2">
           <px-campo
             [etiqueta]="'Precio en ' + nombrePuntos()"
-            ayuda="Un cambio vale para los canjes siguientes."
+            [ayuda]="
+              form().grupoId
+                ? 'Con un grupo, el precio puede ser 0: gratis para ' +
+                  (nombreGrupo(form().grupoId) ?? 'el grupo') +
+                  '.'
+                : 'Un cambio vale para los canjes siguientes.'
+            "
             [error]="errores()['puntos'] ?? null"
             #f3="pxCampo"
           >
@@ -138,7 +156,7 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
               [id]="f3.idControl"
               [attr.aria-describedby]="f3.idDescripcion"
               type="number"
-              min="1"
+              [min]="form().grupoId ? 0 : 1"
               max="100000"
               [value]="form().puntos"
               (input)="set('puntos', valorDe($event))"
@@ -178,6 +196,26 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
             />
           </px-campo>
         </div>
+        <pnl-seccion titulo="Avanzado" [plegable]="true" [abierta]="!!form().grupoId">
+          <px-campo
+            etiqueta="Solo para el grupo"
+            [opcional]="true"
+            ayuda="Solo lo ven y lo usan las personas de ese grupo."
+            [error]="errores()['grupoId'] ?? null"
+            #fg="pxCampo"
+          >
+            <select
+              [id]="fg.idControl"
+              [attr.aria-describedby]="fg.idDescripcion"
+              (change)="set('grupoId', valorDe($event))"
+            >
+              <option value="">Todo el evento</option>
+              @for (g of grupos(); track g.id) {
+                <option [value]="g.id" [selected]="form().grupoId === g.id">{{ g.nombre }}</option>
+              }
+            </select>
+          </px-campo>
+        </pnl-seccion>
       }
     </pnl-panel-lateral>
 
@@ -237,7 +275,16 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
                     </pnl-menu-acciones>
                   }
                 </div>
-                <p class="text-points font-bold">{{ premio.puntos }} {{ nombrePuntos() }}</p>
+                <p class="text-points font-bold">
+                  @if (premio.puntos === 0) {
+                    Gratis para {{ nombreGrupo(premio.grupoId) ?? 'el grupo' }}
+                  } @else {
+                    {{ premio.puntos }} {{ nombrePuntos() }}
+                  }
+                  @if (premio.grupoId && premio.puntos > 0) {
+                    <px-chip variante="puntos">{{ nombreGrupo(premio.grupoId) }}</px-chip>
+                  }
+                </p>
                 <p class="text-muted text-sm">
                   Disponible: {{ premio.disponible }} de {{ premio.stockTotal }}
                   @if (premio.maxPorPersona) {
@@ -264,6 +311,8 @@ const CAMPOS = ['nombre', 'descripcion', 'puntos', 'stockTotal', 'maxPorPersona'
 })
 export class CatalogoPage implements OnInit {
   private readonly api = inject(EventosApi);
+  private readonly gruposApi = inject(GruposApi);
+  protected readonly grupos = signal<readonly GrupoPanel[]>([]);
   private readonly avisos = inject(AvisosService);
   private readonly actual = inject(EventoActualService);
 
@@ -303,6 +352,10 @@ export class CatalogoPage implements OnInit {
     void this.load();
   }
 
+  protected nombreGrupo(id: string | null): string | null {
+    return id ? (this.grupos().find((g) => g.id === id)?.nombre ?? null) : null;
+  }
+
   protected pocos(premio: PremioPanel): boolean {
     return isPocosDisponibles(premio.disponible, premio.stockTotal);
   }
@@ -331,6 +384,7 @@ export class CatalogoPage implements OnInit {
             puntos: String(premio.puntos),
             stockTotal: String(premio.stockTotal),
             maxPorPersona: premio.maxPorPersona === null ? '' : String(premio.maxPorPersona),
+            grupoId: premio.grupoId ?? '',
           }
         : VACIO,
     );
@@ -348,6 +402,7 @@ export class CatalogoPage implements OnInit {
       puntos: Number(f.puntos),
       stockTotal: Number(f.stockTotal),
       maxPorPersona: f.maxPorPersona.trim() === '' ? null : Number(f.maxPorPersona),
+      grupoId: f.grupoId || null,
     };
     this.guardando.set(true);
     this.errores.set({});
@@ -410,7 +465,12 @@ export class CatalogoPage implements OnInit {
   private async load(): Promise<void> {
     if (!this.eventoId()) return;
     try {
-      this.premios.set(await this.api.listPremios(this.eventoId()));
+      const [premios, grupos] = await Promise.all([
+        this.api.listPremios(this.eventoId()),
+        this.gruposApi.list(this.eventoId()),
+      ]);
+      this.premios.set(premios);
+      this.grupos.set(grupos);
       this.estado.set('listo');
     } catch (error) {
       this.traceId.set(error instanceof ErrorApi ? error.traceId : null);

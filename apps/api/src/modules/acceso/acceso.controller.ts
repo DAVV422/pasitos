@@ -30,6 +30,7 @@ import { RELOJ, type Reloj } from '../auth/sesiones.service';
 import { getEstadoApp, getEtag } from './estado-app';
 import { DispositivoAppService } from './dispositivo-app';
 import { EventoAppCache } from './evento-app.cache';
+import { listGruposDe } from '../grupos/grupos-de';
 import { getMiEntrada, listMovimientosApp } from './movimientos-app';
 import { COOKIE_ASISTENTE, COOKIE_DISPOSITIVO } from './sesiones-asistente';
 
@@ -178,8 +179,16 @@ export class AppAsistenteController {
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
-    // HU-309: de la caché en memoria (se invalida con los avisos de contenido).
-    const { evento } = await this.cacheEvento.get(asistente.organizacionId, asistente.eventoId);
+    // HU-309: de la caché en memoria (se invalida con los avisos de contenido), una por cada
+    // combinación de grupos (HU-325).
+    const grupoIds = await withOrganizacion(this.db.db, asistente.organizacionId, async (tx) =>
+      (await listGruposDe(tx, asistente.asistenteId)).map((g) => g.id),
+    );
+    const { evento } = await this.cacheEvento.get(
+      asistente.organizacionId,
+      asistente.eventoId,
+      grupoIds,
+    );
     return sendConEtag(request, reply, evento);
   }
 

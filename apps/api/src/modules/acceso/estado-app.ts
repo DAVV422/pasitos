@@ -14,6 +14,7 @@ import {
 } from '@pasitos/db';
 import { AppError, getEstadoReto, type EstadoRetoAsistente } from '@pasitos/dominio';
 import { isPocosDisponibles } from '@pasitos/dominio/esquemas';
+import { listGruposDe, whereParaLaPersona } from '../grupos/grupos-de';
 
 /**
  * Lo que la app pide al abrir (`GET /app/estado`, HU-308 §1, API §5.2): una sola llamada de 2 a
@@ -119,6 +120,10 @@ export async function getEstadoApp(
     throw new AppError('NO_ENCONTRADO');
   }
 
+  // HU-325: solo los retos y premios sin grupo o de un grupo de la persona.
+  const gruposDeLaPersona = await listGruposDe(tx, asistenteId);
+  const grupoIds = gruposDeLaPersona.map((g) => g.id);
+
   // Un bloque por consulta (HU-308 §1): retos con lo que hizo la persona, stock y movimientos.
   const deLaPersona = tx
     .select({
@@ -145,7 +150,7 @@ export async function getEstadoApp(
       })
       .from(retos)
       .leftJoin(deLaPersona, eq(deLaPersona.retoId, retos.id))
-      .where(eq(retos.eventoId, fila.eventoId))
+      .where(and(eq(retos.eventoId, fila.eventoId), whereParaLaPersona(retos.grupoId, grupoIds)))
       .orderBy(retos.numero),
     tx
       .select({
@@ -155,7 +160,13 @@ export async function getEstadoApp(
         entregado: premios.stockEntregado,
       })
       .from(premios)
-      .where(and(eq(premios.eventoId, fila.eventoId), eq(premios.estado, 'activo')))
+      .where(
+        and(
+          eq(premios.eventoId, fila.eventoId),
+          eq(premios.estado, 'activo'),
+          whereParaLaPersona(premios.grupoId, grupoIds),
+        ),
+      )
       .orderBy(premios.orden, premios.id),
     tx
       .select({
@@ -181,7 +192,7 @@ export async function getEstadoApp(
       codigo: fila.codigo,
       nombre: fila.nombre,
       estado: fila.estado,
-      grupos: [],
+      grupos: gruposDeLaPersona.map((g) => g.nombre),
       ci: { cargado: false, verificado: false },
     },
     saldo: fila.saldo ?? 0,

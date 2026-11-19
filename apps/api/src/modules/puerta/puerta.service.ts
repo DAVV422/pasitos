@@ -21,6 +21,7 @@ import { runIdempotente } from '../acceso/idempotencia';
 import type { Reloj } from '../auth/sesiones.service';
 import { toActor } from '../bitacora/actores';
 import { getNombreCorto, type CheckInService, type MetodoCheckIn } from './check-in.service';
+import { listGruposDe } from '../grupos/grupos-de';
 
 type Pedido = Pick<FirmaVerificada, 'clave' | 'hashCuerpo' | 'ruta'>;
 
@@ -299,7 +300,7 @@ export class PuertaService {
           : [],
       ),
       checkIn: activo ? { at: activo.at.toISOString(), por: getNombreCorto(activo.por) } : null,
-      grupos: [],
+      grupos: (await listGruposDe(tx, asistenteId)).map((g) => g.nombre),
       carnet: null,
     };
   }

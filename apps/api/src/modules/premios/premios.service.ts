@@ -1,5 +1,5 @@
-import { asc, eq, max } from 'drizzle-orm';
-import { premios, withOrganizacion, type Db, type Tx } from '@pasitos/db';
+import { and, asc, eq, max } from 'drizzle-orm';
+import { grupos, premios, withOrganizacion, type Db, type Tx } from '@pasitos/db';
 import { AppError } from '@pasitos/dominio';
 import type { DatosPremio } from '@pasitos/dominio/esquemas';
 import { uuidv7 } from 'uuidv7';
@@ -40,6 +40,7 @@ export class PremiosService {
   async create(contexto: ContextoEvento, datos: DatosPremio) {
     await this.checkImagen(contexto, datos.imagenArchivoId);
     return withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
+      await this.checkGrupo(tx, contexto, datos.puntos, datos.grupoId);
       const [ultimo] = await tx
         .select({ orden: max(premios.orden) })
         .from(premios)
@@ -61,6 +62,12 @@ export class PremiosService {
     await this.checkImagen(contexto, cambios.imagenArchivoId ?? null);
     const resultado = await withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
       const actual = await this.getPremio(tx, contexto, id, true);
+      await this.checkGrupo(
+        tx,
+        contexto,
+        cambios.puntos ?? actual.puntos,
+        cambios.grupoId === undefined ? actual.grupoId : cambios.grupoId,
+      );
       const comprometido = actual.stockReservado + actual.stockEntregado;
       if (cambios.stockTotal !== undefined && cambios.stockTotal < comprometido) {
         throw new AppError('STOCK_MENOR_A_COMPROMETIDO', {
@@ -167,7 +174,39 @@ export class PremiosService {
       puntos: p.puntos,
       stockTotal: p.stockTotal,
       maxPorPersona: p.maxPorPersona,
+      grupoId: p.grupoId,
     };
+  }
+
+  /** HU-325: el grupo es del evento, y el precio 0 solo vale con grupo (un souvenir). */
+  private async checkGrupo(
+    tx: Tx,
+    contexto: ContextoEvento,
+    puntos: number,
+    grupoId: string | null,
+  ): Promise<void> {
+    if (grupoId) {
+      const [grupo] = await tx
+        .select({ id: grupos.id })
+        .from(grupos)
+        .where(and(eq(grupos.id, grupoId), eq(grupos.eventoId, contexto.eventoId)));
+      if (!grupo) {
+        throw new AppError('VALIDACION', {
+          errors: [{ field: 'grupoId', code: 'NO_VALIDO', message: 'No es de este evento.' }],
+        });
+      }
+    }
+    if (puntos === 0 && !grupoId) {
+      throw new AppError('VALIDACION', {
+        errors: [
+          {
+            field: 'puntos',
+            code: 'NO_VALIDO',
+            message: 'Solo un premio de un grupo puede ser gratis. Elige el grupo o pon un precio.',
+          },
+        ],
+      });
+    }
   }
 
   private toPremio(p: Premio) {

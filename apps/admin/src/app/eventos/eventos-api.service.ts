@@ -117,6 +117,12 @@ export interface AsistentePanel {
   readonly estado: 'invitado' | 'registrado' | 'presente' | 'cancelado';
   readonly emailEstado: 'sin_correo' | 'pendiente' | 'en_cola' | 'enviado' | 'rebotado';
   readonly origen: 'lista' | 'csv' | 'puerta' | 'autoregistro';
+  /** HU-325: sus grupos, para el chip. */
+  readonly grupos?: readonly {
+    readonly id: string;
+    readonly nombre: string;
+    readonly color: string;
+  }[];
   /** HU-303: quién lo registró en la puerta (*"Luis C."*); HU-320: quién activó la cuenta. */
   readonly registradoPor?: string | null;
   /** HU-320: el nombre del QR de registro del que salió. */
@@ -222,6 +228,8 @@ export interface PremioPanel {
   readonly disponible: number;
   readonly maxPorPersona: number | null;
   readonly estado: 'activo' | 'oculto';
+  /** HU-325: solo para un grupo. */
+  readonly grupoId: string | null;
 }
 
 export interface RetoPanel {
@@ -239,6 +247,8 @@ export interface RetoPanel {
   readonly disponibleDesde: string | null;
   readonly disponibleHasta: string | null;
   readonly sponsorId: string | null;
+  /** HU-325: solo para un grupo. */
+  readonly grupoId: string | null;
   readonly estado: 'activo' | 'desactivado';
   readonly entregados: number;
   readonly registradoEnStellar: boolean;
@@ -451,6 +461,7 @@ export class EventosApi {
       emailEstado?: string;
       origen?: string;
       qrRegistroId?: string;
+      grupoId?: string;
       cursor?: string | null;
     },
   ): Promise<Pagina<AsistentePanel>> {

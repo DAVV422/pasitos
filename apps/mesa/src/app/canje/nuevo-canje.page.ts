@@ -59,7 +59,12 @@ import { MesaApi, type PremioMesa } from '../mesa-api.service';
                 />
               }
               <p class="text-lg leading-tight font-bold">{{ p.nombre }}</p>
-              <p class="text-points font-display text-xl font-extrabold">{{ p.puntos }} pts</p>
+              <p class="text-points font-display text-xl font-extrabold">
+                {{ p.puntos === 0 ? 'Gratis' : p.puntos + ' pts' }}
+              </p>
+              @if (p.grupo) {
+                <px-chip variante="puntos">Solo {{ p.grupo }}</px-chip>
+              }
               <p class="text-muted text-sm">
                 @if (p.disponible === 0) {
                   <px-chip variante="peligro">Agotado</px-chip>

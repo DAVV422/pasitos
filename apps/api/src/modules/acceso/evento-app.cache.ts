@@ -21,10 +21,15 @@ interface Entrada {
   readonly hasta: number;
 }
 
+/** La clave de la caché: el evento y la combinación de grupos de la persona (HU-325). */
+function getClave(eventoId: string, grupoIds: readonly string[]): string {
+  return `${eventoId}|${[...grupoIds].sort().join(',')}`;
+}
+
 /**
- * La caché de `GET /app/evento` (HU-309 §1): se arma una vez por evento y se guarda en memoria.
- * Se invalida con los avisos de contenido de `outbox`. Con 1.000 celulares que abren a la vez, la
- * base lo arma una sola vez.
+ * La caché de `GET /app/evento` (HU-309 §1): se arma una vez por evento y por combinación de
+ * grupos (HU-325, hay pocas) y se guarda en memoria. Se invalida con los avisos de contenido de
+ * `outbox`. Con 1.000 celulares que abren a la vez, la base lo arma una sola vez.
  */
 export class EventoAppCache {
   private readonly entradas = new Map<string, Entrada>();
@@ -36,27 +41,37 @@ export class EventoAppCache {
     private readonly ahora: () => number = Date.now,
   ) {
     enVivo.onAviso((aviso) => {
-      if (aviso.eventoId && isCambioDeContenido(aviso.tipo)) this.entradas.delete(aviso.eventoId);
+      if (aviso.eventoId && isCambioDeContenido(aviso.tipo)) this.invalidate(aviso.eventoId);
     });
   }
 
-  async get(organizacionId: string, eventoId: string): Promise<Entrada> {
-    const guardada = this.entradas.get(eventoId);
+  async get(
+    organizacionId: string,
+    eventoId: string,
+    grupoIds: readonly string[] = [],
+  ): Promise<Entrada> {
+    const clave = getClave(eventoId, grupoIds);
+    const guardada = this.entradas.get(clave);
     if (guardada && guardada.hasta > this.ahora()) return guardada;
-    const enCurso = this.pendientes.get(eventoId);
+    const enCurso = this.pendientes.get(clave);
     if (enCurso) return enCurso;
-    const armando = withOrganizacion(this.db, organizacionId, (tx) => getEventoApp(tx, eventoId))
+    const armando = withOrganizacion(this.db, organizacionId, (tx) =>
+      getEventoApp(tx, eventoId, grupoIds),
+    )
       .then((evento) => {
         const entrada = { evento, etag: getEtag(evento), hasta: this.ahora() + VIGENCIA_MS };
-        this.entradas.set(eventoId, entrada);
+        this.entradas.set(clave, entrada);
         return entrada;
       })
-      .finally(() => this.pendientes.delete(eventoId));
-    this.pendientes.set(eventoId, armando);
+      .finally(() => this.pendientes.delete(clave));
+    this.pendientes.set(clave, armando);
     return armando;
   }
 
+  /** Borra todas las combinaciones de grupos del evento. */
   invalidate(eventoId: string): void {
-    this.entradas.delete(eventoId);
+    for (const clave of [...this.entradas.keys()]) {
+      if (clave.startsWith(`${eventoId}|`)) this.entradas.delete(clave);
+    }
   }
 }
