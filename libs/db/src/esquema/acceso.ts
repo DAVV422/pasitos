@@ -229,7 +229,7 @@ export const alertas = pgTable(
   (t) => [
     check(
       'alertas_tipo',
-      sql`${t.tipo} in ('A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'no_fui_yo')`,
+      sql`${t.tipo} in ('A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'no_fui_yo', 'foto_inapropiada')`,
     ),
     check('alertas_prioridad', sql`${t.prioridad} in ('normal', 'alta')`),
     check(

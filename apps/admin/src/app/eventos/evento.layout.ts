@@ -12,6 +12,7 @@ import { RouterOutlet, type CanActivateFn } from '@angular/router';
 import { canDo, type AccionEvento } from '@pasitos/dominio';
 import { ContextoEventoService, LayoutComponent, type ItemMenu } from '@pasitos/panel';
 import { AlertasAbiertasService } from './alertas-api.service';
+import { FotosPendientesService } from './fotos-api.service';
 import { EventosApi, type EventoDetalle } from './eventos-api.service';
 
 /** El evento abierto en el panel. Fija el rol en `ContextoEventoService` (HU-204 §5). */
@@ -58,6 +59,8 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: 'sponsors', texto: 'Sponsors', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'preguntas', texto: 'Preguntas', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'retos', texto: 'Retos', grupo: 'Juego', accion: 'contenido.read' },
+  // HU-323: aparece si a la persona le toca revisar (lo dice el servidor).
+  { ruta: 'fotos/revisar', texto: 'Fotos por revisar', grupo: 'Juego', accion: 'evento.read' },
   { ruta: 'catalogo', texto: 'Catálogo', grupo: 'Juego', accion: 'contenido.read' },
   { ruta: 'ajustes', texto: 'Ajustes', grupo: 'Juego', accion: 'puntos.ajustar' },
   { ruta: 'pantallas', texto: 'Pantallas', grupo: 'Dispositivos', accion: 'terminales.read' },
@@ -92,6 +95,7 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
 export class EventoLayout {
   protected readonly actual = inject(EventoActualService);
   private readonly alertas = inject(AlertasAbiertasService);
+  private readonly fotos = inject(FotosPendientesService);
   private readonly destroy = inject(DestroyRef);
 
   constructor() {
@@ -100,6 +104,8 @@ export class EventoLayout {
       const evento = this.actual.evento();
       if (evento && canDo(evento.miRol, 'bitacora.read'))
         this.alertas.watch(evento.id, this.destroy);
+      // HU-323: las fotos por revisar, para quien revisa (D, C o responsable de un reto).
+      if (evento) this.fotos.watch(evento.id, this.destroy);
     });
   }
 
@@ -109,12 +115,20 @@ export class EventoLayout {
       return [];
     }
     const abiertas = this.alertas.abiertas();
-    return MENU_EVENTO.filter((item) => canDo(evento.miRol, item.accion)).map((item): ItemMenu => ({
+    const fotos = this.fotos.pendientes();
+    return MENU_EVENTO.filter(
+      (item) =>
+        canDo(evento.miRol, item.accion) &&
+        (item.ruta !== 'fotos/revisar' || fotos?.puedeRevisar === true),
+    ).map((item): ItemMenu => ({
       texto: item.texto,
       ruta: `/eventos/${evento.id}${item.ruta ? `/${item.ruta}` : ''}`,
       ...(item.grupo ? { grupo: item.grupo } : {}),
       ...(item.exacto ? { exacto: true } : {}),
       ...(item.ruta === 'alertas' && abiertas > 0 ? { contador: abiertas } : {}),
+      ...(item.ruta === 'fotos/revisar' && (fotos?.total ?? 0) > 0
+        ? { contador: fotos?.total ?? 0 }
+        : {}),
     }));
   });
 }

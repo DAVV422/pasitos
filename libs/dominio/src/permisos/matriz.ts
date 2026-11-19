@@ -66,6 +66,11 @@ export const PERMISOS = {
    * servicio: la matriz es por rol).
    */
   'ci.verify': [...DC, 'registrador'],
+  /**
+   * HU-323: revisar las fotos de todos los retos. Además, los responsables de cada reto, solo las
+   * de sus retos (lo revisa el servicio: la matriz es por rol).
+   */
+  'fotos.review': DC,
   /** HU-325: crear grupos y agregar o quitar personas. */
   'grupos.update': DC,
   /** HU-319: ver los QR de registro. */
@@ -98,6 +103,7 @@ export const ACCIONES_ESCRITURA: ReadonlySet<AccionEvento> = new Set<AccionEvent
   'qr_registro.update',
   'grupos.update',
   'ci.verify',
+  'fotos.review',
 ]);
 
 /** Acciones que, para los operadores, valen solo en sus terminales asignadas (²). */

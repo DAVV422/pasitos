@@ -60,3 +60,19 @@ export const esquemaReto = z.object({
 });
 
 export type DatosReto = z.infer<typeof esquemaReto>;
+
+/** HU-323: tomar la siguiente foto (de un reto, o de cualquiera de los míos). */
+export const esquemaSiguienteFoto = z.object({ retoId: z.uuid().optional() });
+
+/** Rechazar: con *otro*, la nota es obligatoria (y es lo que ve la persona). */
+export const esquemaRechazarFoto = z
+  .object({
+    motivo: z.enum(['no_corresponde', 'no_se_ve', 'repetida', 'inapropiada', 'otro']),
+    nota: z.string().trim().max(300).optional(),
+  })
+  .refine((d) => d.motivo !== 'otro' || (d.nota?.length ?? 0) >= 3, {
+    error: 'Cuenta el motivo (al menos 3 letras).',
+    path: ['nota'],
+  });
+
+export const esquemaAnularFoto = z.object({ motivo: z.string().trim().min(5).max(300) });

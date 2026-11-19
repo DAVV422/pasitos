@@ -94,6 +94,13 @@ export const appRoutes: Route[] = [
           import('./eventos/activar-cuentas.page').then((m) => m.ActivarCuentasPage),
       },
       {
+        // HU-323: D y C, y los responsables de cada reto (el servidor filtra sus retos).
+        path: 'fotos/revisar',
+        canActivate: [canDoActivate('evento.read')],
+        title: 'Fotos por revisar · Pasitos',
+        loadComponent: () => import('./eventos/fotos-revisar.page').then((m) => m.FotosRevisarPage),
+      },
+      {
         path: 'carnets',
         canActivate: [canDoActivate('ci.verify')],
         title: 'Verificar carnet · Pasitos',

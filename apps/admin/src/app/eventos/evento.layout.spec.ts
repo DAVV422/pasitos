@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import type { RolEvento } from '@pasitos/dominio';
 import { ContextoEventoService } from '@pasitos/panel';
 import { AlertasAbiertasService } from './alertas-api.service';
+import { FotosPendientesService } from './fotos-api.service';
 import { EventoActualService, EventoLayout } from './evento.layout';
 import type { EventoDetalle } from './eventos-api.service';
 
@@ -55,6 +56,11 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         {
           provide: AlertasAbiertasService,
           useValue: { abiertas: signal(0), watch: () => undefined },
+        },
+        // Sin fotos que revisar: el menú no muestra *Fotos por revisar*.
+        {
+          provide: FotosPendientesService,
+          useValue: { pendientes: signal(null), watch: () => undefined },
         },
       ],
     });

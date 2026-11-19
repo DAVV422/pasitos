@@ -332,6 +332,21 @@ export const CATALOGO_ERRORES = {
     title: 'Falta la autorización',
     mensaje: 'Este reto es para difusión: marca la autorización de uso para enviar tu foto.',
   },
+  FOTO_NO_DISPONIBLE: {
+    status: 404,
+    title: 'Foto no disponible',
+    mensaje: 'Esta foto no existe o no te toca revisarla.',
+  },
+  FOTO_YA_TOMADA: {
+    status: 409,
+    title: 'Foto tomada',
+    mensaje: 'Esta foto la está revisando otra persona.',
+  },
+  FOTO_YA_REVISADA: {
+    status: 409,
+    title: 'Foto ya revisada',
+    mensaje: 'Esta foto ya se revisó.',
+  },
   CONFIRMAR_RIESGO: {
     status: 422,
     title: 'Falta confirmar el riesgo',

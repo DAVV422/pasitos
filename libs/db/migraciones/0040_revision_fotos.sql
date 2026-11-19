@@ -1,0 +1,2 @@
+ALTER TABLE "alertas" DROP CONSTRAINT "alertas_tipo";--> statement-breakpoint
+ALTER TABLE "alertas" ADD CONSTRAINT "alertas_tipo" CHECK ("alertas"."tipo" in ('A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'no_fui_yo', 'foto_inapropiada'));

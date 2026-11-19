@@ -222,7 +222,7 @@ describe('Eventos (HU-205)', () => {
     const { resultados, rutas } = await runV9(api.app, actores, {
       eventoId: evento.eventoId,
       recursos: { ...evento.recursos, miembros: await addInvitado(base, evento) },
-      parametros: { asistenteId: evento.recursos.asistentes },
+      parametros: { asistenteId: evento.recursos.asistentes, variante: '400' },
       recrear: (recurso) => createRecursoDePrueba(base, evento, recurso),
     });
     expect(rutas).toBeGreaterThanOrEqual(7);

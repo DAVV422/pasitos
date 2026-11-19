@@ -18,7 +18,8 @@ import { uuidv7 } from 'uuidv7';
 import { getVencimientoSesion } from './sesiones-asistente';
 
 export type MomentoTecnico = 'vinculacion' | 'reclamo' | 'canje' | 'foto' | 'intento_fallido';
-export type TipoAlerta = `A${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11}` | 'no_fui_yo';
+export type TipoAlerta =
+  `A${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11}` | 'no_fui_yo' | 'foto_inapropiada';
 
 /** `SHA-256(JCS(campos))` (HU-307 §2). Débil con muchos celulares iguales: solo alerta. */
 export function getHuella(senales: SenalesDispositivo | undefined): Buffer | null {

@@ -1,4 +1,6 @@
 import {
+  archivos,
+  enviosFoto,
   grupos,
   actividades,
   alertas,
@@ -55,6 +57,7 @@ export interface EventoDePrueba {
     readonly canjes: string;
     readonly qrRegistro: string;
     readonly grupos: string;
+    readonly fotos: string;
   };
 }
 
@@ -196,6 +199,38 @@ export async function createEventoDePrueba(
   await base.sistema.db
     .insert(grupos)
     .values({ id: grupoId, organizacionId, eventoId, nombre: 'Grupo de prueba' });
+  // HU-322: una foto de un reto con foto.
+  const retoFotoId = uuidv7();
+  await base.sistema.db.insert(retos).values({
+    id: retoFotoId,
+    organizacionId,
+    eventoId,
+    nombre: 'Reto con foto',
+    tipo: 'foto',
+    puntos: 10,
+    topeTotal: 100,
+    instruccionFoto: 'Una foto de prueba',
+  });
+  const archivoFotoId = uuidv7();
+  await base.sistema.db.insert(archivos).values({
+    id: archivoFotoId,
+    organizacionId,
+    eventoId,
+    proposito: 'foto_reto',
+    nombreOriginal: 'foto',
+    tamanoBytes: 1,
+  });
+  const envioFotoId = uuidv7();
+  await base.sistema.db.insert(enviosFoto).values({
+    id: envioFotoId,
+    organizacionId,
+    eventoId,
+    retoId: retoFotoId,
+    asistenteId,
+    intento: 1,
+    archivoId: archivoFotoId,
+    origen: 'camara',
+  });
   // HU-305: un aviso No fui yo.
   const alertaId = uuidv7();
   await base.sistema.db.insert(alertas).values({
@@ -228,6 +263,7 @@ export async function createEventoDePrueba(
       canjes: canjeId,
       qrRegistro: qrRegistroId,
       grupos: grupoId,
+      fotos: envioFotoId,
     },
   };
 }

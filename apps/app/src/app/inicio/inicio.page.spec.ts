@@ -108,6 +108,7 @@ describe('InicioPage', () => {
     sinConexion: signal(false),
     aviso: signal<string | null>(null),
     bienvenida: signal<string | null>(null),
+    avisoFoto: signal(null),
   };
 
   beforeEach(async () => {

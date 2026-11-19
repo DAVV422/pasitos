@@ -281,6 +281,13 @@
       "when": 1795060134305,
       "tag": "0039_fotos",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795061533271,
+      "tag": "0040_revision_fotos",
+      "breakpoints": true
     }
   ]
 }

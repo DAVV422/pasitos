@@ -110,6 +110,7 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 | Crear y administrar los QR de registro | ✅ | ✅ | — | — | — | — |
 | Crear grupos y agregar personas a un grupo | ✅ | ✅ | — | — | — | — |
 | Verificar el carnet de un asistente ³ | ✅ | ✅ | ✅ | — | — | — |
+| Revisar las fotos de los retos ⁴ | ✅ | ✅ | — | — | — | — |
 | Mostrar el QR de registro asignado (*Activar cuentas*) | ✅ | ✅ | ✅ | — | — | — |
 | Cobrar canjes | ✅ | ✅ | — | ✅ ² | — | — |
 | Controlar pantallas (pausar, generar otro QR, mostrar QR) | ✅ | ✅ | — | — | ✅ ² | — |
@@ -121,6 +122,7 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 ¹ Un coorganizador no puede nombrar ni quitar a otro coorganizador ni al dueño.
 ² Solo en las mesas o pantallas que tiene asignadas.
 ³ Y cualquier persona del equipo marcada con *Verifica carnets* (por ejemplo, el stand de Pasitos).
+⁴ Y las personas asignadas a cada reto con foto, solo las de sus retos.
 
 **Reglas:**
 - **Nadie puede darse puntos a sí mismo.** Los ajustes manuales a la propia cuenta están bloqueados, aunque la persona también sea asistente.

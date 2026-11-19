@@ -53,6 +53,8 @@ export class SesionAsistente {
   readonly actualizadoAt = signal<number | null>(null);
   /** No se pudo traer el contenido del evento y no hay copia (HU-309: el estado de error). */
   readonly errorEvento = signal(false);
+  /** HU-323: lo que pasó con la última foto (*"¡Tu foto fue aprobada! +20 puntos"*). */
+  readonly avisoFoto = signal<{ texto: string; variante: 'ok' | 'advertencia' } | null>(null);
   /** HU-320: *"¡Listo, Valeria! Ya estás en el evento"*, una vez, al llegar a *Inicio*. */
   readonly bienvenida = signal<string | null>(null);
   /** El último aviso del organizador (P2; si llega, se muestra). */
@@ -157,6 +159,20 @@ export class SesionAsistente {
     // HU-309: el contenido cambió. Cada celular espera un poco al azar para no pedir todos juntos.
     conexion.on('contenido.actualizado', () => {
       setTimeout(() => void this.loadEvento(), Math.random() * ESPERA_CONTENIDO_MS);
+    });
+    conexion.on('foto.revisada', (aviso) => {
+      const datos = aviso.datos as { estado?: string; puntos?: number; motivo?: string } | null;
+      if (datos?.estado === 'aprobada') {
+        this.avisoFoto.set({
+          variante: 'ok',
+          texto: `¡Tu foto fue aprobada! +${datos.puntos ?? 0} ${this.estado()?.evento.nombrePuntos ?? 'puntos'}`,
+        });
+      } else if (datos?.estado === 'rechazada' || datos?.estado === 'rechazada_sistema') {
+        this.avisoFoto.set({
+          variante: 'advertencia',
+          texto: `Tu foto fue rechazada: ${datos.motivo ?? 'sin motivo'}`,
+        });
+      }
     });
     conexion.on('aviso.publicado', (aviso) => {
       const texto = (aviso.datos as { texto?: unknown } | null)?.texto;

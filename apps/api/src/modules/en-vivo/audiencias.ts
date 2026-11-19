@@ -192,8 +192,14 @@ export function toAvisoEnVivo(aviso: AvisoOutbox, suscriptor: Suscriptor): Aviso
 
     // HU-322: una foto nueva para revisar (los responsables de cada reto, en HU-323).
     case 'foto.recibida':
-      return isEquipo(suscriptor, ORGANIZADORES)
-        ? { evento: aviso.tipo, datos, agrupar: `fotos:${texto(payload, 'retoId')}` }
+      // A todo el equipo, sin datos de la persona: cada uno vuelve a pedir *sus* pendientes
+      // (los responsables solo ven sus retos, HU-323).
+      return suscriptor.tipo === 'equipo'
+        ? {
+            evento: aviso.tipo,
+            datos: { retoId: texto(payload, 'retoId') },
+            agrupar: `fotos:${texto(payload, 'retoId')}`,
+          }
         : null;
 
     case 'foto.revisada':

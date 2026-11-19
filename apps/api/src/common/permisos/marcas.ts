@@ -30,6 +30,7 @@ export const TABLAS_RECURSO = {
   canjes: 'canjes',
   qrRegistro: 'qr_registro',
   grupos: 'grupos',
+  fotos: 'envios_foto',
 } as const;
 export type RecursoEvento = keyof typeof TABLAS_RECURSO;
 
