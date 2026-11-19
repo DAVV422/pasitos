@@ -11,6 +11,12 @@ export interface OpcionesAsistente {
    */
   readonly firmado?: boolean;
   /**
+   * HU-322: la firma va sobre el SHA-256 del **archivo** (un `multipart/form-data` no deja el
+   * cuerpo crudo). El guard no la verifica: deja `verifyFirmaArchivo`, que el controlador llama
+   * con el hash al leer el archivo.
+   */
+  readonly firmaDeArchivo?: boolean;
+  /**
    * Momento sensible (HU-307 §4): cada pedido, aceptado o rechazado, deja su registro técnico
    * con la diferencia de reloj y la latencia.
    */
@@ -55,6 +61,8 @@ export type RequestConAsistente = FastifyRequest & {
   rawBody?: Buffer;
   /** Cuándo llegó, por el reloj del servidor (para la latencia y la diferencia de reloj). */
   llegadaMs?: number;
+  /** HU-322: verifica la firma sobre el hash del archivo (base64url del SHA-256). */
+  verifyFirmaArchivo?: (hashArchivo: string) => Promise<FirmaVerificada>;
 };
 
 /** El asistente de la sesión, en el controlador. */

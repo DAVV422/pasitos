@@ -127,6 +127,12 @@ export const retos = pgTable(
     disponibleDesde: timestamp('disponible_desde', { withTimezone: true }),
     disponibleHasta: timestamp('disponible_hasta', { withTimezone: true }),
     sponsorId: uuid('sponsor_id'),
+    // HU-322: los retos con foto. Qué pedir, si se puede subir de la galería, si la autorización
+    // de uso es requerida y cuántas veces puede reenviar si se la rechazan.
+    instruccionFoto: text('instruccion_foto'),
+    permiteGaleria: boolean('permite_galeria').notNull().default(true),
+    autorizacionUso: text('autorizacion_uso').notNull().default('opcional'),
+    intentosMax: integer('intentos_max').notNull().default(3),
     // HU-325: solo lo ven y lo usan las personas de este grupo.
     grupoId: uuid('grupo_id').references((): AnyPgColumn => grupos.id),
     createdBy: uuid('created_by'),
@@ -135,7 +141,16 @@ export const retos = pgTable(
   },
   (t) => [
     unique('retos_numero').on(t.eventoId, t.numero),
-    check('retos_tipo', sql`${t.tipo} in ('qr', 'otorgado', 'encuesta', 'verificacion_ci')`),
+    check(
+      'retos_tipo',
+      sql`${t.tipo} in ('qr', 'otorgado', 'encuesta', 'verificacion_ci', 'foto')`,
+    ),
+    check('retos_autorizacion_uso', sql`${t.autorizacionUso} in ('opcional', 'requerida')`),
+    check('retos_intentos_max', sql`${t.intentosMax} between 1 and 10`),
+    check(
+      'retos_instruccion_foto',
+      sql`(${t.tipo} <> 'foto' or char_length(${t.instruccionFoto}) between 5 and 200)`,
+    ),
     check('retos_estado', sql`${t.estado} in ('activo', 'desactivado')`),
     check('retos_puntos', sql`${t.puntos} > 0`),
     check('retos_tope_total', sql`${t.topeTotal} > 0`),

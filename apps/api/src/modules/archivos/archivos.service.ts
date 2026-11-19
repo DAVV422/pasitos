@@ -19,7 +19,7 @@ import { Limitador } from '../auth/limitador';
 import type { ContextoSesion, Reloj } from '../auth/sesiones.service';
 import { toActor } from '../bitacora/actores';
 import { BitacoraService } from '../bitacora/bitacora.service';
-import { checkCsv, processImagen, type ImagenProcesada } from './procesador';
+import { checkCsv, processImagen, type ImagenProcesada } from '@pasitos/imagenes';
 
 export interface ArchivoSubido {
   readonly datos: Buffer;
@@ -190,7 +190,13 @@ export class ArchivosService {
     const relativa = (archivo?.variantes as Partial<Record<VarianteImagen, string>> | null)?.[
       variante
     ];
-    if (!archivo || archivo.estado !== 'aprobado' || !relativa) {
+    // HU-322: las fotos de los retos nunca salen por aquí (son personales): las sirven sus rutas.
+    if (
+      !archivo ||
+      archivo.estado !== 'aprobado' ||
+      !relativa ||
+      archivo.proposito === 'foto_reto'
+    ) {
       throw new AppError('NO_ENCONTRADO');
     }
     const privado = archivo.visibilidad === 'privado';

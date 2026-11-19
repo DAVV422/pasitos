@@ -35,6 +35,13 @@ import { getComoSeCompleta, type RetoVista } from '../retos-vista';
             <px-icono nombre="scan" [tamano]="16" />{{ como() }}
           </p>
           @if (accion()) {
+            @if (r.tipo === 'foto') {
+              <a
+                [routerLink]="['/retos', r.id]"
+                class="text-points mt-1 inline-flex items-center gap-1 font-bold underline"
+                >{{ textoFoto() }}</a
+              >
+            }
             @if (r.tipo === 'qr') {
               <a
                 routerLink="/escanear"
@@ -80,6 +87,15 @@ export class RetoTarjetaComponent {
   readonly enlace = input(true);
 
   protected readonly como = computed(() => getComoSeCompleta(this.reto()));
+  /** HU-322: *Sacar foto*, o en qué va la que mandó. */
+  protected readonly textoFoto = computed(() => {
+    const foto = this.reto().estadoPersona.foto;
+    if (foto?.estado === 'recibida' || foto?.estado === 'en_revision') return 'Foto en revisión';
+    if (foto?.estado === 'rechazada' || foto?.estado === 'rechazada_sistema') {
+      return 'Rechazada: volver a intentar';
+    }
+    return 'Sacar foto';
+  });
   protected readonly desde = computed(() => {
     const desde = this.reto().estadoPersona.desde;
     return desde ? formatHora(desde, this.zona()) : '';

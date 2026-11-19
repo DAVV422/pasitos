@@ -12,6 +12,7 @@ import { OutboxService, type AperturaEventosService } from '../eventos/outbox.se
 import type { CostoRedService } from '../costo/costo-red.service';
 import type { OperacionesTrabajoService } from '../invitados/operaciones.service';
 import type { SelladorService } from '../sellador/sellador.service';
+import { PROCESAR_FOTOS_CADA_MS, type ProcesarFotosService } from '../fotos/procesar-fotos.service';
 
 /** Colas del trabajador (HU-103 §3). Nombres de trabajos en kebab-case (Backend §1.3). */
 export const COLA_TICK = 'tick-sellador';
@@ -107,6 +108,7 @@ export interface DependenciasColas {
   readonly alertasDiferidas: AlertasDiferidasService;
   readonly vencerCobros: VencerCobrosService;
   readonly operaciones: OperacionesTrabajoService;
+  readonly fotos: ProcesarFotosService;
 }
 
 export async function startColas({
@@ -123,6 +125,7 @@ export async function startColas({
   alertasDiferidas,
   vencerCobros,
   operaciones,
+  fotos,
 }: DependenciasColas): Promise<() => void> {
   const logger = new Logger('Colas');
   await boss.createQueue(COLA_TICK);
@@ -214,6 +217,23 @@ export async function startColas({
       });
   }, OPERACIONES_CADA_MS);
 
+  // HU-322 §4: procesar-fotos, cada 2 s y de a un proceso (candado), dos fotos a la vez.
+  let procesando = false;
+  const intervaloFotos = setInterval(() => {
+    if (procesando) return;
+    procesando = true;
+    void withCandado(pool, 'procesar-fotos', () => fotos.processPendientes())
+      .catch((error: unknown) =>
+        logger.error(
+          { err: error instanceof Error ? error.message : String(error) },
+          'Error en procesar-fotos',
+        ),
+      )
+      .finally(() => {
+        procesando = false;
+      });
+  }, PROCESAR_FOTOS_CADA_MS);
+
   // HU-316 §2: vencer-cobros, cada 15 s y de a un proceso (candado): libera el stock reservado.
   let venciendo = false;
   const intervaloCobros = setInterval(() => {
@@ -283,6 +303,7 @@ export async function startColas({
     clearInterval(intervalo);
     clearInterval(intervaloOperaciones);
     clearInterval(intervaloCobros);
+    clearInterval(intervaloFotos);
   };
 }
 

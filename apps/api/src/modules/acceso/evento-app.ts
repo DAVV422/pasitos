@@ -66,6 +66,11 @@ export interface EventoApp {
     readonly lugarId: string | null;
     readonly sponsorId: string | null;
     readonly grupo: GrupoApp | null;
+    /** HU-322: en los retos con foto. */
+    readonly instruccionFoto: string | null;
+    readonly permiteGaleria: boolean;
+    readonly autorizacionUso: string;
+    readonly intentosMax: number;
     readonly disponibleDesde: string | null;
     readonly disponibleHasta: string | null;
   }[];
@@ -134,6 +139,10 @@ export async function getEventoApp(
           lugarId: retos.lugarId,
           sponsorId: retos.sponsorId,
           grupoId: retos.grupoId,
+          instruccionFoto: retos.instruccionFoto,
+          permiteGaleria: retos.permiteGaleria,
+          autorizacionUso: retos.autorizacionUso,
+          intentosMax: retos.intentosMax,
           disponibleDesde: retos.disponibleDesde,
           disponibleHasta: retos.disponibleHasta,
         })

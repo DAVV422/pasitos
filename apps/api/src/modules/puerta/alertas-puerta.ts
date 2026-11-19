@@ -85,6 +85,8 @@ export function describeAlerta(
       return `${String(ctx.datos['cuentas'] ?? 'Varias')} cuentas con el mismo celular salieron del mismo QR de registro en 10 minutos`;
     case 'A10':
       return `Intentaron verificar en la cuenta de ${quien} un carnet que ya está verificado en la de ${nombreDe('otroAsistenteId')}`;
+    case 'A11':
+      return `${quien} y ${nombreDe('otroAsistenteId')} mandaron la misma foto (o casi) en un reto`;
     case 'no_fui_yo':
       return `${quien} dice «No fui yo»`;
     default:

@@ -5,13 +5,14 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { eventos } from './eventos';
-import { pantallas } from './libro';
+import { pantallas, retos } from './libro';
 import { organizaciones, usuarios } from './plataforma';
 import { lugares } from './contenido';
 import { bytea, citext } from './tipos';
@@ -117,5 +118,28 @@ export const miembroTerminales = pgTable(
     uniqueIndex('miembro_terminales_mesa')
       .on(t.miembroEventoId, t.mesaId)
       .where(sql`${t.mesaId} is not null`),
+  ],
+);
+
+/** HU-322: quiénes revisan las fotos de un reto (además de dueño y coorganizadores). */
+export const retoResponsables = pgTable(
+  'reto_responsables',
+  {
+    retoId: uuid('reto_id')
+      .notNull()
+      .references(() => retos.id),
+    miembroId: uuid('miembro_id')
+      .notNull()
+      .references(() => miembrosEvento.id),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+  },
+  (t) => [
+    primaryKey({ columns: [t.retoId, t.miembroId] }),
+    index('reto_responsables_miembro').on(t.miembroId),
   ],
 );

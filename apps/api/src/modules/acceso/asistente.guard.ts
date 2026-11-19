@@ -87,6 +87,19 @@ export class AsistenteGuard implements CanActivate {
     });
     const { llavePublica, ...contexto } = sesion;
     request.asistente = contexto;
+    if (opciones.firmaDeArchivo) {
+      // HU-322: se verifica al leer el archivo, con su hash.
+      request.verifyFirmaArchivo = async (hashArchivo) => {
+        const firma = await this.verifyFirma(
+          request,
+          sesion.dispositivoId,
+          llavePublica,
+          hashArchivo,
+        );
+        request.firma = firma;
+        return firma;
+      };
+    }
     if (opciones.firmado) {
       try {
         request.firma = await this.verifyFirma(request, sesion.dispositivoId, llavePublica);
@@ -110,6 +123,7 @@ export class AsistenteGuard implements CanActivate {
     request: RequestConAsistente,
     dispositivoId: string,
     llavePublica: Buffer | null,
+    hashArchivo?: string,
   ): Promise<FirmaVerificada> {
     const clave = header(request, 'Idempotency-Key');
     if (!clave || !UUID.test(clave)) {
@@ -140,7 +154,8 @@ export class AsistenteGuard implements CanActivate {
       ruta,
       clave,
       timestamp,
-      hashCuerpo: await hashCuerpo(request.rawBody ? new Uint8Array(request.rawBody) : ''),
+      hashCuerpo:
+        hashArchivo ?? (await hashCuerpo(request.rawBody ? new Uint8Array(request.rawBody) : '')),
     };
     const llave = await this.getLlave(dispositivoId, llavePublica);
     if (!(await verifyPedido(llave, pedido, firma))) {

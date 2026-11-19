@@ -13,6 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { archivos } from './archivos';
 import { eventos } from './eventos';
 import { asistentes, grupos, movimientos, pantallas, retos } from './libro';
 import { organizaciones, tokens, usuarios } from './plataforma';
@@ -434,5 +435,65 @@ export const qrRegistro = pgTable(
       .where(sql`${t.estado} = 'activo' and ${t.pantallaId} is not null`),
     index('qr_registro_evento').on(t.eventoId),
     index('qr_registro_usuario').on(t.usuarioId),
+  ],
+);
+
+/**
+ * Las fotos de los retos (HU-322): cada intento de una persona en un reto. La imagen es un
+ * archivo `foto_reto`, que se procesa en el trabajador. Se revisa en HU-323. Con RLS.
+ */
+export const enviosFoto = pgTable(
+  'envios_foto',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .references(() => eventos.id),
+    retoId: uuid('reto_id')
+      .notNull()
+      .references(() => retos.id),
+    asistenteId: uuid('asistente_id')
+      .notNull()
+      .references(() => asistentes.id),
+    dispositivoId: uuid('dispositivo_id').references(() => dispositivos.id),
+    intento: integer('intento').notNull(),
+    archivoId: uuid('archivo_id')
+      .notNull()
+      .references(() => archivos.id),
+    origen: text('origen').notNull(),
+    estado: text('estado').notNull().default('recibida'),
+    tomadaPor: uuid('tomada_por').references(() => usuarios.id),
+    tomadaHasta: timestamp('tomada_hasta', { withTimezone: true }),
+    revisadaPor: uuid('revisada_por').references(() => usuarios.id),
+    revisadaAt: timestamp('revisada_at', { withTimezone: true }),
+    motivoRechazo: text('motivo_rechazo'),
+    nota: text('nota'),
+    movimientoId: uuid('movimiento_id').references(() => movimientos.id),
+    firmaDispositivo: bytea('firma_dispositivo'),
+    sha256: text('sha256'),
+    hashPerceptual: bytea('hash_perceptual'),
+    autorizaUso: boolean('autoriza_uso').notNull().default(false),
+    autorizaUsoAt: timestamp('autoriza_uso_at', { withTimezone: true }),
+    autorizaUsoRetiradaAt: timestamp('autoriza_uso_retirada_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('envios_foto_intento').on(t.retoId, t.asistenteId, t.intento),
+    check('envios_foto_origen', sql`${t.origen} in ('camara', 'galeria')`),
+    check(
+      'envios_foto_estado',
+      sql`${t.estado} in ('recibida', 'en_revision', 'rechazada_sistema', 'aprobada', 'rechazada', 'anulada')`,
+    ),
+    check('envios_foto_intento_positivo', sql`${t.intento} >= 1`),
+    // Una sola foto esperando revisión por persona y reto.
+    uniqueIndex('envios_foto_pendiente')
+      .on(t.retoId, t.asistenteId)
+      .where(sql`${t.estado} in ('recibida', 'en_revision')`),
+    index('envios_foto_cola').on(t.eventoId, t.estado, t.createdAt),
+    index('envios_foto_asistente').on(t.asistenteId),
   ],
 );

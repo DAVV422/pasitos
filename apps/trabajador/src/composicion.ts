@@ -16,6 +16,7 @@ import { PurgaArchivosService } from './archivos/purga.service';
 import { AperturaEventosService } from './eventos/outbox.service';
 import { InvitacionesCorreoGancho } from './invitados/invitaciones-correo';
 import { OperacionesTrabajoService } from './invitados/operaciones.service';
+import { ProcesarFotosService } from './fotos/procesar-fotos.service';
 import { EvidenciaService } from './evidencia/evidencia.service';
 import { SelladorRepository } from './sellador/sellador.repository';
 import { OPCIONES_SELLADOR_POR_DEFECTO, SelladorService } from './sellador/sellador.service';
@@ -35,6 +36,7 @@ export interface Composicion {
   readonly alertasDiferidas: AlertasDiferidasService;
   readonly vencerCobros: VencerCobrosService;
   readonly operaciones: OperacionesTrabajoService;
+  readonly fotos: ProcesarFotosService;
 }
 
 /** Arma las piezas del trabajador. Los tests arman las mismas con FakeStellar y otro reloj. */
@@ -132,6 +134,7 @@ export function buildComposicion(
     vencerCobros: new VencerCobrosService(conexion.db, reloj),
     purga: new PurgaArchivosService(conexion.db, config.ARCHIVOS_DIR, reloj),
     operaciones: new OperacionesTrabajoService(conexion.db, config.ARCHIVOS_DIR, reloj),
+    fotos: new ProcesarFotosService(conexion.db, config.ARCHIVOS_DIR, reloj),
   };
 }
 

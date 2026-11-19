@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { and, count, desc, eq, max, sql } from 'drizzle-orm';
 import {
+  enviosFoto,
   asistentes,
   eventos,
   lotes,
@@ -12,7 +13,12 @@ import {
   saldos,
   type Tx,
 } from '@pasitos/db';
-import { AppError, getEstadoReto, type EstadoRetoAsistente } from '@pasitos/dominio';
+import {
+  getIntentosRestantes,
+  AppError,
+  getEstadoReto,
+  type EstadoRetoAsistente,
+} from '@pasitos/dominio';
 import { isPocosDisponibles } from '@pasitos/dominio/esquemas';
 import { listGruposDe, whereParaLaPersona } from '../grupos/grupos-de';
 
@@ -53,6 +59,12 @@ export interface EstadoRetoApp {
   readonly completadas: number;
   readonly desde: string | null;
   readonly completadoAt: string | null;
+  /** HU-322: la última foto de la persona en un reto con foto, y los intentos que le quedan. */
+  readonly foto?: {
+    readonly estado: string;
+    readonly motivo: string | null;
+    readonly intentosRestantes: number;
+  } | null;
 }
 
 export interface StockPremioApp {
@@ -145,6 +157,8 @@ export async function getEstadoApp(
         topeTotal: retos.topeTotal,
         entregados: retos.entregados,
         vecesPorPersona: retos.vecesPorPersona,
+        tipo: retos.tipo,
+        intentosMax: retos.intentosMax,
         disponibleDesde: retos.disponibleDesde,
         disponibleHasta: retos.disponibleHasta,
         completadas: deLaPersona.completadas,
@@ -188,6 +202,24 @@ export async function getEstadoApp(
       .limit(ULTIMOS),
   ]);
 
+  // HU-322: las fotos de la persona, la última de cada reto y los rechazos que gastan intentos.
+  const fotos = await tx
+    .select({
+      retoId: enviosFoto.retoId,
+      estado: enviosFoto.estado,
+      motivo: enviosFoto.motivoRechazo,
+      intento: enviosFoto.intento,
+    })
+    .from(enviosFoto)
+    .where(eq(enviosFoto.asistenteId, asistenteId))
+    .orderBy(desc(enviosFoto.intento));
+  const ultimaFoto = new Map<string, (typeof fotos)[number]>();
+  const rechazos = new Map<string, number>();
+  for (const f of fotos) {
+    if (!ultimaFoto.has(f.retoId)) ultimaFoto.set(f.retoId, f);
+    if (f.estado === 'rechazada') rechazos.set(f.retoId, (rechazos.get(f.retoId) ?? 0) + 1);
+  }
+
   const evento = { estado: fila.eventoEstado, inicioAt: fila.inicioAt };
   return {
     asistente: {
@@ -221,6 +253,20 @@ export async function getEstadoApp(
         completadas: calculado.completadas,
         desde: calculado.desde?.toISOString() ?? null,
         completadoAt: calculado.completadoAt?.toISOString() ?? null,
+        ...(reto.tipo === 'foto'
+          ? {
+              foto: ultimaFoto.has(reto.id)
+                ? {
+                    estado: ultimaFoto.get(reto.id)?.estado ?? 'recibida',
+                    motivo: ultimaFoto.get(reto.id)?.motivo ?? null,
+                    intentosRestantes: getIntentosRestantes(
+                      reto.intentosMax,
+                      rechazos.get(reto.id) ?? 0,
+                    ),
+                  }
+                : null,
+            }
+          : {}),
       };
     }),
     premios: filasPremios.map((premio) => {

@@ -1,0 +1,9 @@
+{
+  "name": "imagenes",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/imagenes/src",
+  "projectType": "library",
+  "tags": ["scope:servidor"],
+  "// targets": "to see all targets run: nx show project imagenes --web",
+  "targets": {}
+}

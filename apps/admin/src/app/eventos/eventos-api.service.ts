@@ -245,7 +245,7 @@ export interface RetoPanel {
   readonly numero: number;
   readonly nombre: string;
   readonly descripcion: string | null;
-  readonly tipo: 'qr' | 'otorgado';
+  readonly tipo: 'qr' | 'otorgado' | 'foto' | 'verificacion_ci';
   readonly modoQr: 'por_tiempo' | 'un_uso';
   readonly rotacionSegundos: 15 | 30 | 60;
   readonly puntos: number;
@@ -262,6 +262,12 @@ export interface RetoPanel {
   readonly registradoEnStellar: boolean;
   readonly lugar?: { readonly id: string; readonly nombre: string } | null;
   readonly tienePantalla?: boolean;
+  /** HU-322: en los retos con foto. */
+  readonly instruccionFoto?: string | null;
+  readonly permiteGaleria?: boolean;
+  readonly autorizacionUso?: 'opcional' | 'requerida';
+  readonly intentosMax?: number;
+  readonly responsables?: readonly string[];
 }
 
 export type TransicionPanel = 'publicar' | 'abrir' | 'pausar' | 'reanudar';

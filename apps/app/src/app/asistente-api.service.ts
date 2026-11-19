@@ -62,6 +62,12 @@ export interface EstadoRetoApp {
   readonly completadas: number;
   readonly desde: string | null;
   readonly completadoAt: string | null;
+  /** HU-322: la última foto en un reto con foto y los intentos que le quedan. */
+  readonly foto?: {
+    readonly estado: string;
+    readonly motivo: string | null;
+    readonly intentosRestantes: number;
+  } | null;
 }
 
 /** `GET /app/evento`: lo que casi no cambia (la base de HU-309). */
@@ -139,6 +145,11 @@ export interface DefinicionReto {
   readonly sponsorId: string | null;
   /** HU-325: solo para un grupo (*VIP*). */
   readonly grupo: GrupoApp | null;
+  /** HU-322: en los retos con foto. */
+  readonly instruccionFoto: string | null;
+  readonly permiteGaleria: boolean;
+  readonly autorizacionUso: string;
+  readonly intentosMax: number;
   readonly disponibleDesde: string | null;
   readonly disponibleHasta: string | null;
 }

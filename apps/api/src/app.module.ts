@@ -22,6 +22,7 @@ import { PuertaModule } from './modules/puerta/puerta.module';
 import { SalaModule } from './modules/sala/sala.module';
 import { RegistroModule } from './modules/registro/registro.module';
 import { GruposModule } from './modules/grupos/grupos.module';
+import { FotosModule } from './modules/fotos/fotos.module';
 import { ReclamosModule } from './modules/reclamos/reclamos.module';
 import { CanjesModule } from './modules/canjes/canjes.module';
 import { AjustesModule } from './modules/movimientos/ajustes.module';
@@ -61,6 +62,7 @@ export class AppModule {
         PuertaModule,
         RegistroModule,
         GruposModule,
+        FotosModule,
         SalaModule,
         ReclamosModule,
         CanjesModule,

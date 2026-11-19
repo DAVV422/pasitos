@@ -1,5 +1,7 @@
-import { and, asc, count, eq, isNull } from 'drizzle-orm';
+import { inArray, ne, and, asc, count, eq, isNull } from 'drizzle-orm';
 import {
+  miembrosEvento,
+  retoResponsables,
   grupos,
   actividades,
   eventos,
@@ -43,6 +45,12 @@ const CAMPOS_PUBLICOS = [
   'disponibleDesde',
   'disponibleHasta',
   'sponsorId',
+  // HU-325 y HU-322.
+  'grupoId',
+  'instruccionFoto',
+  'permiteGaleria',
+  'autorizacionUso',
+  'intentosMax',
 ] as const;
 
 /**
@@ -68,8 +76,12 @@ export class RetosService {
         .where(eq(retos.eventoId, contexto.eventoId))
         .orderBy(asc(retos.numero));
       const conPantalla = await this.getLugaresConPantalla(tx, contexto.eventoId);
+      const responsables = await this.listResponsables(
+        tx,
+        filas.map((f) => f.reto.id),
+      );
       return filas.map(({ reto, lugar }) => ({
-        ...this.toReto(reto),
+        ...this.toReto(reto, responsables.get(reto.id)),
         lugar: lugar ? { id: reto.lugarId, nombre: lugar } : null,
         tienePantalla: reto.tipo !== 'qr' || conPantalla(reto.lugarId),
       }));
@@ -89,11 +101,15 @@ export class RetosService {
         ...this.toColumnas(datos),
         createdBy: contexto.usuarioId,
       });
+      await this.setResponsables(tx, contexto, id, datos.tipo === 'foto' ? datos.responsables : []);
       if (publicado) {
         await this.notifyCambio(tx, contexto.eventoId, id);
       }
       await this.record(tx, contexto, 'reto.create', id, datos.nombre, undefined, datos);
-      return this.toReto(await this.getReto(tx, contexto, id));
+      return this.toReto(
+        await this.getReto(tx, contexto, id),
+        datos.tipo === 'foto' ? datos.responsables : [],
+      );
     });
   }
 
@@ -102,7 +118,11 @@ export class RetosService {
       const evento = await this.getEvento(tx, contexto.eventoId);
       const actual = await this.getReto(tx, contexto, id, true);
       const publicado = ESTADOS_PUBLICADOS.has(evento.estado);
-      const final: DatosReto = { ...this.toDatos(actual), ...cambios };
+      const antes: DatosReto = {
+        ...this.toDatos(actual),
+        responsables: (await this.listResponsables(tx, [id])).get(id) ?? [],
+      };
+      const final: DatosReto = { ...antes, ...cambios };
       if (cambios.topeTotal !== undefined && cambios.topeTotal < actual.topeTotal) {
         if (publicado) {
           throw new AppError('TOPE_NO_BAJA', { meta: { tope: actual.topeTotal } });
@@ -125,10 +145,18 @@ export class RetosService {
           ...(publicado && subioElTope ? { registradoEnStellarAt: null } : {}),
         })
         .where(eq(retos.id, id));
+      if (cambios.responsables !== undefined || cambios.tipo !== undefined) {
+        await this.setResponsables(
+          tx,
+          contexto,
+          id,
+          final.tipo === 'foto' ? final.responsables : [],
+        );
+      }
       if (publicado && subioElTope) {
         await this.notifyCambio(tx, contexto.eventoId, id);
       }
-      const recortado = diff(this.toDatos(actual), final);
+      const recortado = diff(antes, final);
       if (Object.keys(recortado.despues).length > 0) {
         await this.record(
           tx,
@@ -140,7 +168,10 @@ export class RetosService {
           recortado.despues,
         );
       }
-      return this.toReto(await this.getReto(tx, contexto, id));
+      return this.toReto(
+        await this.getReto(tx, contexto, id),
+        final.tipo === 'foto' ? final.responsables : [],
+      );
     });
   }
 
@@ -208,6 +239,29 @@ export class RetosService {
     evento: { inicioAt: Date; finAt: Date },
     datos: DatosReto,
   ): Promise<void> {
+    // HU-322: un reto con foto dice qué foto pedir, y sus responsables son del equipo del evento.
+    if (datos.tipo === 'foto') {
+      const largo = datos.instruccionFoto?.length ?? 0;
+      if (largo < 5 || largo > 200) {
+        throw errorCampo('instruccionFoto', 'Cuenta qué foto pedir (de 5 a 200 caracteres).');
+      }
+      const unicos = [...new Set(datos.responsables)];
+      if (unicos.length > 0) {
+        const validos = await tx
+          .select({ id: miembrosEvento.id })
+          .from(miembrosEvento)
+          .where(
+            and(
+              eq(miembrosEvento.eventoId, contexto.eventoId),
+              inArray(miembrosEvento.id, unicos),
+              ne(miembrosEvento.estado, 'revocado'),
+            ),
+          );
+        if (validos.length !== unicos.length) {
+          throw errorCampo('responsables', 'Alguna de esas personas no es del equipo del evento.');
+        }
+      }
+    }
     if (datos.tipo === 'qr' && !datos.lugarId) {
       throw errorCampo(
         'lugarId',
@@ -329,6 +383,10 @@ export class RetosService {
       disponibleHasta: datos.disponibleHasta ? new Date(datos.disponibleHasta) : null,
       sponsorId: datos.sponsorId,
       grupoId: datos.grupoId,
+      instruccionFoto: datos.tipo === 'foto' ? datos.instruccionFoto : null,
+      permiteGaleria: datos.permiteGaleria,
+      autorizacionUso: datos.autorizacionUso,
+      intentosMax: datos.intentosMax,
     };
   }
 
@@ -347,14 +405,56 @@ export class RetosService {
       disponibleHasta: reto.disponibleHasta?.toISOString() ?? null,
       sponsorId: reto.sponsorId,
       grupoId: reto.grupoId,
+      instruccionFoto: reto.instruccionFoto,
+      permiteGaleria: reto.permiteGaleria,
+      autorizacionUso: reto.autorizacionUso as DatosReto['autorizacionUso'],
+      intentosMax: reto.intentosMax,
+      responsables: [],
     };
   }
 
-  private toReto(reto: Reto) {
+  /** HU-322: quiénes revisan las fotos de cada reto (`miembros_evento.id`). */
+  private async listResponsables(
+    tx: Tx,
+    retoIds: readonly string[],
+  ): Promise<Map<string, string[]>> {
+    const porReto = new Map<string, string[]>();
+    if (retoIds.length === 0) return porReto;
+    const filas = await tx
+      .select({ retoId: retoResponsables.retoId, miembroId: retoResponsables.miembroId })
+      .from(retoResponsables)
+      .where(inArray(retoResponsables.retoId, [...retoIds]));
+    for (const fila of filas) {
+      porReto.set(fila.retoId, [...(porReto.get(fila.retoId) ?? []), fila.miembroId]);
+    }
+    return porReto;
+  }
+
+  private async setResponsables(
+    tx: Tx,
+    contexto: ContextoEvento,
+    retoId: string,
+    miembros: readonly string[],
+  ): Promise<void> {
+    await tx.delete(retoResponsables).where(eq(retoResponsables.retoId, retoId));
+    const unicos = [...new Set(miembros)];
+    if (unicos.length === 0) return;
+    await tx.insert(retoResponsables).values(
+      unicos.map((miembroId) => ({
+        retoId,
+        miembroId,
+        organizacionId: contexto.organizacionId,
+        eventoId: contexto.eventoId,
+      })),
+    );
+  }
+
+  private toReto(reto: Reto, responsables: readonly string[] = []) {
     return {
       id: reto.id,
       numero: reto.numero,
       ...Object.fromEntries(CAMPOS_PUBLICOS.map((c) => [c, this.toDatos(reto)[c]])),
+      responsables,
       estado: reto.estado,
       entregados: reto.entregados,
       registradoEnStellar: reto.registradoEnStellarAt !== null,

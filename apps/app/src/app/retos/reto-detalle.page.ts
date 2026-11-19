@@ -4,6 +4,7 @@ import { EstadoComponent, IconoComponent } from '@pasitos/ui';
 import { formatDiaYHora, formatHora } from '../formato';
 import { getComoSeCompleta, getRetosVista } from '../retos-vista';
 import { SesionAsistente } from '../sesion-asistente';
+import { FotoRetoComponent } from './foto-reto.component';
 import { RetoTarjetaComponent } from './reto-tarjeta.component';
 
 /**
@@ -13,7 +14,7 @@ import { RetoTarjetaComponent } from './reto-tarjeta.component';
 @Component({
   selector: 'app-reto-detalle-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EstadoComponent, IconoComponent, RetoTarjetaComponent, RouterLink],
+  imports: [EstadoComponent, FotoRetoComponent, IconoComponent, RetoTarjetaComponent, RouterLink],
   template: `
     <a routerLink="/retos" class="text-muted inline-flex min-h-11 items-center gap-1 font-semibold">
       <px-icono nombre="back" [tamano]="18" />Retos
@@ -27,6 +28,14 @@ import { RetoTarjetaComponent } from './reto-tarjeta.component';
       <app-reto-tarjeta [reto]="r" [zona]="zona" [accion]="puedeActuar()" [enlace]="false" />
       @if (r.descripcion) {
         <p class="whitespace-pre-line">{{ r.descripcion }}</p>
+      }
+      @if (r.tipo === 'foto') {
+        <!-- HU-322: el achicador y la subida se cargan solo en los retos de foto. -->
+        @defer {
+          <app-foto-reto [reto]="r" [accion]="puedeActuar()" />
+        } @loading {
+          <px-estado tipo="cargando" />
+        }
       }
       <dl class="border-line bg-surface flex flex-col gap-3 rounded-xl border p-4">
         <div>

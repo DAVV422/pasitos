@@ -36,9 +36,13 @@ export const archivos = pgTable(
   (t) => [
     check(
       'archivos_proposito',
-      sql`${t.proposito} in ('logo_evento', 'portada', 'plano', 'logo_sponsor', 'imagen_premio', 'importacion_csv', 'mapa_estatico')`,
+      sql`${t.proposito} in ('logo_evento', 'portada', 'plano', 'logo_sponsor', 'imagen_premio', 'importacion_csv', 'mapa_estatico', 'foto_reto')`,
     ),
-    check('archivos_estado', sql`${t.estado} in ('cuarentena', 'aprobado', 'rechazado')`),
+    // HU-324: `borrado` (la fila queda; las variantes ya no están).
+    check(
+      'archivos_estado',
+      sql`${t.estado} in ('cuarentena', 'aprobado', 'rechazado', 'borrado')`,
+    ),
     index('archivos_evento').on(t.eventoId, t.proposito),
     index('archivos_cuarentena')
       .on(t.createdAt)

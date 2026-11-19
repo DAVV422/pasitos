@@ -317,6 +317,21 @@ export const CATALOGO_ERRORES = {
     title: 'Verificación apagada',
     mensaje: 'La verificación de carnet no está activada en este evento.',
   },
+  FOTO_EN_REVISION: {
+    status: 409,
+    title: 'Foto en revisión',
+    mensaje: 'Ya tienes una foto en revisión en este reto. Espera la respuesta.',
+  },
+  INTENTOS_AGOTADOS: {
+    status: 422,
+    title: 'Sin intentos',
+    mensaje: 'Ya usaste todos los intentos de este reto.',
+  },
+  AUTORIZACION_REQUERIDA: {
+    status: 422,
+    title: 'Falta la autorización',
+    mensaje: 'Este reto es para difusión: marca la autorización de uso para enviar tu foto.',
+  },
   CONFIRMAR_RIESGO: {
     status: 422,
     title: 'Falta confirmar el riesgo',

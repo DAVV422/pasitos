@@ -17,6 +17,7 @@ export * from './acceso/senales';
 export * from './acceso/motivos';
 export * from './registro/qr-registro';
 export * from './registro/carnet';
+export * from './retos/fotos';
 export * from './grupos/grupos';
 export * from './puntos/motivos-ajuste';
 export * from './alertas/reglas';

@@ -51,6 +51,14 @@ export const PROPOSITOS_ARCHIVO = {
     subible: true,
     texto: 'Lista de invitados',
   },
+  /** HU-322: la sube el asistente desde su reto (no la ruta de archivos del equipo). */
+  foto_reto: {
+    tipo: 'imagen',
+    maxBytes: 8 * MB,
+    maxLado: 6_000,
+    subible: false,
+    texto: 'Foto de un reto',
+  },
   mapa_estatico: {
     tipo: 'imagen',
     maxBytes: 2 * MB,

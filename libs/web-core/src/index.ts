@@ -6,3 +6,4 @@ export * from './lib/en-vivo.service';
 export * from './lib/dispositivo-asistente';
 export * from './lib/firma.interceptor';
 export * from './lib/senales';
+export * from './lib/achicar-imagen';

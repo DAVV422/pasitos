@@ -60,6 +60,7 @@ export class RolesRepository {
         organizacionId: eventos.organizacionId,
         estadoEvento: eventos.estado,
         visibilidad: eventos.visibilidad,
+        proposito: archivos.proposito,
       })
       .from(archivos)
       .innerJoin(eventos, eq(eventos.id, archivos.eventoId))

@@ -1,7 +1,9 @@
 import * as z from 'zod';
+import { AUTORIZACIONES_USO } from './fotos';
 
 /** Retos (HU-207 §2). Los usan el API y el panel. */
-export const TIPOS_RETO = ['qr', 'otorgado'] as const;
+/** HU-322: `foto`, con su instrucción y sus responsables. */
+export const TIPOS_RETO = ['qr', 'otorgado', 'foto'] as const;
 /** En el piloto: por tiempo y de un solo uso (los otros dos, P2). */
 export const MODOS_QR = ['por_tiempo', 'un_uso'] as const;
 export const ROTACIONES_QR = [15, 30, 60] as const;
@@ -42,6 +44,19 @@ export const esquemaReto = z.object({
   sponsorId: z.uuid().nullable().default(null),
   // HU-325: solo para las personas de un grupo.
   grupoId: z.uuid().nullable().default(null),
+  // HU-322: la foto. La instrucción la exige el servicio cuando el tipo es `foto`.
+  instruccionFoto: z
+    .string()
+    .trim()
+    .max(200)
+    .transform((t) => (t.length === 0 ? null : t))
+    .nullable()
+    .default(null),
+  permiteGaleria: z.boolean().default(true),
+  autorizacionUso: z.enum(AUTORIZACIONES_USO).default('opcional'),
+  intentosMax: z.number().int().min(1).max(10).default(3),
+  /** Los miembros del equipo que revisan (`miembros_evento.id`). */
+  responsables: z.array(z.uuid()).max(50).default([]),
 });
 
 export type DatosReto = z.infer<typeof esquemaReto>;

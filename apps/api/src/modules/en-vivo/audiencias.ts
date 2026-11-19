@@ -190,6 +190,12 @@ export function toAvisoEnVivo(aviso: AvisoOutbox, suscriptor: Suscriptor): Aviso
         ? { evento: aviso.tipo, datos, cerrar: true }
         : null;
 
+    // HU-322: una foto nueva para revisar (los responsables de cada reto, en HU-323).
+    case 'foto.recibida':
+      return isEquipo(suscriptor, ORGANIZADORES)
+        ? { evento: aviso.tipo, datos, agrupar: `fotos:${texto(payload, 'retoId')}` }
+        : null;
+
     case 'foto.revisada':
       return suscriptor.tipo === 'asistente' &&
         suscriptor.asistenteId === texto(payload, 'asistenteId')

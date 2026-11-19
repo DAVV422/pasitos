@@ -7,7 +7,7 @@ import {
   type OnInit,
   signal,
 } from '@angular/core';
-import { canDo } from '@pasitos/dominio';
+import { NOMBRES_ROL, canDo } from '@pasitos/dominio';
 import { MODOS_QR, NOMBRES_MODO_QR, ROTACIONES_QR } from '@pasitos/dominio/esquemas';
 import {
   AvisosService,
@@ -38,7 +38,7 @@ const PUBLICADOS = new Set(['publicado', 'en_curso', 'pausado']);
 interface FormularioReto {
   nombre: string;
   descripcion: string;
-  tipo: 'qr' | 'otorgado';
+  tipo: 'qr' | 'otorgado' | 'foto';
   modoQr: 'por_tiempo' | 'un_uso';
   rotacionSegundos: string;
   puntos: string;
@@ -49,6 +49,12 @@ interface FormularioReto {
   hasta: string;
   sponsorId: string;
   grupoId: string;
+  // HU-322: la foto.
+  instruccionFoto: string;
+  permiteGaleria: boolean;
+  autorizacionUso: 'opcional' | 'requerida';
+  intentosMax: string;
+  responsables: readonly string[];
 }
 
 const VACIO: FormularioReto = {
@@ -65,6 +71,11 @@ const VACIO: FormularioReto = {
   hasta: '',
   sponsorId: '',
   grupoId: '',
+  instruccionFoto: '',
+  permiteGaleria: true,
+  autorizacionUso: 'opcional',
+  intentosMax: '3',
+  responsables: [],
 };
 
 function toLocal(iso: string | null): string {
@@ -161,9 +172,104 @@ function toIso(local: string): string | null {
                 <span class="pnl-opcion__titulo">Otorgado</span>
                 <span class="pnl-opcion__detalle">Lo da el equipo a mano.</span>
               </label>
+              <label class="pnl-opcion">
+                <input
+                  type="radio"
+                  name="tipo"
+                  [checked]="form().tipo === 'foto'"
+                  (change)="set('tipo', 'foto')"
+                />
+                <span class="pnl-opcion__titulo">Con foto</span>
+                <span class="pnl-opcion__detalle">
+                  La persona manda una foto y el equipo la revisa.
+                </span>
+              </label>
             </div>
           </fieldset>
         </pnl-seccion>
+        @if (form().tipo === 'foto') {
+          <pnl-seccion titulo="La foto">
+            <px-campo
+              etiqueta="Qué foto pedir"
+              ayuda="Lo que ve la persona. Por ejemplo: Una foto tuya con la mascota del stand."
+              [error]="errores()['instruccionFoto'] ?? null"
+              #ff1="pxCampo"
+            >
+              <input
+                [id]="ff1.idControl"
+                [attr.aria-describedby]="ff1.idDescripcion"
+                maxlength="200"
+                [value]="form().instruccionFoto"
+                (input)="set('instruccionFoto', valorDe($event))"
+              />
+            </px-campo>
+            <px-campo etiqueta="Desde dónde" #ff2="pxCampo">
+              <select
+                [id]="ff2.idControl"
+                (change)="setFoto('permiteGaleria', valorDe($event) === 'si')"
+              >
+                <option value="si" [selected]="form().permiteGaleria">Cámara o galería</option>
+                <option value="no" [selected]="!form().permiteGaleria">Solo la cámara</option>
+              </select>
+            </px-campo>
+            <px-campo etiqueta="Autorización de uso" #ff3="pxCampo">
+              <select
+                [id]="ff3.idControl"
+                (change)="setFoto('autorizacionUso', $any(valorDe($event)))"
+              >
+                <option value="opcional" [selected]="form().autorizacionUso === 'opcional'">
+                  Opcional: la persona elige
+                </option>
+                <option value="requerida" [selected]="form().autorizacionUso === 'requerida'">
+                  Requerida
+                </option>
+              </select>
+            </px-campo>
+            @if (form().autorizacionUso === 'requerida') {
+              <px-aviso variante="advertencia">
+                Quien no quiera que su foto se use en redes no podrá participar de este reto. Úsalo
+                en retos pensados para difusión, y revisa el texto con alguien de lo legal.
+              </px-aviso>
+            }
+            <px-campo
+              etiqueta="Intentos"
+              ayuda="Cuántas veces puede volver a mandarla si se la rechazan. De 1 a 10."
+              [error]="errores()['intentosMax'] ?? null"
+              #ff4="pxCampo"
+            >
+              <input
+                [id]="ff4.idControl"
+                [attr.aria-describedby]="ff4.idDescripcion"
+                type="number"
+                min="1"
+                max="10"
+                [value]="form().intentosMax"
+                (input)="set('intentosMax', valorDe($event))"
+              />
+            </px-campo>
+            <fieldset class="flex flex-col gap-2">
+              <legend class="mb-1 font-semibold">Quiénes revisan</legend>
+              <p class="text-muted text-sm">
+                Además del dueño y los coorganizadores. Ven solo las fotos de este reto.
+              </p>
+              @for (m of revisores(); track m.id) {
+                <label class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    [checked]="form().responsables.includes(m.id)"
+                    (change)="toggleResponsable(m.id)"
+                  />
+                  {{ m.nombre }}
+                </label>
+              } @empty {
+                <p class="text-muted text-sm">Invita a alguien en Equipo para asignarlo.</p>
+              }
+              @if (errores()['responsables']; as e) {
+                <p class="text-danger text-sm" role="alert">{{ e }}</p>
+              }
+            </fieldset>
+          </pnl-seccion>
+        }
         @if (form().tipo === 'qr') {
           <pnl-seccion titulo="El QR">
             <fieldset class="flex flex-col gap-2">
@@ -358,7 +464,15 @@ function toIso(local: string): string | null {
                   <px-chip variante="puntos">{{ g }}</px-chip>
                 }
                 <span class="text-muted block text-sm">
-                  {{ reto.tipo === 'qr' ? (reto.lugar?.nombre ?? 'Sin lugar') : 'Otorgado' }}
+                  {{
+                    reto.tipo === 'qr'
+                      ? (reto.lugar?.nombre ?? 'Sin lugar')
+                      : reto.tipo === 'foto'
+                        ? 'Con foto'
+                        : reto.tipo === 'verificacion_ci'
+                          ? 'Verificación de carnet'
+                          : 'Otorgado'
+                  }}
                   @if (reto.disponibleDesde) {
                     · {{ reto.disponibleDesde | date: 'dd/MM HH:mm' }}–{{
                       reto.disponibleHasta | date: 'HH:mm'
@@ -436,6 +550,8 @@ export class RetosPage implements OnInit {
   protected readonly lugares = signal<readonly FilaContenido[]>([]);
   protected readonly sponsors = signal<readonly FilaContenido[]>([]);
   protected readonly grupos = signal<readonly GrupoPanel[]>([]);
+  /** HU-322: el equipo que puede revisar fotos (los miembros que aceptaron). */
+  protected readonly revisores = signal<readonly { id: string; nombre: string }[]>([]);
   private readonly gruposApi = inject(GruposApi);
   protected readonly editando = signal<'nuevo' | RetoPanel | null>(null);
   protected readonly form = signal<FormularioReto>(VACIO);
@@ -462,6 +578,21 @@ export class RetosPage implements OnInit {
     this.form.set({ ...this.form(), [campo]: valor } as FormularioReto);
   }
 
+  protected setFoto<K extends 'permiteGaleria' | 'autorizacionUso'>(
+    campo: K,
+    valor: FormularioReto[K],
+  ): void {
+    this.form.set({ ...this.form(), [campo]: valor });
+  }
+
+  protected toggleResponsable(id: string): void {
+    const actuales = this.form().responsables;
+    this.form.set({
+      ...this.form(),
+      responsables: actuales.includes(id) ? actuales.filter((r) => r !== id) : [...actuales, id],
+    });
+  }
+
   protected start(reto: RetoPanel | null): void {
     this.errores.set({});
     this.editando.set(reto ?? 'nuevo');
@@ -470,7 +601,7 @@ export class RetosPage implements OnInit {
         ? {
             nombre: reto.nombre,
             descripcion: reto.descripcion ?? '',
-            tipo: reto.tipo,
+            tipo: reto.tipo === 'verificacion_ci' ? 'otorgado' : reto.tipo,
             modoQr: reto.modoQr,
             rotacionSegundos: String(reto.rotacionSegundos),
             puntos: String(reto.puntos),
@@ -481,6 +612,11 @@ export class RetosPage implements OnInit {
             hasta: toLocal(reto.disponibleHasta),
             sponsorId: reto.sponsorId ?? '',
             grupoId: reto.grupoId ?? '',
+            instruccionFoto: reto.instruccionFoto ?? '',
+            permiteGaleria: reto.permiteGaleria ?? true,
+            autorizacionUso: reto.autorizacionUso ?? 'opcional',
+            intentosMax: String(reto.intentosMax ?? 3),
+            responsables: reto.responsables ?? [],
           }
         : VACIO,
     );
@@ -505,6 +641,15 @@ export class RetosPage implements OnInit {
       disponibleHasta: toIso(f.hasta),
       sponsorId: f.sponsorId || null,
       grupoId: f.grupoId || null,
+      ...(f.tipo === 'foto'
+        ? {
+            instruccionFoto: f.instruccionFoto.trim() || null,
+            permiteGaleria: f.permiteGaleria,
+            autorizacionUso: f.autorizacionUso,
+            intentosMax: Number(f.intentosMax),
+            responsables: f.responsables,
+          }
+        : {}),
     };
     this.guardando.set(true);
     this.errores.set({});
@@ -576,13 +721,19 @@ export class RetosPage implements OnInit {
   private async load(): Promise<void> {
     if (!this.eventoId()) return;
     try {
-      const [retos, lugares, sponsors, grupos] = await Promise.all([
+      const [retos, lugares, sponsors, grupos, miembros] = await Promise.all([
         this.api.listRetos(this.eventoId()),
         this.api.listContenido(this.eventoId(), 'lugares'),
         this.api.listContenido(this.eventoId(), 'sponsors'),
         this.gruposApi.list(this.eventoId()),
+        this.api.listMiembros(this.eventoId()).catch(() => []),
       ]);
       this.grupos.set(grupos);
+      this.revisores.set(
+        miembros
+          .filter((m) => m.estado === 'activo' && m.rol !== 'coorganizador')
+          .map((m) => ({ id: m.id, nombre: `${m.nombre ?? m.email} · ${NOMBRES_ROL[m.rol]}` })),
+      );
       this.retos.set(retos);
       this.lugares.set(lugares);
       this.sponsors.set(sponsors);
