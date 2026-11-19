@@ -257,9 +257,11 @@ export class CarnetsPage {
         this.ficha.set(hecho.ficha);
         this.corrigiendo.set(false);
         this.resultado.set(
-          hecho.puntos > 0
-            ? `Verificado ✓ · +${hecho.puntos} ${this.nombrePuntos()}`
-            : 'Verificado ✓',
+          hecho.yaGanoAntes
+            ? `Verificado ✓, sin ${this.nombrePuntos()}: ya los había ganado antes de que se deshiciera la verificación. Si corresponde devolvérselos, hazlo con un ajuste en Juego → Ajustes (dueño o coorganizador).`
+            : hecho.puntos > 0
+              ? `Verificado ✓ · +${hecho.puntos} ${this.nombrePuntos()}`
+              : 'Verificado ✓',
         );
       } catch (error) {
         if (error instanceof ErrorApi && error.code === 'CI_VERIFICADO_EN_OTRA_CUENTA') {

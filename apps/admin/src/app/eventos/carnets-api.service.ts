@@ -37,9 +37,9 @@ export class CarnetsApi {
   verify(
     asistenteId: string,
     ci: string | null,
-  ): Promise<{ ficha: FichaCarnet; puntos: number; saldo: number }> {
+  ): Promise<{ ficha: FichaCarnet; puntos: number; saldo: number; yaGanoAntes: boolean }> {
     return firstValueFrom(
-      this.http.post<{ ficha: FichaCarnet; puntos: number; saldo: number }>(
+      this.http.post<{ ficha: FichaCarnet; puntos: number; saldo: number; yaGanoAntes: boolean }>(
         `${BASE}/asistentes/${asistenteId}/carnet/verificar`,
         ci ? { ci } : {},
         conClave(),

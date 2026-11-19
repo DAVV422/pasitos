@@ -22,7 +22,7 @@ type Pestana = 'ajustar' | 'otorgar' | 'canjes';
 
 const RESULTADOS: Readonly<Record<ResultadoOtorgamiento['resultado'], string>> = {
   ok: 'Otorgado',
-  ya_completado: 'Ya lo tenía',
+  ya_completado: 'Ya lo ganó antes (aunque se haya anulado): si corresponde, usa un ajuste',
   tope: 'Sin cupo',
   sin_check_in: 'Sin check-in',
   no_encontrado: 'No encontrado',

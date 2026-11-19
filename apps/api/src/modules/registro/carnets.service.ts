@@ -125,7 +125,7 @@ export class CarnetsService {
     asistenteId: string,
     datos: { ci?: string | undefined },
     pedido: Pedido,
-  ): Promise<{ ficha: FichaCarnet; puntos: number; saldo: number }> {
+  ): Promise<{ ficha: FichaCarnet; puntos: number; saldo: number; yaGanoAntes: boolean }> {
     const choque: { otro?: { id: string; codigo: string; nombre: string; at: Date | null } } = {};
     try {
       return await withOrganizacion(this.db, contexto.organizacionId, (tx) =>
@@ -247,6 +247,9 @@ export class CarnetsService {
           return {
             ficha: await this.getFicha(tx, contexto, asistenteId),
             puntos: puntosGanados,
+            // Ya ganó los puntos antes de que se deshiciera: no se repiten (el cupo del reto ya se
+            // usó). Si corresponde, se compensa con un ajuste manual (HU-317).
+            yaGanoAntes: previa !== undefined,
             saldo,
           };
         }),

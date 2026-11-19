@@ -165,6 +165,7 @@ describe('Verificación de carnet (HU-321)', () => {
     expect(hecho.json()).toMatchObject({
       puntos: 30,
       saldo: 30,
+      yaGanoAntes: false,
       ficha: { verificacion: { por: 'Rita R.' } },
     });
     expect(await getSaldo(id)).toBe(30);
@@ -244,7 +245,7 @@ describe('Verificación de carnet (HU-321)', () => {
     // Desbloqueado: se puede verificar de nuevo, sin volver a sumar (el reto es una vez).
     const denuevo = await verificar(id, registrador);
     expect(denuevo.statusCode).toBe(200);
-    expect(denuevo.json()).toMatchObject({ puntos: 0, saldo: 0 });
+    expect(denuevo.json()).toMatchObject({ puntos: 0, saldo: 0, yaGanoAntes: true });
     const acciones = await base.sistema.db
       .select({ accion: bitacora.accion })
       .from(bitacora)
