@@ -54,7 +54,10 @@ export function isSignoValido(tipo: TipoMovimiento, puntos: number): boolean {
       return puntos <= 0;
     case 'vencimiento':
       return puntos < 0;
+    // Una anulación compensa exactamente lo que anula; la de un canje de 0 (HU-325) es de 0 y
+    // deja en el libro que ese canje se anuló.
     case 'anulacion':
+      return true;
     case 'ajuste':
       return puntos !== 0;
   }

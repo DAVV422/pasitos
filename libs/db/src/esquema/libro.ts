@@ -238,7 +238,8 @@ export const movimientos = pgTable(
         or (${t.tipo} = 'reto' and ${t.puntos} > 0)
         or (${t.tipo} = 'canje' and ${t.puntos} <= 0)
         or (${t.tipo} = 'vencimiento' and ${t.puntos} < 0)
-        or (${t.tipo} in ('anulacion', 'ajuste') and ${t.puntos} <> 0)`,
+        or (${t.tipo} = 'ajuste' and ${t.puntos} <> 0)
+        or ${t.tipo} = 'anulacion'`,
     ),
     check('movimientos_reto', sql`${t.tipo} <> 'reto' or ${t.retoId} is not null`),
     check('movimientos_canje', sql`${t.tipo} <> 'canje' or ${t.canjeId} is not null`),

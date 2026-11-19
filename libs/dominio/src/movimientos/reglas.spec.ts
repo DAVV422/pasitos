@@ -84,6 +84,7 @@ describe('isSignoValido', () => {
     ['ajuste', -5, true],
     ['ajuste', 0, false],
     ['anulacion', 5, true],
+    ['anulacion', 0, true],
     ['reto', 1.5, false],
   ] as const)('%s con %d puntos → %s', (tipo, puntos, esperado) => {
     expect(isSignoValido(tipo, puntos)).toBe(esperado);

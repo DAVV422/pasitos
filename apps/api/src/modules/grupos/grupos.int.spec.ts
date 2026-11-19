@@ -314,7 +314,7 @@ describe('Grupos, retos y premios exclusivos (HU-325)', () => {
     const otraVez = await cobrar([{ premioId, cantidad: 1 }]);
     expect((await confirmar(dentro, otraVez.json().qr)).json().code).toBe('MAXIMO_POR_PERSONA');
 
-    // Anular un canje de 0 devuelve el stock, sin una anulación de 0 en el libro.
+    // Anular un canje de 0 devuelve el stock y deja una anulación de 0 en el libro.
     const anular = await api.app.inject({
       method: 'POST',
       url: `/api/v1/canjes/${canje?.id ?? ''}/anular`,
@@ -334,9 +334,14 @@ describe('Grupos, retos y premios exclusivos (HU-325)', () => {
     expect(
       await base.sistema.db.$count(
         movimientos,
-        and(eq(movimientos.asistenteId, dentro.asistenteId), eq(movimientos.tipo, 'anulacion')),
+        and(
+          eq(movimientos.asistenteId, dentro.asistenteId),
+          eq(movimientos.tipo, 'anulacion'),
+          eq(movimientos.anulaMovimientoId, canje?.movimientoId ?? ''),
+          eq(movimientos.puntos, 0),
+        ),
       ),
-    ).toBe(0);
+    ).toBe(1);
   });
 
   it('un premio sin grupo no puede costar 0, ni por el API ni en la base', async () => {

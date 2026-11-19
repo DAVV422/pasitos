@@ -267,6 +267,13 @@
       "when": 1795050783535,
       "tag": "0037_carnet",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795057852201,
+      "tag": "0038_anulacion_de_cero",
+      "breakpoints": true
     }
   ]
 }

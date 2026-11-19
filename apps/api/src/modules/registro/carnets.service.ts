@@ -194,8 +194,8 @@ export class CarnetsService {
             });
           }
           // Los puntos del reto, con su tope, como cualquier reto otorgado por el equipo. Si ya los
-          // ganó (se deshizo y se vuelve a verificar), no se repiten: el reto es una vez por persona,
-          // también en el contrato.
+          // ganó (se deshizo y se vuelve a verificar), no se repiten: el reto es una vez por persona
+          // y el libro cuenta también la participación anulada.
           const [previa] = await tx
             .select({ id: participaciones.id })
             .from(participaciones)
