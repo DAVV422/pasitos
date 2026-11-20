@@ -19,6 +19,10 @@ const PERMITIDOS = [
   'pruebas/',
   // Los comandos de soporte (pnpm plataforma): actúan como la consola.
   'cli/',
+  // HU-405 y HU-406: lo público de los eventos *Público*, sin organización. Solo columnas de una
+  // lista explícita (nunca la fila entera), en un solo archivo.
+  'modules/publico/eventos-publicos.service.ts',
+  'modules/publico/publico.module.ts',
 ];
 
 function listArchivos(carpeta: string): string[] {

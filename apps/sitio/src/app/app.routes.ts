@@ -23,5 +23,11 @@ export const appRoutes: Route[] = [
     data: { tipo: 'privacidad' },
     component: DocumentoLegalPage,
   },
+  {
+    // HU-405: aparte del paquete inicial (el sitio tiene 80 KB).
+    path: 'eventos',
+    title: 'Eventos · Pasitos',
+    loadComponent: () => import('./eventos/eventos.page').then((m) => m.EventosPage),
+  },
   { path: '**', title: 'Página no encontrada · Pasitos', component: NoEncontradoPage },
 ];

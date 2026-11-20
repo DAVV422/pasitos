@@ -17,6 +17,7 @@ import { TEXTOS_LANDING } from './landing/textos';
       aria-label="Secciones"
       class="text-muted mx-auto flex max-w-5xl flex-wrap gap-x-5 gap-y-1 px-5 pt-3 text-sm"
     >
+      <a href="/eventos" class="hover:underline">Eventos</a>
       <a href="/#como-funciona" class="hover:underline">Cómo funciona</a>
       <a href="/#preguntas" class="hover:underline">Preguntas</a>
       <a href="/#contacto" class="hover:underline">Contacto</a>

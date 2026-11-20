@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createEmailPrueba, createIpPrueba } from './apoyo/base';
+import { createEmailPrueba, createIpPrueba, seedEventoPublico } from './apoyo/base';
 
 /**
  * El formulario de contacto de la landing (HU-410): se carga al llegar a la sección y el mensaje
@@ -24,4 +24,20 @@ test('dejar los datos en el formulario de contacto', async ({ page }) => {
   await formulario.getByRole('checkbox').check();
   await formulario.getByRole('button', { name: 'Enviar' }).click();
   await expect(page.getByTestId('contacto-enviado')).toHaveText('Gracias, te escribiremos pronto.');
+});
+
+test('la sección Eventos muestra los públicos y no los privados (HU-405)', async ({ page }) => {
+  const sufijo = Date.now();
+  const publico = `Encuentro público ${sufijo}`;
+  const privado = `Encuentro privado ${sufijo}`;
+  await seedEventoPublico(publico);
+  await seedEventoPublico(privado, 'privado');
+  await page.goto('/eventos?momento=proximos');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Eventos');
+  await expect(page.getByText(publico)).toBeVisible();
+  await expect(page.getByText(privado)).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Próximos' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
 });

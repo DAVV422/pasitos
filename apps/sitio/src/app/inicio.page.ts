@@ -25,7 +25,7 @@ const ICONOS_PASOS: readonly NombreIcono[] = ['scan', 'puntos', 'check'];
         <p class="text-muted text-lg">{{ t.portada.bajada }}</p>
         <div class="flex flex-wrap gap-3">
           <a pxBoton href="/#contacto">{{ t.portada.principal }}</a>
-          <a pxBoton="secundario" href="/#como-funciona">{{ t.portada.secundario }}</a>
+          <a pxBoton="secundario" href="/eventos">{{ t.portada.secundario }}</a>
         </div>
       </div>
       <div

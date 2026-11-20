@@ -10,7 +10,7 @@ export const TEXTOS_LANDING = {
     bajada:
       'Los asistentes ganan puntos por participar y los canjean por premios, desde el celular y sin descargar nada. Tú y tus sponsors saben, de verdad, cuánta gente participó.',
     principal: 'Quiero usar Pasitos en mi evento',
-    secundario: 'Cómo funciona',
+    secundario: 'Ver eventos',
   },
   problema: {
     titulo: 'Lo que pasa en muchos eventos',

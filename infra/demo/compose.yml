@@ -83,6 +83,8 @@ services:
       PORT: 4000
       # El SSR de Angular solo responde a los hosts conocidos (protección contra SSRF).
       NG_ALLOWED_HOSTS: pasitos.com.bo,www.pasitos.com.bo
+      # HU-405: la sección Eventos pide los datos al API por la red interna.
+      API_INTERNO_URL: http://api:3000
     ports:
       - '127.0.0.1:4000:4000'
 
