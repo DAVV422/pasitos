@@ -11,6 +11,8 @@ export const TRABAJO_POR_OUTBOX: Readonly<Record<string, NombreTrabajoStellar>> 
   'evento.publicado': 'deploy-contrato',
   'reto.cambiado': 'sync-retos',
   'pantalla.conectada': 'register-pantallas',
+  // HU-401: al cerrar, el último lote y el cierre del contrato.
+  'evento.cerrado': 'close-contrato',
 };
 
 export type EncolarTrabajo = (trabajo: TrabajoStellar) => Promise<unknown>;

@@ -15,6 +15,7 @@ function estadoDe(cambios: Partial<EstadoApp['evento']> = {}, asistente = 'prese
       ci: { cargado: false, verificado: false },
     },
     saldo: 80,
+    vencidos: 0,
     evento: {
       id: 'e1',
       nombre: 'Foro de prueba',
@@ -24,6 +25,7 @@ function estadoDe(cambios: Partial<EstadoApp['evento']> = {}, asistente = 'prese
       nombrePuntos: 'puntos',
       requiereCheckIn: true,
       zonaHoraria: 'America/La_Paz',
+      cierreProgramadoAt: null,
       ...cambios,
     },
     retos: [
@@ -159,5 +161,13 @@ describe('InicioPage', () => {
     expect(html.textContent).toContain('Bienvenida al stand');
     expect(html.textContent).not.toContain('Charla de apertura');
     expect(html.querySelector('a[href="/historial"]')).not.toBeNull();
+    expect(html.querySelector('[data-testid="vencidos"]')).toBeNull();
+  });
+
+  it('cerrado con saldo vencido (HU-401): cuánto venció al cierre', async () => {
+    const html = await render({ ...estadoDe({ estado: 'cerrado' }), saldo: 0, vencidos: 120 });
+    expect(html.querySelector('[data-testid="vencidos"]')?.textContent).toContain(
+      'Tus 120 puntos vencieron al cierre.',
+    );
   });
 });

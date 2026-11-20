@@ -39,6 +39,9 @@ import { BitacoraService, diff } from '../bitacora/bitacora.service';
 import type { ArchivosService } from '../archivos/archivos.service';
 import { toSlug } from '../plataforma/slug';
 
+/** Cerrar tiene su propio servicio (HU-401: `CierreService`). */
+type TransicionGenerica = Exclude<TransicionEvento, 'cerrar'>;
+
 export interface DatosCrearEvento {
   readonly nombre: string;
   readonly inicioAt: string;
@@ -295,7 +298,7 @@ export class EventosService {
    * Publicar, abrir, pausar o reanudar (HU-205 §3). La fila del evento queda bloqueada: dos
    * clics no publican dos veces (el segundo recibe TRANSICION_NO_PERMITIDA).
    */
-  async transition(contexto: ContextoEvento, transicion: TransicionEvento) {
+  async transition(contexto: ContextoEvento, transicion: TransicionGenerica) {
     return withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
       const [evento] = await tx
         .select()
@@ -586,6 +589,12 @@ export class EventosService {
         mapaEstaticoArchivoId: evento.mapaEstaticoArchivoId,
       },
       miRol: rol,
+      // HU-401: el cierre (el detalle, con quién cerró y la transacción, en GET …/cierre).
+      cierre: {
+        cerradoAt: evento.cerradoAt,
+        estado: evento.cierreEstado,
+        programadoAt: evento.cierreProgramadoAt,
+      },
       stellar: {
         contratoId: evento.contratoId,
         enlace:

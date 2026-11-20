@@ -221,6 +221,11 @@ export const CATALOGO_ERRORES = {
     title: 'Todavía no está en Stellar',
     mensaje: 'Todavía estamos registrando el evento en Stellar. Prueba en un minuto.',
   },
+  CONFIRMACION_INVALIDA: {
+    status: 422,
+    title: 'Confirmación inválida',
+    mensaje: 'Escribe CERRAR para confirmar.',
+  },
   TRANSICION_NO_PERMITIDA: {
     status: 409,
     title: 'Cambio de estado no permitido',

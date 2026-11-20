@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { AvisoComponent, EncabezadoComponent } from '@pasitos/ui';
 import { filter, map } from 'rxjs';
-import { formatHace } from './formato';
+import { formatHace, formatHora } from './formato';
 import { NavegacionComponent } from './navegacion.component';
 import { PreferenciasService } from './preferencias';
 import { SesionAsistente } from './sesion-asistente';
@@ -25,6 +25,14 @@ const SIN_BARRA = /^\/(acceso|sin-acceso|anulado|sin-conexion)(\/|$)/;
       @if (sesion.estado()?.evento?.estado === 'pausado') {
         <div class="sticky top-0 z-10 px-5 pt-2">
           <px-aviso variante="advertencia">Pausamos un momento. Tus puntos están seguros.</px-aviso>
+        </div>
+      }
+      @if (cierreProximo(); as hora) {
+        <div class="sticky top-0 z-10 px-5 pt-2">
+          <px-aviso variante="advertencia" data-testid="cierre-proximo"
+            >Los {{ sesion.estado()?.evento?.nombrePuntos }} vencen a las {{ hora }}.
+            ¡Canjéalos!</px-aviso
+          >
         </div>
       }
       @if (sesion.sinConexion()) {
@@ -73,6 +81,18 @@ export class AppComponent {
     if (estado === 'cerrado') return 'El evento terminó';
     if (estado !== 'en_curso') return 'El evento todavía no empezó';
     return null;
+  });
+
+  /**
+   * HU-401: *"Los pasos vencen a las 19:00. ¡Canjéalos!"*, desde 30 minutos antes del cierre
+   * programado y mientras el evento siga abierto.
+   */
+  protected readonly cierreProximo = computed(() => {
+    const evento = this.sesion.estado()?.evento;
+    const at = evento?.cierreProgramadoAt;
+    if (!evento || !at || !['en_curso', 'pausado'].includes(evento.estado)) return null;
+    const falta = Date.parse(at) - this.ahora();
+    return falta <= 30 * 60_000 && falta > -60_000 ? formatHora(at, evento.zonaHoraria) : null;
   });
 
   protected readonly hace = computed(() => {

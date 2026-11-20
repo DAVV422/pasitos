@@ -61,6 +61,12 @@ import { SesionAsistente } from '../sesion-asistente';
           @if (e.evento.estado === 'cerrado') {
             <!-- A18 -->
             <px-aviso variante="ok">{{ e.evento.nombre }} terminó. ¡Gracias por quedarte!</px-aviso>
+            @if (e.vencidos > 0) {
+              <!-- HU-401 §6 -->
+              <p class="text-muted" data-testid="vencidos">
+                Tus {{ e.vencidos }} {{ e.evento.nombrePuntos }} vencieron al cierre.
+              </p>
+            }
           }
         }
 

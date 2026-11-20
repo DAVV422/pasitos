@@ -108,6 +108,13 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/fotos.page').then((m) => m.FotosPage),
       },
       {
+        // HU-401: solo el dueño cierra.
+        path: 'cierre',
+        canActivate: [canDoActivate('evento.close')],
+        title: 'Cerrar el evento · Pasitos',
+        loadComponent: () => import('./eventos/cierre.page').then((m) => m.CierrePage),
+      },
+      {
         path: 'carnets',
         canActivate: [canDoActivate('ci.verify')],
         title: 'Verificar carnet · Pasitos',

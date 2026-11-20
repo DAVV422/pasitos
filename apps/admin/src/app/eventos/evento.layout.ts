@@ -11,6 +11,7 @@ import {
 import { RouterOutlet, type CanActivateFn } from '@angular/router';
 import { canDo, type AccionEvento } from '@pasitos/dominio';
 import { ContextoEventoService, LayoutComponent, type ItemMenu } from '@pasitos/panel';
+import { AvisoComponent } from '@pasitos/ui';
 import { AlertasAbiertasService } from './alertas-api.service';
 import { FotosPendientesService } from './fotos-api.service';
 import { EventosApi, type EventoDetalle } from './eventos-api.service';
@@ -54,6 +55,8 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: 'configuracion', texto: 'Configuración', grupo: 'Evento', accion: 'evento.update' },
   { ruta: 'bitacora', texto: 'Bitácora', grupo: 'Evento', accion: 'bitacora.read' },
   { ruta: 'alertas', texto: 'Alertas', grupo: 'Evento', accion: 'bitacora.read' },
+  // HU-401: al final del grupo, solo para el dueño.
+  { ruta: 'cierre', texto: 'Cerrar el evento', grupo: 'Evento', accion: 'evento.close' },
   { ruta: 'lugares', texto: 'Lugares', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'agenda', texto: 'Agenda', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'sponsors', texto: 'Sponsors', grupo: 'Contenido', accion: 'contenido.read' },
@@ -80,16 +83,33 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: 'equipo', texto: 'Equipo', grupo: 'Personas', accion: 'equipo.read' },
 ];
 
+/** Lo que solo sirve con el evento abierto: con el evento cerrado, sale del menú. */
+const SOLO_CON_EVENTO_ABIERTO: ReadonlySet<string> = new Set([
+  'cierre',
+  'puerta',
+  'ajustes',
+  'fotos/revisar',
+  'mis-pantallas',
+  'carnets',
+  'qr-registro',
+]);
+
 @Component({
   selector: 'adm-evento-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LayoutComponent, RouterOutlet],
+  imports: [AvisoComponent, LayoutComponent, RouterOutlet],
   template: `
     <pnl-layout
       [contexto]="actual.evento()?.nombre ?? 'Evento'"
       [volver]="{ ruta: '/eventos', texto: 'Mis eventos' }"
       [menu]="menu()"
     >
+      @if (actual.evento()?.estado === 'cerrado') {
+        <!-- HU-401 §5.1: el resto del panel queda en solo lectura. -->
+        <px-aviso variante="info" data-testid="evento-cerrado"
+          >El evento está cerrado: se puede consultar, pero ya no cambia.</px-aviso
+        >
+      }
       <router-outlet />
     </pnl-layout>
   `,
@@ -118,9 +138,12 @@ export class EventoLayout {
     }
     const abiertas = this.alertas.abiertas();
     const fotos = this.fotos.pendientes();
+    const cerrado = evento.estado === 'cerrado';
     return MENU_EVENTO.filter(
       (item) =>
         canDo(evento.miRol, item.accion) &&
+        // Cerrado, lo que solo sirve para operar el día del evento ya no aparece (HU-401 §5.1).
+        !(cerrado && SOLO_CON_EVENTO_ABIERTO.has(item.ruta)) &&
         (!item.ruta.startsWith('fotos') || fotos?.puedeRevisar === true),
     ).map((item): ItemMenu => ({
       texto: item.texto,

@@ -10,6 +10,8 @@ export const ACCIONES_BITACORA = {
   'evento.open': 'Abrió el evento',
   'evento.pause': 'Pausó el evento',
   'evento.resume': 'Reanudó el evento',
+  'evento.close': 'Cerró el evento',
+  'evento.cierre_programar': 'Programó el cierre del evento',
   'evento.ubicacion.update': 'Cambió la ubicación',
   'evento.intervalo_anclaje.update': 'Cambió cada cuánto se ancla en Stellar',
   // Contenido

@@ -43,6 +43,7 @@ function buildEvento(miRol: RolEvento): EventoDetalle {
     ubicacion: { nombre: null, direccion: null, lat: null, lng: null, mapaEstaticoArchivoId: null },
     miRol,
     stellar: { contratoId: null, enlace: null },
+    cierre: { cerradoAt: null, estado: null, programadoAt: null },
     contadores: { retos: 0, pantallas: 0, pantallasConectadas: 0, mesas: 0, invitados: 0 },
   };
 }
@@ -75,6 +76,7 @@ describe('Menú del evento según el rol (HU-204 §5)', () => {
         'Configuración',
         'Bitácora',
         'Alertas',
+        'Cerrar el evento',
         'Lugares',
         'Agenda',
         'Sponsors',

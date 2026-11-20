@@ -49,6 +49,8 @@ const esquemaConfig = z.object({
   CORREOS_DIR: z.string().min(1).default('.correos'),
   CORREO_REMITENTE: z.string().min(3).default('Pasitos <hola@example.com>'),
   CORREO_SOPORTE: z.string().email().default('soporte@example.com'),
+  // HU-401: los enlaces de los correos que arma el trabajador (el aviso del cierre automático).
+  PUBLIC_URL: z.string().url().default('http://localhost:8080'),
   CORREO_TOPE_DIARIO: z.coerce.number().int().min(1).default(80),
   CORREO_RESERVA_SEGURIDAD: z.coerce.number().int().min(0).default(10),
   CORREO_ENVIOS_POR_SEGUNDO: z.coerce.number().min(0).default(2),

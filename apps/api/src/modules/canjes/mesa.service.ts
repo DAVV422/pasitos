@@ -165,7 +165,9 @@ export class MesaService {
             detail:
               evento?.estado === 'pausado'
                 ? 'Pausamos un momento: los canjes vuelven al reanudar.'
-                : 'El evento no está en curso.',
+                : evento?.estado === 'cerrado'
+                  ? 'El evento terminó.'
+                  : 'El evento no está en curso.',
           });
         }
         const ordenados = [...items].sort((a, b) => (a.premioId < b.premioId ? -1 : 1));

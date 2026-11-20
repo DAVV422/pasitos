@@ -170,6 +170,7 @@ export class ContratoService {
       if (!evento.evidenciaSha256) {
         await this.evidencia?.saveEvidencia(eventoId);
       }
+      await this.repositorio.setCierreEstado(eventoId, 'listo');
       return;
     }
     for (let paso = 0; ; paso++) {
@@ -178,6 +179,8 @@ export class ContratoService {
       }
       const resultado = await this.sellador.processEvento(eventoId, { forzar: true, cierre: true });
       if (resultado === 'detenido') {
+        // HU-401 §4: no se arregla reintentando; el panel lo dice y Pasitos lo resuelve a mano.
+        await this.repositorio.setCierreEstado(eventoId, 'fallido');
         throw new Error('Hay un lote rechazado: el contrato no se puede cerrar hasta resolverlo');
       }
       const pendientes = await this.repositorio.listLotesPendientes(eventoId);
@@ -208,6 +211,7 @@ export class ContratoService {
       await this.extendContrato(eventoId);
     }
     await this.evidencia?.saveEvidencia(eventoId);
+    await this.repositorio.setCierreEstado(eventoId, 'listo');
   }
 
   /**

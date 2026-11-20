@@ -11,6 +11,9 @@ import type { ContextoSesion } from '../auth/sesiones.service';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
 import { EventosService } from './eventos.service';
 
+/** Cerrar tiene su propio servicio (HU-401: `CierreService`). */
+type TransicionGenerica = Exclude<TransicionEvento, 'cerrar'>;
+
 /** Eventos del panel (HU-205, API §4.1). */
 @Controller()
 export class EventosController {
@@ -113,7 +116,7 @@ export class EventosController {
     return this.transition(contexto, 'reanudar');
   }
 
-  private transition(contexto: ContextoEvento, transicion: TransicionEvento) {
+  private transition(contexto: ContextoEvento, transicion: TransicionGenerica) {
     return this.eventos.transition(contexto, transicion);
   }
 }

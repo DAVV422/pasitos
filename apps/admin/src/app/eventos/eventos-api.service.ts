@@ -33,6 +33,28 @@ export interface ReglasEvento {
   readonly topeAjuste: number;
 }
 
+/** HU-401: la tarjeta del cierre en el Resumen (`GET /eventos/:id/cierre`). */
+export interface EstadoCierre {
+  readonly estado: string;
+  readonly cerradoAt: string | null;
+  /** `null`: lo cerró Pasitos (programado o automático). */
+  readonly cerradoPor: string | null;
+  readonly cierreEstado: 'sellando' | 'listo' | 'fallido' | null;
+  readonly programadoAt: string | null;
+  readonly automaticoAt: string;
+  readonly contrato: string | null;
+}
+
+/** HU-401: lo que va a pasar al cerrar. */
+export interface VistaPreviaCierre {
+  readonly estado: string;
+  readonly personasConSaldo: number;
+  readonly puntosSinUsar: number;
+  readonly cobrosPendientes: number;
+  readonly programadoAt: string | null;
+  readonly automaticoAt: string;
+}
+
 export interface EventoDetalle {
   readonly id: string;
   readonly organizacionId: string;
@@ -66,6 +88,12 @@ export interface EventoDetalle {
   };
   readonly miRol: RolEvento;
   readonly stellar: { readonly contratoId: string | null; readonly enlace: string | null };
+  /** HU-401. */
+  readonly cierre: {
+    readonly cerradoAt: string | null;
+    readonly estado: 'sellando' | 'listo' | 'fallido' | null;
+    readonly programadoAt: string | null;
+  };
   readonly contadores: {
     readonly retos: number;
     readonly pantallas: number;
@@ -583,6 +611,38 @@ export class EventosApi {
 
   getListaChequeo(id: string): Promise<ListaChequeo> {
     return firstValueFrom(this.http.get<ListaChequeo>(`${BASE}/eventos/${id}/lista-de-chequeo`));
+  }
+
+  getCierre(id: string): Promise<EstadoCierre> {
+    return firstValueFrom(this.http.get<EstadoCierre>(`${BASE}/eventos/${id}/cierre`));
+  }
+
+  getVistaPreviaCierre(id: string): Promise<VistaPreviaCierre> {
+    return firstValueFrom(
+      this.http.get<VistaPreviaCierre>(`${BASE}/eventos/${id}/cierre/vista-previa`),
+    );
+  }
+
+  /** Cerrar escribiendo CERRAR (HU-401). No se deshace. */
+  close(
+    id: string,
+    confirmacion: string,
+  ): Promise<{ vencimientos: number; puntosVencidos: number; cobrosCancelados: number }> {
+    return firstValueFrom(
+      this.http.post<{ vencimientos: number; puntosVencidos: number; cobrosCancelados: number }>(
+        `${BASE}/eventos/${id}/cerrar`,
+        { confirmacion },
+      ),
+    );
+  }
+
+  /** Programar el cierre a una hora, o quitarlo (`null`). */
+  scheduleCierre(id: string, at: string | null): Promise<{ programadoAt: string | null }> {
+    return firstValueFrom(
+      this.http.put<{ programadoAt: string | null }>(`${BASE}/eventos/${id}/cierre/programado`, {
+        at,
+      }),
+    );
   }
 
   transition(id: string, transicion: TransicionPanel): Promise<EventoDetalle> {

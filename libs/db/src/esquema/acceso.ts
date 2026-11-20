@@ -52,7 +52,7 @@ export const invitaciones = pgTable(
   (t) => [
     check(
       'invitaciones_estado',
-      sql`${t.estado} in ('creada', 'enviada', 'rebotada', 'usada', 'revocada')`,
+      sql`${t.estado} in ('creada', 'enviada', 'rebotada', 'usada', 'revocada', 'vencida')`,
     ),
     // Una sola invitación no revocada por asistente.
     uniqueIndex('invitaciones_vigente')

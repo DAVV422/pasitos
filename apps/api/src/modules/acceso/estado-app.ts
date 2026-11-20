@@ -38,6 +38,8 @@ export interface EstadoApp {
     readonly ci: { readonly cargado: boolean; readonly verificado: boolean };
   };
   readonly saldo: number;
+  /** HU-401: lo que venció al cierre (*"Tus 120 pasos vencieron al cierre"*). */
+  readonly vencidos: number;
   readonly evento: {
     readonly id: string;
     readonly nombre: string;
@@ -47,6 +49,8 @@ export interface EstadoApp {
     readonly nombrePuntos: string;
     readonly requiereCheckIn: boolean;
     readonly zonaHoraria: string;
+    /** HU-401: el cierre programado, para el aviso *"Los puntos vencen a las 19:00"*. */
+    readonly cierreProgramadoAt: string | null;
   };
   readonly retos: readonly EstadoRetoApp[];
   readonly premios: readonly StockPremioApp[];
@@ -123,6 +127,9 @@ export async function getEstadoApp(
       nombrePuntos: eventos.nombrePuntos,
       requiereCheckIn: eventos.retosRequierenCheckIn,
       zonaHoraria: eventos.zonaHoraria,
+      cierreProgramadoAt: eventos.cierreProgramadoAt,
+      vencidos: sql<number>`(select coalesce(-sum(${movimientos.puntos}), 0)::int from ${movimientos}
+        where ${movimientos.asistenteId} = ${asistentes.id} and ${movimientos.tipo} = 'vencimiento')`,
       ciCargado: sql<boolean>`${asistentes.ciCifrado} is not null`,
       ciVerificado: sql<boolean>`${asistentes.ciVerificadoAt} is not null`,
     })
@@ -230,6 +237,7 @@ export async function getEstadoApp(
       ci: { cargado: fila.ciCargado, verificado: fila.ciVerificado },
     },
     saldo: fila.saldo ?? 0,
+    vencidos: Number(fila.vencidos ?? 0),
     evento: {
       id: fila.eventoId,
       nombre: fila.evento,
@@ -239,6 +247,7 @@ export async function getEstadoApp(
       nombrePuntos: fila.nombrePuntos,
       requiereCheckIn: fila.requiereCheckIn,
       zonaHoraria: fila.zonaHoraria,
+      cierreProgramadoAt: fila.cierreProgramadoAt?.toISOString() ?? null,
     },
     retos: filasRetos.map((reto) => {
       const calculado = getEstadoReto(

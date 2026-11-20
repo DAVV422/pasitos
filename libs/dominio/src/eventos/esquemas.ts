@@ -157,3 +157,9 @@ export type RecursoContenido = keyof typeof ESQUEMAS_CONTENIDO;
 export const RECURSOS_CONTENIDO = Object.keys(ESQUEMAS_CONTENIDO) as RecursoContenido[];
 
 export const esquemaOrden = z.object({ ids: z.array(z.uuid()).min(1).max(500) });
+
+/** `POST /eventos/:eventoId/cerrar` (HU-401 §2). La palabra se revisa con `isConfirmacionCierre`. */
+export const esquemaCerrarEvento = z.object({ confirmacion: z.string().max(20) });
+
+/** `PUT /eventos/:eventoId/cierre/programado` (HU-401 §5): `null` lo quita. */
+export const esquemaProgramarCierre = z.object({ at: z.iso.datetime({ offset: true }).nullable() });

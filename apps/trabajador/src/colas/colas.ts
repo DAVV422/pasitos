@@ -1,3 +1,4 @@
+import type { CierresEventosService } from '../eventos/cierres.service';
 import { Logger } from '@nestjs/common';
 import type { Pool } from 'pg';
 import type { PgBoss } from 'pg-boss';
@@ -21,6 +22,7 @@ export const COLA_STELLAR = 'stellar';
 export const COLA_SALDO = 'check-saldo-operador';
 export const COLA_CORREOS = 'send-correos';
 export const COLA_APERTURA = 'open-eventos';
+export const COLA_CIERRES = 'cerrar-eventos';
 export const COLA_PURGA_ARCHIVOS = 'purge-archivos';
 export const COLA_PURGA_OUTBOX = 'purge-outbox';
 export const COLA_BORRADO_DISPOSITIVOS = 'borrar-dispositivos';
@@ -106,6 +108,7 @@ export interface DependenciasColas {
   readonly costo: CostoRedService;
   readonly envios: EnviosCorreoService;
   readonly apertura: AperturaEventosService;
+  readonly cierres: CierresEventosService;
   readonly purga: PurgaArchivosService;
   readonly borrado: BorradoDispositivosService;
   readonly alertasDiferidas: AlertasDiferidasService;
@@ -124,6 +127,7 @@ export async function startColas({
   costo,
   envios,
   apertura,
+  cierres,
   purga,
   borrado,
   alertasDiferidas,
@@ -138,6 +142,7 @@ export async function startColas({
   await boss.createQueue(COLA_SALDO);
   await boss.createQueue(COLA_CORREOS);
   await boss.createQueue(COLA_APERTURA);
+  await boss.createQueue(COLA_CIERRES);
   await boss.createQueue(COLA_PURGA_ARCHIVOS);
   await boss.createQueue(COLA_PURGA_OUTBOX);
   await boss.createQueue(COLA_BORRADO_DISPOSITIVOS);
@@ -178,6 +183,18 @@ export async function startColas({
     const { abiertos } = await apertura.openEventos();
     if (abiertos.length > 0) {
       logger.log({ eventos: abiertos }, 'Eventos abiertos a su hora');
+    }
+  });
+
+  // HU-401 §5: el aviso de 30 minutos, el cierre programado y el automático.
+  await boss.schedule(COLA_CIERRES, '* * * * *');
+  await boss.work(COLA_CIERRES, { localConcurrency: 1 }, async () => {
+    const resultado = await withCandado(pool, 'cerrar-eventos', () => cierres.run());
+    if (
+      resultado &&
+      (resultado.cerrados.length > 0 || resultado.avisos > 0 || resultado.correos > 0)
+    ) {
+      logger.log(resultado, 'Cierres de eventos');
     }
   });
 

@@ -29,6 +29,8 @@ const AVISOS = [
   'evento.pausado',
   'evento.reanudado',
   'evento.cerrado',
+  // HU-401: el aviso de 30 minutos antes del cierre programado.
+  'evento.cierre_proximo',
   'aviso.publicado',
   'contenido.actualizado',
 ] as const;
@@ -184,6 +186,7 @@ export class SesionAsistente {
       'evento.pausado',
       'evento.reanudado',
       'evento.cerrado',
+      'evento.cierre_proximo',
       'reiniciar',
     ]) {
       conexion.on(tipo, () => void this.refresh());

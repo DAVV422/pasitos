@@ -132,6 +132,19 @@ export const CORREOS = {
     boton: { texto: 'Entrar a la consola', enlace: '{enlace}' },
     pie: 'Te llega este correo porque te dieron acceso a la consola de Pasitos.',
   },
+  // ── Cierre del evento (HU-401) ────────────────────────────────────────────
+  cierre_automatico: {
+    prioridad: 2,
+    asunto: '{evento} se cierra solo en 2 horas',
+    parrafos: [
+      'Hola, {nombre}.',
+      '**{evento}** terminó el {fechaFin} y todavía no lo cerraste. Para que los puntos venzan y se genere el reporte, lo vamos a cerrar automáticamente a las **{hora}**.',
+      'Si quieres cerrarlo antes, o revisar algo primero, entra al panel.',
+    ],
+    boton: { texto: 'Ir al evento', enlace: '{enlace}' },
+    pie: 'Te llega este correo porque eres el dueño de {evento}.',
+  },
+
   invitacion_equipo: {
     prioridad: 2,
     asunto: '{quienInvita} te invitó al equipo de {evento}',

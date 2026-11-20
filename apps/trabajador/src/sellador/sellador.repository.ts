@@ -120,6 +120,24 @@ export class SelladorRepository {
       .where(eq(eventos.id, eventoId));
   }
 
+  /**
+   * HU-401 §4: cómo va el cierre en Stellar, para la tarjeta del Resumen. Al terminar, el panel se
+   * entera por el canal en vivo (`evento.sellado`).
+   */
+  async setCierreEstado(eventoId: string, estado: 'listo' | 'fallido'): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.update(eventos).set({ cierreEstado: estado }).where(eq(eventos.id, eventoId));
+      if (estado === 'listo') {
+        await tx.insert(outbox).values({
+          id: uuidv7(),
+          tipo: 'evento.sellado',
+          eventoId,
+          payload: { eventoId },
+        });
+      }
+    });
+  }
+
   /** Lotes confirmados del evento, en orden (verificación, HU-105 §3). */
   listLotesConfirmados(eventoId: string): Promise<FilaLote[]> {
     return this.db

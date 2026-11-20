@@ -1,8 +1,8 @@
 import * as z from 'zod';
 
 /**
- * Ciclo de vida del evento (HU-205 §3, Modelo §11.1). Volver a borrador no existe; cerrar llega con
- * la fase 4.
+ * Ciclo de vida del evento (HU-205 §3, Modelo §11.1). Volver a borrador no existe; cerrar
+ * (HU-401) no se deshace.
  */
 export const ESTADOS_EVENTO = [
   'borrador',
@@ -15,15 +15,37 @@ export const ESTADOS_EVENTO = [
 export type EstadoEvento = (typeof ESTADOS_EVENTO)[number];
 
 export const TRANSICIONES_EVENTO = {
-  publicar: { de: 'borrador', a: 'publicado' },
-  abrir: { de: 'publicado', a: 'en_curso' },
-  pausar: { de: 'en_curso', a: 'pausado' },
-  reanudar: { de: 'pausado', a: 'en_curso' },
-} as const satisfies Record<string, { de: EstadoEvento; a: EstadoEvento }>;
+  publicar: { de: ['borrador'], a: 'publicado' },
+  abrir: { de: ['publicado'], a: 'en_curso' },
+  pausar: { de: ['en_curso'], a: 'pausado' },
+  reanudar: { de: ['pausado'], a: 'en_curso' },
+  // HU-401: también un evento publicado que nunca se abrió (si no, quedaría publicado para siempre).
+  cerrar: { de: ['publicado', 'en_curso', 'pausado'], a: 'cerrado' },
+} as const satisfies Record<string, { de: readonly EstadoEvento[]; a: EstadoEvento }>;
 export type TransicionEvento = keyof typeof TRANSICIONES_EVENTO;
 
 export function canTransicion(estado: string, transicion: TransicionEvento): boolean {
-  return TRANSICIONES_EVENTO[transicion].de === estado;
+  return (TRANSICIONES_EVENTO[transicion].de as readonly string[]).includes(estado);
+}
+
+/** La palabra que hay que escribir para cerrar (HU-401 §2): sin importar mayúsculas ni espacios. */
+export const CONFIRMACION_CIERRE = 'CERRAR';
+
+export function isConfirmacionCierre(texto: string): boolean {
+  return texto.trim().toUpperCase() === CONFIRMACION_CIERRE;
+}
+
+/** HU-401 §5: el aviso a los asistentes, antes del cierre programado. */
+export const AVISO_CIERRE_MIN = 30;
+/** HU-401 §5: si nadie lo cerró, se cierra solo a las 24 h del fin, con un correo 2 h antes. */
+export const CIERRE_AUTOMATICO_HORAS = 24;
+export const AVISO_CIERRE_AUTOMATICO_HORAS = 2;
+/** HU-401 §5: el cierre programado, entre ahora + 15 minutos y el fin + 24 h. */
+export const CIERRE_PROGRAMADO_MIN_MIN = 15;
+
+/** Cuándo se cierra solo un evento abierto que nadie cerró ni programó. */
+export function getCierreAutomatico(finAt: Date): Date {
+  return new Date(finAt.getTime() + CIERRE_AUTOMATICO_HORAS * 3_600_000);
 }
 
 export const NOMBRES_ESTADO_EVENTO: Readonly<Record<EstadoEvento, string>> = {

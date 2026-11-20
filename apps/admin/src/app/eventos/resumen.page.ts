@@ -22,7 +22,12 @@ import {
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
-import { EventosApi, type ListaChequeo, type TransicionPanel } from './eventos-api.service';
+import {
+  EventosApi,
+  type EstadoCierre,
+  type ListaChequeo,
+  type TransicionPanel,
+} from './eventos-api.service';
 
 const CONFIRMACIONES: Readonly<Record<TransicionPanel, string>> = {
   publicar:
@@ -180,6 +185,43 @@ const BOTON_POR_ESTADO: Readonly<Record<string, { transicion: TransicionPanel; t
         }
       </section>
 
+      @if (cierre(); as c) {
+        <!-- HU-401 §5.1: cómo va el cierre. -->
+        <px-tarjeta data-testid="tarjeta-cierre">
+          <h2 class="mb-2 text-xl font-bold">Cierre</h2>
+          <p>
+            Cerrado el {{ c.cerradoAt | date: 'dd/MM/yyyy' }} a las
+            {{ c.cerradoAt | date: 'HH:mm' }}
+            {{ c.cerradoPor ? 'por ' + c.cerradoPor : 'por Pasitos (automático)' }}.
+          </p>
+          @switch (c.cierreEstado) {
+            @case ('listo') {
+              <p class="text-success">Cierre registrado en Stellar ✓</p>
+              @if (c.contrato; as enlace) {
+                <a class="underline" [href]="enlace" target="_blank" rel="noopener"
+                  >Ver el contrato en stellar.expert</a
+                >
+              }
+            }
+            @case ('fallido') {
+              <px-aviso variante="peligro"
+                >No pudimos registrar el cierre en Stellar. Ya avisamos al equipo de
+                Pasitos.</px-aviso
+              >
+            }
+            @default {
+              <p>Registrando el cierre en Stellar…</p>
+            }
+          }
+          <p class="text-muted mt-2 text-sm">El reporte del evento llega en una próxima versión.</p>
+        </px-tarjeta>
+      } @else if (evento.cierre.programadoAt) {
+        <px-aviso variante="info" data-testid="cierre-programado"
+          >El evento se cierra el
+          {{ evento.cierre.programadoAt | date: 'dd/MM/yyyy HH:mm' }}.</px-aviso
+        >
+      }
+
       <px-tarjeta>
         <h2 class="mb-2 text-xl font-bold">Stellar</h2>
         @if (evento.stellar.contratoId) {
@@ -220,16 +262,20 @@ export class ResumenPage implements OnInit, OnDestroy {
   protected readonly listos = computed(
     () => this.lista()?.items.filter((item) => item.ok).length ?? 0,
   );
+  protected readonly cierre = signal<EstadoCierre | null>(null);
   private sondeo: ReturnType<typeof setInterval> | undefined;
 
   ngOnInit(): void {
     void this.loadLista();
     // Mientras se registra en Stellar, se vuelve a mirar cada 10 s.
+    void this.loadCierre();
     this.sondeo = setInterval(() => {
       const evento = this.actual.evento();
       if (evento && evento.estado !== 'borrador' && !evento.stellar.contratoId) {
         void this.actual.load(evento.id);
       }
+      // HU-401: mientras se registra el cierre en Stellar.
+      if (this.cierre()?.cierreEstado === 'sellando') void this.loadCierre();
     }, 10_000);
   }
 
@@ -287,6 +333,13 @@ export class ResumenPage implements OnInit, OnDestroy {
       });
     } finally {
       this.enviando.set(false);
+    }
+  }
+
+  private async loadCierre(): Promise<void> {
+    const evento = this.actual.evento();
+    if (evento?.estado === 'cerrado') {
+      this.cierre.set(await this.api.getCierre(evento.id).catch(() => null));
     }
   }
 

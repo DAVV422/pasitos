@@ -34,6 +34,7 @@ async function bootstrap(): Promise<void> {
     costo: composicion.costo,
     envios: composicion.envios,
     apertura: composicion.apertura,
+    cierres: composicion.cierres,
     purga: composicion.purga,
     borrado: composicion.borrado,
     alertasDiferidas: composicion.alertasDiferidas,

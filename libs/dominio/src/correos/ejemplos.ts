@@ -49,6 +49,13 @@ export const EJEMPLOS_CORREO: { readonly [T in TipoCorreo]: DatosCorreo<T> } = {
     organizacion: 'Comunidad de Ejemplo',
     enlace: 'http://localhost:4200/app/acceso/invitacion/ejemplo',
   },
+  cierre_automatico: {
+    nombre: 'Ana',
+    evento: 'Encuentro de Ejemplo 2026',
+    fechaFin: '21/11/2026',
+    hora: '19:00',
+    enlace: 'http://localhost:4200/admin/eventos/ejemplo/cierre',
+  },
   registro_puerta: {
     nombre: 'Carla',
     evento: 'Encuentro de Ejemplo 2026',

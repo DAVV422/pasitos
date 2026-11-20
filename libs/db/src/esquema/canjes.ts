@@ -44,6 +44,8 @@ export const canjes = pgTable(
     expiraAt: timestamp('expira_at', { withTimezone: true }).notNull(),
     confirmadoAt: timestamp('confirmado_at', { withTimezone: true }),
     canceladoAt: timestamp('cancelado_at', { withTimezone: true }),
+    // HU-401: el cobro pendiente que se canceló al cerrar el evento.
+    canceladoPorCierre: boolean('cancelado_por_cierre').notNull().default(false),
     canceladoPor: uuid('cancelado_por').references(() => usuarios.id),
     anuladoAt: timestamp('anulado_at', { withTimezone: true }),
     anuladoPor: uuid('anulado_por').references(() => usuarios.id),

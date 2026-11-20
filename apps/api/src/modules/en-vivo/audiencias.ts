@@ -215,13 +215,19 @@ export function toAvisoEnVivo(aviso: AvisoOutbox, suscriptor: Suscriptor): Aviso
         ? { evento: 'contenido.actualizado', datos: {}, agrupar: 'contenido' }
         : null;
 
-    // Lo del evento entero: a todos los canales.
+    // Lo del evento entero: a todos los canales. HU-401: `evento.cierre_proximo` es *"Los puntos
+    // vencen a las 19:00"* (los datos traen la hora, `cierreAt`).
     case 'evento.abierto':
     case 'evento.pausado':
     case 'evento.reanudado':
     case 'evento.cerrado':
     case 'aviso.publicado':
+    case 'evento.cierre_proximo':
       return { evento: aviso.tipo, datos };
+
+    // HU-401 §4: el cierre quedó registrado en Stellar. Solo al equipo (la tarjeta del Resumen).
+    case 'evento.sellado':
+      return suscriptor.tipo === 'equipo' ? { evento: aviso.tipo, datos } : null;
 
     default:
       return null;

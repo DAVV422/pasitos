@@ -30,6 +30,8 @@ export interface EstadoApp {
     readonly ci: { readonly cargado: boolean; readonly verificado: boolean };
   };
   readonly saldo: number;
+  /** HU-401: lo que venció al cierre. */
+  readonly vencidos: number;
   readonly evento: {
     readonly id: string;
     readonly nombre: string;
@@ -39,6 +41,8 @@ export interface EstadoApp {
     readonly nombrePuntos: string;
     readonly requiereCheckIn: boolean;
     readonly zonaHoraria: string;
+    /** HU-401: el cierre programado. */
+    readonly cierreProgramadoAt: string | null;
   };
   readonly retos: readonly EstadoRetoApp[];
   readonly premios: readonly {

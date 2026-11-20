@@ -48,6 +48,12 @@ export const eventos = pgTable(
     iniciadoAt: timestamp('iniciado_at', { withTimezone: true }),
     cerradoAt: timestamp('cerrado_at', { withTimezone: true }),
     cerradoPor: uuid('cerrado_por'),
+    // HU-401: el cierre programado, el aviso de 30 minutos a los asistentes, el correo al dueño
+    // antes del cierre automático y el avance del cierre en Stellar.
+    cierreProgramadoAt: timestamp('cierre_programado_at', { withTimezone: true }),
+    cierreAvisoAt: timestamp('cierre_aviso_at', { withTimezone: true }),
+    cierreAutomaticoAvisoAt: timestamp('cierre_automatico_aviso_at', { withTimezone: true }),
+    cierreEstado: text('cierre_estado'),
     // Reglas con su valor al crear (HU-205 §1); se editan en HU-206 y HU-212.
     nombrePuntos: text('nombre_puntos').notNull().default('puntos'),
     modoRegistro: text('modo_registro').notNull().default('lista'),
@@ -112,6 +118,10 @@ export const eventos = pgTable(
     check(
       'eventos_estado',
       sql`${t.estado} in ('borrador', 'publicado', 'en_curso', 'pausado', 'cerrado', 'archivado')`,
+    ),
+    check(
+      'eventos_cierre_estado',
+      sql`${t.cierreEstado} is null or ${t.cierreEstado} in ('sellando', 'listo', 'fallido')`,
     ),
     check('eventos_visibilidad', sql`${t.visibilidad} in ('privado', 'solo_enlace', 'publico')`),
     check('eventos_fechas', sql`${t.finAt} > ${t.inicioAt}`),

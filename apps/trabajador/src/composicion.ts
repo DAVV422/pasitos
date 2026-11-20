@@ -14,6 +14,7 @@ import { EnviosCorreoService } from './correos/envios.service';
 import { CostoRedService } from './costo/costo-red.service';
 import { PurgaArchivosService } from './archivos/purga.service';
 import { AperturaEventosService } from './eventos/outbox.service';
+import { CierresEventosService } from './eventos/cierres.service';
 import { InvitacionesCorreoGancho } from './invitados/invitaciones-correo';
 import { OperacionesTrabajoService } from './invitados/operaciones.service';
 import { ProcesarFotosService } from './fotos/procesar-fotos.service';
@@ -32,6 +33,7 @@ export interface Composicion {
   readonly repositorio: SelladorRepository;
   readonly envios: EnviosCorreoService;
   readonly apertura: AperturaEventosService;
+  readonly cierres: CierresEventosService;
   readonly purga: PurgaArchivosService;
   readonly borrado: BorradoDispositivosService;
   readonly alertasDiferidas: AlertasDiferidasService;
@@ -131,6 +133,12 @@ export function buildComposicion(
     repositorio,
     envios,
     apertura,
+    cierres: new CierresEventosService(
+      conexion.db,
+      reloj,
+      { topeDiario: config.CORREO_TOPE_DIARIO, reservaSeguridad: config.CORREO_RESERVA_SEGURIDAD },
+      config.PUBLIC_URL,
+    ),
     borrado: new BorradoDispositivosService(conexion.db, reloj),
     alertasDiferidas: new AlertasDiferidasService(conexion.db, reloj),
     vencerCobros: new VencerCobrosService(conexion.db, reloj),
