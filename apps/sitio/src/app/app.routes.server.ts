@@ -11,5 +11,11 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Server,
     headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' },
   },
+  // HU-406: la página de cada evento; sin página pública responde 404 (lo decide la página).
+  {
+    path: 'eventos/:slug',
+    renderMode: RenderMode.Server,
+    headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' },
+  },
   { path: '**', renderMode: RenderMode.Server, status: 404 },
 ];

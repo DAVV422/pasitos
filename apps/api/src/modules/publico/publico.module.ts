@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CorreosService } from '@pasitos/correos';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { DbService, DbSistemaService } from '../../infra/db/db.module';
+import { AccesoModule } from '../acceso/acceso.module';
 import { AuthModule } from '../auth/auth.module';
 import { RELOJ, type Reloj } from '../auth/sesiones.service';
 import { ContactoService } from './contacto.service';
@@ -9,9 +10,9 @@ import { EventosPublicosService } from './eventos-publicos.service';
 import { PublicoController } from './publico.controller';
 import { TurnstileCloudflare, VERIFICADOR_TURNSTILE, type VerificadorTurnstile } from './turnstile';
 
-/** El sitio público (HU-405, HU-410; después HU-406). */
+/** El sitio público (HU-405, HU-406, HU-410). */
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, AccesoModule],
   controllers: [PublicoController],
   providers: [
     {

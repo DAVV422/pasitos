@@ -47,6 +47,7 @@ function formatFecha(evento: EventoPublico): string {
     ...opciones,
     hour: 'numeric',
     minute: '2-digit',
+    hourCycle: 'h23',
   }).format(fecha);
   return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} · ${hora}`;
 }

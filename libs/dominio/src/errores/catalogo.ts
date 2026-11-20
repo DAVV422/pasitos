@@ -7,6 +7,11 @@ export const CATALOGO_ERRORES = {
   // Generales
   VALIDACION: { status: 400, title: 'Datos inválidos', mensaje: 'Revisa los campos marcados.' },
   NO_ENCONTRADO: { status: 404, title: 'No encontrado', mensaje: 'No encontramos lo que buscas.' },
+  EVENTO_SIN_PAGINA_PUBLICA: {
+    status: 404,
+    title: 'Sin página pública',
+    mensaje: 'Este evento no tiene página pública.',
+  },
   DEMASIADOS_INTENTOS: {
     status: 429,
     title: 'Demasiados intentos',

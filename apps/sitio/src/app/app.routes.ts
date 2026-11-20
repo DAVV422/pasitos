@@ -29,5 +29,10 @@ export const appRoutes: Route[] = [
     title: 'Eventos · Pasitos',
     loadComponent: () => import('./eventos/eventos.page').then((m) => m.EventosPage),
   },
+  {
+    // HU-406: la página pública de cada evento, también aparte del paquete inicial.
+    path: 'eventos/:slug',
+    loadComponent: () => import('./eventos/evento.page').then((m) => m.EventoPage),
+  },
   { path: '**', title: 'Página no encontrada · Pasitos', component: NoEncontradoPage },
 ];

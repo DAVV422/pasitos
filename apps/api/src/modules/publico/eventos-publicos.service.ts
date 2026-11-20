@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gt, inArray, lt, or, sql, type SQL } from 'drizzle-orm';
 import { eventos, organizaciones, type Db } from '@pasitos/db';
 import type { Reloj } from '../auth/sesiones.service';
+import { getEventoPublico, getIdEventoPublico } from './evento-publico';
 
 export type MomentoEvento = 'proximos' | 'en_curso' | 'pasados';
 
@@ -30,6 +31,16 @@ export class EventosPublicosService {
     private readonly sistema: Db,
     private readonly reloj: Reloj,
   ) {}
+
+  /** La página pública de un evento (HU-406). */
+  get(slug: string) {
+    return getEventoPublico(this.sistema, slug);
+  }
+
+  /** El id del evento si tiene página pública; si no, `null` (HU-406, *Ir a mi entrada*). */
+  getId(slug: string): Promise<string | null> {
+    return getIdEventoPublico(this.sistema, slug);
+  }
 
   async list(momento: MomentoEvento, opciones: { cursor?: string | undefined; limit: number }) {
     const ahora = this.reloj.now();

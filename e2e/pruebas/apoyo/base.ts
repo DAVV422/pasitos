@@ -222,3 +222,50 @@ export function seedEventoPublico(
     return slug;
   });
 }
+
+/**
+ * Un evento `real`, *Público* y en curso, con un asistente presente y su invitación, para *Ir a mi
+ * entrada* (HU-406). Devuelve el slug y el token de la invitación.
+ */
+export function seedEventoPublicoConInvitado(
+  nombre: string,
+): Promise<{ slug: string; token: string }> {
+  return withCliente(async (cliente) => {
+    const organizacionId = uuidv7();
+    const eventoId = uuidv7();
+    const asistenteId = uuidv7();
+    await cliente.query('insert into organizaciones (id, nombre, slug) values ($1, $2, $3)', [
+      organizacionId,
+      'Comunidad pública e2e',
+      `e2e-publica-${organizacionId}`,
+    ]);
+    const slug = `publico-e2e-${eventoId.slice(-12)}`;
+    await cliente.query(
+      `insert into eventos (id, organizacion_id, slug, nombre, tipo, estado, visibilidad,
+                            inicio_at, fin_at)
+       values ($1, $2, $3, $4, 'real', 'en_curso', 'publico', now() - interval '1 hour',
+               now() + interval '8 hours')`,
+      [eventoId, organizacionId, slug, nombre],
+    );
+    await cliente.query(
+      `insert into asistentes (id, organizacion_id, evento_id, codigo_asistente, nombre, estado)
+       values ($1, $2, $3, 'A-0001', 'Valeria Quispe', 'presente')`,
+      [asistenteId, organizacionId, eventoId],
+    );
+    const token = randomBytes(32).toString('base64url');
+    await cliente.query(
+      `insert into invitaciones (id, organizacion_id, evento_id, asistente_id, token_hash,
+                                 token_cifrado, estado)
+       values ($1, $2, $3, $4, $5, $6, 'enviada')`,
+      [
+        uuidv7(),
+        organizacionId,
+        eventoId,
+        asistenteId,
+        createHash('sha256').update(token, 'utf8').digest(),
+        Buffer.from('cifrado-de-prueba'),
+      ],
+    );
+    return { slug, token };
+  });
+}

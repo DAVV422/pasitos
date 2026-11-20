@@ -48,7 +48,7 @@ describe('sección Eventos (HU-405)', () => {
     expect(tarjeta?.textContent).toContain('DevFest de Ejemplo');
     expect(tarjeta?.textContent).toContain('Centro de Ejemplo');
     expect(tarjeta?.textContent).toContain('Organiza Comunidad de Ejemplo');
-    expect(tarjeta?.textContent).toMatch(/5 de diciembre · 9:00/);
+    expect(tarjeta?.textContent).toMatch(/5 de diciembre · 09:00/);
     const enlaces = [...pagina.querySelectorAll('a')].map((a) => a.getAttribute('href'));
     expect(enlaces).toContain('/eventos?momento=proximos&cursor=c1');
   });
