@@ -1,3 +1,4 @@
+import { VERIFICADOR_TURNSTILE, type VerificadorTurnstile } from '../modules/publico/turnstile';
 import fastifyCookie from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import type { Type } from '@nestjs/common';
@@ -54,6 +55,8 @@ export async function startApiDePrueba(
     /** Variables de configuración que cambian para un test. */
     config?: Readonly<Record<string, string>>;
     traerMapa?: (lat: number, lng: number) => Promise<Buffer | null>;
+    /** HU-410: un Turnstile falso (sin la red); sin esto, el que diga la configuración. */
+    turnstile?: VerificadorTurnstile | null;
   } = {},
 ): Promise<ApiDePrueba> {
   const reloj = new RelojDePrueba();
@@ -69,7 +72,7 @@ export async function startApiDePrueba(
     ...(opciones.archivosDir ? { ARCHIVOS_DIR: opciones.archivosDir } : {}),
     ...opciones.config,
   });
-  const modulo = await Test.createTestingModule({
+  let constructor = Test.createTestingModule({
     imports: [
       AppModule.forConfig(
         config,
@@ -83,8 +86,11 @@ export async function startApiDePrueba(
     .overrideProvider(PASSWORDS_FILTRADAS)
     .useValue(filtradas)
     .overrideProvider(TRAER_MAPA)
-    .useValue(opciones.traerMapa ?? (() => Promise.resolve(null)))
-    .compile();
+    .useValue(opciones.traerMapa ?? (() => Promise.resolve(null)));
+  if (opciones.turnstile !== undefined) {
+    constructor = constructor.overrideProvider(VERIFICADOR_TURNSTILE).useValue(opciones.turnstile);
+  }
+  const modulo = await constructor.compile();
   const app = modulo.createNestApplication<NestFastifyApplication>(new FastifyAdapter(), {
     rawBody: true,
     logger: false,

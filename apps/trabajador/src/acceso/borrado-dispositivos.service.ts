@@ -1,5 +1,5 @@
 import { and, isNotNull, lt, or } from 'drizzle-orm';
-import { dispositivos, registrosTecnicos, type Db } from '@pasitos/db';
+import { dispositivos, mensajesContacto, registrosTecnicos, type Db } from '@pasitos/db';
 import type { Reloj } from '../comun/reloj';
 
 /**
@@ -13,7 +13,7 @@ export class BorradoDispositivosService {
     private readonly reloj: Reloj,
   ) {}
 
-  async deleteVencidos(): Promise<{ registros: number; dispositivos: number }> {
+  async deleteVencidos(): Promise<{ registros: number; dispositivos: number; contactos: number }> {
     const ahora = this.reloj.now();
     const registros = await this.db
       .delete(registrosTecnicos)
@@ -29,6 +29,15 @@ export class BorradoDispositivosService {
         ),
       )
       .returning({ id: dispositivos.id });
-    return { registros: registros.length, dispositivos: limpiados.length };
+    // HU-410: los mensajes del formulario de contacto, a los 12 meses (Política de privacidad §7).
+    const contactos = await this.db
+      .delete(mensajesContacto)
+      .where(lt(mensajesContacto.borrarAt, ahora))
+      .returning({ id: mensajesContacto.id });
+    return {
+      registros: registros.length,
+      dispositivos: limpiados.length,
+      contactos: contactos.length,
+    };
   }
 }

@@ -40,6 +40,11 @@ const esquemaConfig = z.object({
     .string()
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  // HU-410: Cloudflare Turnstile en el formulario de contacto. Sin secreto, el paso no corre.
+  TURNSTILE_SECRETO: z
+    .string()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   // Solo para el enlace al explorador (stellar.expert); el API no habla con Stellar.
   STELLAR_RED: z.enum(['local', 'testnet']).default('local'),
   CORREO_TOPE_DIARIO: z.coerce.number().int().min(1).default(80),

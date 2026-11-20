@@ -106,6 +106,9 @@ export const ACCIONES_BITACORA = {
   'organizacion.dueno.invite': 'Invitó al dueño de una organización',
   'organizacion.dueno.accept': 'Aceptó ser dueño de una organización',
   'plataforma.usuario.create': 'Nombró a una persona de Pasitos',
+  // HU-410: la bandeja de contactos.
+  'contacto.ver': 'Vio un mensaje de contacto',
+  'contacto.actualizar': 'Actualizó un mensaje de contacto',
   'plataforma.usuario.update': 'Cambió el rol de una persona de Pasitos',
   'plataforma.usuario.accept': 'Aceptó el acceso a la consola',
   'plataforma.evento_prueba.create': 'Creó un evento de prueba',

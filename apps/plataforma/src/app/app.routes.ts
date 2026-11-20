@@ -37,6 +37,16 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./consola/usuarios.page').then((m) => m.UsuariosPage),
       },
       {
+        path: 'contactos',
+        title: 'Contactos · Consola',
+        loadComponent: () => import('./consola/contactos.page').then((m) => m.ContactosPage),
+      },
+      {
+        path: 'contactos/:id',
+        title: 'Contacto · Consola',
+        loadComponent: () => import('./consola/contacto.page').then((m) => m.ContactoPage),
+      },
+      {
         path: 'bitacora',
         title: 'Bitácora · Consola',
         loadComponent: () => import('./consola/bitacora.page').then((m) => m.BitacoraPage),

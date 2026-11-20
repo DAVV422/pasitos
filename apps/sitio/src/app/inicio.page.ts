@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CONFIG_LEGAL } from '@pasitos/dominio/legal';
 import { BotonDirective, IconoComponent, type NombreIcono } from '@pasitos/ui';
+import { ContactoFormComponent } from './landing/contacto-form.component';
 import { TEXTOS_LANDING } from './landing/textos';
 
 const ICONOS_PROBLEMA: readonly NombreIcono[] = ['clock', 'gift', 'image'];
@@ -15,7 +16,7 @@ const ICONOS_PASOS: readonly NombreIcono[] = ['scan', 'puntos', 'check'];
   selector: 'sit-inicio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-col gap-16' },
-  imports: [BotonDirective, IconoComponent],
+  imports: [BotonDirective, ContactoFormComponent, IconoComponent],
   template: `
     <section class="grid items-center gap-8 md:grid-cols-[1fr_auto]" aria-labelledby="portada">
       <div class="flex flex-col gap-5">
@@ -121,12 +122,13 @@ const ICONOS_PASOS: readonly NombreIcono[] = ['scan', 'puntos', 'check'];
     >
       <h2 id="titulo-contacto" class="text-3xl font-extrabold">{{ t.contacto.titulo }}</h2>
       <p class="text-lg">{{ t.contacto.bajada }}</p>
+      <!-- HU-410: el formulario de contacto. -->
+      <sit-contacto-form />
       @if (correo) {
-        <div>
-          <a pxBoton [attr.href]="'mailto:' + correo">{{ t.contacto.escribir }}: {{ correo }}</a>
-        </div>
-      } @else {
-        <p class="text-muted" data-testid="contacto-pronto">{{ t.contacto.pronto }}</p>
+        <p class="text-muted text-sm">
+          También puedes escribirnos a
+          <a class="underline" [attr.href]="'mailto:' + correo">{{ correo }}</a>.
+        </p>
       }
     </section>
   `,
@@ -135,6 +137,6 @@ export class InicioPage {
   protected readonly t = TEXTOS_LANDING;
   protected readonly iconosProblema = ICONOS_PROBLEMA;
   protected readonly iconosPasos = ICONOS_PASOS;
-  /** Hasta el formulario (HU-410): el correo de contacto, si ya se publicó (`CONFIG_LEGAL`). */
+  /** El correo de contacto, si ya se publicó (`CONFIG_LEGAL`), además del formulario. */
   protected readonly correo = CONFIG_LEGAL.correoContacto.trim();
 }

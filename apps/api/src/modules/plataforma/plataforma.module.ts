@@ -16,6 +16,8 @@ import { createTipoEquipo } from '../equipo/equipo.service';
 import { EventosPlataformaService } from './eventos-plataforma.service';
 import { OrganizacionesPlataformaService } from './organizaciones-plataforma.service';
 import { PersonasPlataformaService } from './personas-plataforma.service';
+import { ContactosPlataformaController } from './contactos-plataforma.controller';
+import { ContactosPlataformaService } from './contactos-plataforma.service';
 import { FotosPlataformaController } from './fotos-plataforma.controller';
 import { PlataformaController } from './plataforma.controller';
 import { InvitadosModule } from '../invitados/invitados.module';
@@ -27,7 +29,12 @@ import { InvitadosModule } from '../invitados/invitados.module';
 @Module({
   imports: [AuthModule, InvitadosModule],
   // HU-324: la descarga de fotos para redes desde la consola.
-  controllers: [PlataformaController, InvitacionesController, FotosPlataformaController],
+  controllers: [
+    PlataformaController,
+    InvitacionesController,
+    FotosPlataformaController,
+    ContactosPlataformaController,
+  ],
   providers: [
     {
       provide: InvitacionesService,
@@ -62,6 +69,12 @@ import { InvitadosModule } from '../invitados/invitados.module';
           reloj,
           config.PUBLIC_URL,
         ),
+    },
+    {
+      provide: ContactosPlataformaService,
+      inject: [DbSistemaService, RELOJ],
+      useFactory: (sistema: DbSistemaService, reloj: Reloj) =>
+        new ContactosPlataformaService(sistema.db, reloj),
     },
     {
       provide: EventosPlataformaService,

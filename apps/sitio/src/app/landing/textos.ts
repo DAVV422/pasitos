@@ -98,9 +98,6 @@ export const TEXTOS_LANDING = {
   contacto: {
     titulo: '¿Quieres usar Pasitos en tu evento?',
     bajada: 'Cuéntanos de tu evento y te escribimos para armarlo juntos.',
-    escribir: 'Escríbenos',
-    /** Hasta que esté el formulario (HU-410) y el correo de contacto en CONFIG_LEGAL. */
-    pronto: 'Muy pronto vas a poder dejarnos tus datos aquí.',
   },
   pie: 'Hecho en Bolivia sobre la red Stellar · Piloto en su red de pruebas.',
 } as const;

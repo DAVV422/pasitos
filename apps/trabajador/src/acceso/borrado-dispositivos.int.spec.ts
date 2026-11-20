@@ -61,7 +61,7 @@ describe('borrar-dispositivos', () => {
     }
 
     const resultado = await new BorradoDispositivosService(base.sistema.db, reloj).deleteVencidos();
-    expect(resultado).toEqual({ registros: 1, dispositivos: 1 });
+    expect(resultado).toEqual({ registros: 1, dispositivos: 1, contactos: 0 });
 
     const filas = await base.sistema.db.select().from(dispositivos);
     const vencido = filas.find((d) => d.id === ids.vencido);
@@ -79,6 +79,7 @@ describe('borrar-dispositivos', () => {
     expect(await new BorradoDispositivosService(base.sistema.db, reloj).deleteVencidos()).toEqual({
       registros: 0,
       dispositivos: 0,
+      contactos: 0,
     });
   });
 });

@@ -157,3 +157,42 @@ export const operaciones = pgTable(
     index('operaciones_evento').on(t.eventoId),
   ],
 );
+
+/**
+ * El formulario de contacto de la landing (HU-410). Global, sin RLS: no es de ninguna
+ * organización. La IP no se guarda: solo su HMAC con la llave de datos, para el límite. Se borra a
+ * los 12 meses (`borrar_at`).
+ */
+export const mensajesContacto = pgTable(
+  'mensajes_contacto',
+  {
+    id: uuid('id').primaryKey(),
+    nombre: text('nombre').notNull(),
+    email: citext('email').notNull(),
+    organizacion: text('organizacion'),
+    tipoEvento: text('tipo_evento'),
+    asistentesAprox: text('asistentes_aprox'),
+    mensaje: text('mensaje').notNull(),
+    versionPrivacidad: text('version_privacidad').notNull(),
+    estado: text('estado').notNull().default('nuevo'),
+    notaInterna: text('nota_interna'),
+    atendidoPor: uuid('atendido_por'),
+    atendidoAt: timestamp('atendido_at', { withTimezone: true }),
+    ipHash: bytea('ip_hash'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    borrarAt: timestamp('borrar_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    check('mensajes_contacto_estado', sql`${t.estado} in ('nuevo', 'respondido', 'descartado')`),
+    check(
+      'mensajes_contacto_tipo_evento',
+      sql`${t.tipoEvento} is null or ${t.tipoEvento} in ('conferencia', 'meetup', 'feria', 'universidad', 'otro')`,
+    ),
+    check(
+      'mensajes_contacto_asistentes',
+      sql`${t.asistentesAprox} is null or ${t.asistentesAprox} in ('menos_100', '100_300', '300_1000', 'mas_1000')`,
+    ),
+    index('mensajes_contacto_estado_fecha').on(t.estado, t.createdAt),
+    index('mensajes_contacto_borrar').on(t.borrarAt),
+  ],
+);

@@ -132,6 +132,30 @@ export const CORREOS = {
     boton: { texto: 'Entrar a la consola', enlace: '{enlace}' },
     pie: 'Te llega este correo porque te dieron acceso a la consola de Pasitos.',
   },
+  // ── Contacto de la landing (HU-410) ─────────────────────────────────────────
+  // El mensaje no va en el correo (puede traer datos de otros): solo en la consola.
+  nuevo_contacto: {
+    prioridad: 2,
+    asunto: 'Nuevo contacto: {quien}',
+    parrafos: [
+      'Llegó un mensaje desde el formulario de la landing.',
+      '**{nombre}** · {organizacion} · {tipoEvento} · {asistentes}',
+      'Por privacidad, el mensaje está solo en la consola.',
+    ],
+    boton: { texto: 'Ver en la consola', enlace: '{enlace}' },
+    pie: 'Te llega este correo porque eres administrador de Pasitos.',
+  },
+  nuevos_contactos: {
+    prioridad: 2,
+    asunto: 'Llegaron {cantidad} contactos nuevos',
+    parrafos: [
+      'Llegaron {cantidad} mensajes desde el formulario de la landing en la última hora.',
+      'Por privacidad, los mensajes están solo en la consola.',
+    ],
+    boton: { texto: 'Ver en la consola', enlace: '{enlace}' },
+    pie: 'Te llega este correo porque eres administrador de Pasitos.',
+  },
+
   // ── Cierre del evento (HU-401) ────────────────────────────────────────────
   cierre_automatico: {
     prioridad: 2,

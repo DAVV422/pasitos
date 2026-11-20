@@ -28,7 +28,7 @@ describe('sitio', () => {
     expect(enlaces).toEqual(['/terminos', '/privacidad', '/#contacto']);
   });
 
-  it('la landing: portada, secciones y contacto pendiente sin correo (HU-404)', async () => {
+  it('la landing: portada, secciones y el lugar del formulario de contacto (HU-404)', async () => {
     const harness = await RouterTestingHarness.create('/');
     const pagina = harness.routeNativeElement as HTMLElement;
     expect(pagina.querySelector('h1')?.textContent).toContain('Cada paso cuenta.');
@@ -44,7 +44,7 @@ describe('sitio', () => {
       'Quiero usar Pasitos en mi evento',
     );
     expect(pagina.querySelectorAll('details')).toHaveLength(5);
-    expect(pagina.querySelector('[data-testid="contacto-pronto"]')).not.toBeNull();
+    expect(pagina.querySelector('[data-testid="contacto-form"]')).not.toBeNull();
   });
 
   it('una dirección que no existe', async () => {

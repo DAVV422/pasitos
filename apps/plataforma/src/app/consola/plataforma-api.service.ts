@@ -88,6 +88,25 @@ export interface FilaBitacora {
 
 const BASE = '/api/v1/plataforma';
 
+/** HU-410: un mensaje del formulario de contacto, en la lista. */
+export interface ContactoFila {
+  readonly id: string;
+  readonly nombre: string;
+  readonly organizacion: string | null;
+  readonly tipoEvento: string | null;
+  readonly asistentesAprox: string | null;
+  readonly estado: 'nuevo' | 'respondido' | 'descartado';
+  readonly createdAt: string;
+}
+
+export interface ContactoDetalle extends ContactoFila {
+  readonly email: string;
+  readonly mensaje: string;
+  readonly notaInterna: string | null;
+  readonly atendidoAt: string | null;
+  readonly borrarAt: string;
+}
+
 function toParams(valores: Readonly<Record<string, string | null | undefined>>): HttpParams {
   let params = new HttpParams();
   for (const [clave, valor] of Object.entries(valores)) {
@@ -131,6 +150,25 @@ export class PlataformaApi {
     return firstValueFrom(
       this.http.post<{ id: string }>(`${BASE}/organizaciones/${id}/eventos-prueba`, datos),
     );
+  }
+
+  listContactos(filtros: { estado?: string | null; cursor?: string | null }) {
+    return firstValueFrom(
+      this.http.get<Pagina<ContactoFila> & { nuevos: number }>(`${BASE}/contactos`, {
+        params: toParams(filtros),
+      }),
+    );
+  }
+
+  getContacto(id: string) {
+    return firstValueFrom(this.http.get<ContactoDetalle>(`${BASE}/contactos/${id}`));
+  }
+
+  updateContacto(
+    id: string,
+    cambios: { estado?: ContactoFila['estado']; notaInterna?: string | null },
+  ) {
+    return firstValueFrom(this.http.patch<void>(`${BASE}/contactos/${id}`, cambios));
   }
 
   listEventos(filtros: { cursor?: string | null; organizacionId?: string }) {

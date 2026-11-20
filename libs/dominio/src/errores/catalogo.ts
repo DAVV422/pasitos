@@ -221,6 +221,11 @@ export const CATALOGO_ERRORES = {
     title: 'Todavía no está en Stellar',
     mensaje: 'Todavía estamos registrando el evento en Stellar. Prueba en un minuto.',
   },
+  VERIFICACION_FALLIDA: {
+    status: 422,
+    title: 'Verificación fallida',
+    mensaje: 'No pudimos comprobar que no eres un robot. Recarga la página.',
+  },
   CONFIRMACION_INVALIDA: {
     status: 422,
     title: 'Confirmación inválida',

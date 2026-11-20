@@ -28,6 +28,7 @@ import { CanjesModule } from './modules/canjes/canjes.module';
 import { AjustesModule } from './modules/movimientos/ajustes.module';
 import { EventosModule } from './modules/eventos/eventos.module';
 import { PlataformaModule } from './modules/plataforma/plataforma.module';
+import { PublicoModule } from './modules/publico/publico.module';
 import { MovimientosModule } from './modules/movimientos/movimientos.module';
 import { SaludModule } from './modules/salud/salud.module';
 
@@ -47,6 +48,7 @@ export class AppModule {
         SeguridadModule,
         BitacoraModule,
         PlataformaModule,
+        PublicoModule,
         EventosModule,
         EquipoModule,
         ArchivosModule,
