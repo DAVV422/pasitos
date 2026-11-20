@@ -12,7 +12,7 @@ export interface Imprimible {
   readonly url: string;
 }
 
-function getModulos(texto: string): boolean[][] {
+export function getModulos(texto: string): boolean[][] {
   const codigo = qrcode(0, 'M');
   codigo.addData(texto);
   codigo.make();
@@ -23,7 +23,7 @@ function getModulos(texto: string): boolean[][] {
 }
 
 /** Los módulos oscuros de cada fila, juntos en tramos (menos rectángulos). */
-function getTramos(modulos: boolean[][]): { fila: number; desde: number; largo: number }[] {
+export function getTramos(modulos: boolean[][]): { fila: number; desde: number; largo: number }[] {
   const tramos: { fila: number; desde: number; largo: number }[] = [];
   modulos.forEach((fila, y) => {
     let x = 0;
@@ -74,7 +74,7 @@ export async function renderPng(datos: Imprimible): Promise<Buffer> {
 }
 
 /** Texto para Helvetica (WinAnsi ≈ Latin-1): los acentos del español entran; lo demás, `?`. */
-function toTextoPdf(texto: string): string {
+export function toTextoPdf(texto: string): string {
   let salida = '';
   for (const caracter of texto) {
     const codigo = caracter.codePointAt(0) ?? 63;
@@ -116,11 +116,16 @@ export function renderPdf(datos: Imprimible): Buffer {
     '0.28 0.33 0.41 rg',
     `BT /F1 12 Tf ${f(centrar(nombre, 12, ANCHO))} 150 Td (${toTextoPdf(nombre)}) Tj ET`,
   ].join('\n');
+  return wrapPdf(contenido, ANCHO, ALTO);
+}
+
+/** Un PDF de una página con Helvetica y Helvetica-Bold (`/F1`, `/F2`) y el dibujo dado. */
+export function wrapPdf(contenido: string, ancho: number, alto: number): Buffer {
   const flujo = Buffer.from(contenido, 'latin1');
   const objetos = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ANCHO} ${ALTO}] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>`,
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ancho} ${alto}] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>`,
     `<< /Length ${flujo.length} >>\nstream\n${contenido}\nendstream`,
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',

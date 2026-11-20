@@ -57,6 +57,8 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: 'alertas', texto: 'Alertas', grupo: 'Evento', accion: 'bitacora.read' },
   // HU-401: al final del grupo, solo para el dueño.
   { ruta: 'cierre', texto: 'Cerrar el evento', grupo: 'Evento', accion: 'evento.close' },
+  // HU-402: con el evento cerrado.
+  { ruta: 'reporte', texto: 'Reporte', grupo: 'Evento', accion: 'reporte.read' },
   { ruta: 'lugares', texto: 'Lugares', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'agenda', texto: 'Agenda', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'sponsors', texto: 'Sponsors', grupo: 'Contenido', accion: 'contenido.read' },
@@ -82,6 +84,9 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   { ruta: 'carnets', texto: 'Verificar carnet', grupo: 'Personas', accion: 'ci.verify' },
   { ruta: 'equipo', texto: 'Equipo', grupo: 'Personas', accion: 'equipo.read' },
 ];
+
+/** Lo que solo existe con el evento cerrado. */
+const SOLO_CON_EVENTO_CERRADO: ReadonlySet<string> = new Set(['reporte']);
 
 /** Lo que solo sirve con el evento abierto: con el evento cerrado, sale del menú. */
 const SOLO_CON_EVENTO_ABIERTO: ReadonlySet<string> = new Set([
@@ -144,6 +149,7 @@ export class EventoLayout {
         canDo(evento.miRol, item.accion) &&
         // Cerrado, lo que solo sirve para operar el día del evento ya no aparece (HU-401 §5.1).
         !(cerrado && SOLO_CON_EVENTO_ABIERTO.has(item.ruta)) &&
+        !(!cerrado && SOLO_CON_EVENTO_CERRADO.has(item.ruta)) &&
         (!item.ruta.startsWith('fotos') || fotos?.puedeRevisar === true),
     ).map((item): ItemMenu => ({
       texto: item.texto,

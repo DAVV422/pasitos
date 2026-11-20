@@ -118,6 +118,8 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 | Panel en vivo | ✅ | ✅ | Solo asistencia | — | Sus pantallas | ✅ lectura |
 | Bitácora | ✅ | ✅ | — | — | — | — |
 | Reporte y estadísticas | ✅ | ✅ | — | — | — | ✅ lectura |
+| Regenerar el reporte | ✅ | ✅ | — | — | — | — |
+| Compartir el reporte con un enlace público | ✅ | — | — | — | — | — |
 | Descargar datos personales (lista de invitados) | ✅ | ✅ | — | — | — | — |
 
 ¹ Un coorganizador no puede nombrar ni quitar a otro coorganizador ni al dueño.

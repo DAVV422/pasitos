@@ -7,6 +7,8 @@ export interface EventoPagina {
   readonly organizacion: string;
   readonly visibilidad: 'publico' | 'solo_enlace';
   readonly estado: 'proximo' | 'en_curso' | 'terminado';
+  /** El camino del reporte compartido (`/reporte/<token>`), si el evento terminó y se comparte. */
+  readonly reporte: string | null;
   readonly logo: string | null;
   readonly portada: string | null;
   readonly zonaHoraria: string;

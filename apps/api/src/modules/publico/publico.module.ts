@@ -10,16 +10,19 @@ import { EventosPublicosService } from './eventos-publicos.service';
 import { PublicoController } from './publico.controller';
 import { TurnstileCloudflare, VERIFICADOR_TURNSTILE, type VerificadorTurnstile } from './turnstile';
 
-/** El sitio público (HU-405, HU-406, HU-410). */
+/** El sitio público (HU-405, HU-406, HU-410) y el reporte compartido (HU-402). */
 @Module({
   imports: [AuthModule, AccesoModule],
   controllers: [PublicoController],
   providers: [
     {
       provide: EventosPublicosService,
-      inject: [DbSistemaService, RELOJ],
-      useFactory: (sistema: DbSistemaService, reloj: Reloj) =>
-        new EventosPublicosService(sistema.db, reloj),
+      inject: [DbSistemaService, RELOJ, APP_CONFIG],
+      useFactory: (sistema: DbSistemaService, reloj: Reloj, config: AppConfig) =>
+        new EventosPublicosService(sistema.db, reloj, {
+          red: config.STELLAR_RED,
+          llaveDatos: config.LLAVE_CIFRADO_DATOS,
+        }),
     },
     {
       provide: VERIFICADOR_TURNSTILE,

@@ -17,5 +17,11 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Server,
     headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' },
   },
+  // HU-402: el reporte compartido. 5 minutos, como el API; sin enlace válido, 404.
+  {
+    path: 'reporte/:token',
+    renderMode: RenderMode.Server,
+    headers: { 'Cache-Control': 'public, max-age=300', 'X-Robots-Tag': 'noindex' },
+  },
   { path: '**', renderMode: RenderMode.Server, status: 404 },
 ];

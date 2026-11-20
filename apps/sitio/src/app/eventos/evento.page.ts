@@ -97,7 +97,12 @@ function formatFecha(inicio: string, fin: string, zona: string): string {
             }
           </section>
         } @else {
-          <p class="text-muted">Este evento ya terminó.</p>
+          <div class="flex flex-wrap items-center gap-4">
+            <p class="text-muted">Este evento ya terminó.</p>
+            @if (e.reporte) {
+              <a pxBoton="secundario" [href]="e.reporte" data-testid="ver-reporte">Ver reporte</a>
+            }
+          </div>
         }
 
         @if (e.descripcion) {

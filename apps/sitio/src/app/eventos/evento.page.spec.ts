@@ -11,6 +11,7 @@ const EVENTO: EventoPagina = {
   organizacion: 'Comunidad de Ejemplo',
   visibilidad: 'publico',
   estado: 'proximo',
+  reporte: null,
   logo: null,
   portada: null,
   zonaHoraria: 'America/La_Paz',
@@ -80,8 +81,11 @@ describe('página pública del evento (HU-406)', () => {
   });
 
   it('un evento terminado no muestra Cómo entrar', async () => {
-    const { pagina } = await render({ ...EVENTO, estado: 'terminado' });
+    const { pagina } = await render({ ...EVENTO, estado: 'terminado', reporte: '/reporte/abc' });
     expect(pagina.textContent).toContain('Este evento ya terminó.');
     expect(pagina.textContent).not.toContain('Cómo entrar');
+    expect(pagina.querySelector('[data-testid="ver-reporte"]')?.getAttribute('href')).toBe(
+      '/reporte/abc',
+    );
   });
 });

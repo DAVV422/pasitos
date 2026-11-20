@@ -5,6 +5,7 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -138,5 +139,38 @@ export const eventos = pgTable(
       sql`${t.topeRegistrosPuerta} is null or ${t.topeRegistrosPuerta} between 1 and 10000`,
     ),
     index('eventos_organizacion').on(t.organizacionId),
+  ],
+);
+
+/**
+ * El reporte de un evento cerrado (HU-402), uno por evento, con RLS. `datos` es la foto del evento
+ * completo (`DatosReporte` de `libs/dominio/src/reporte/`), armada la primera vez que se pide: el
+ * evento cerrado ya no cambia. Del enlace público se guarda solo el SHA-256 del token; el token se
+ * vuelve a calcular con la llave de datos para mostrar el enlace.
+ */
+export const reportes = pgTable(
+  'reportes',
+  {
+    id: uuid('id').primaryKey(),
+    organizacionId: uuid('organizacion_id')
+      .notNull()
+      .references(() => organizaciones.id),
+    eventoId: uuid('evento_id')
+      .notNull()
+      .unique()
+      .references(() => eventos.id),
+    version: integer('version').notNull(),
+    datos: jsonb('datos').notNull(),
+    publico: boolean('publico').notNull().default(false),
+    tokenPublicoHash: bytea('token_publico_hash').unique(),
+    // El token es un HMAC de (reporte, versión): *Cambiar el enlace* sube la versión.
+    enlaceVersion: integer('enlace_version').notNull().default(0),
+    generadoAt: timestamp('generado_at', { withTimezone: true }).notNull().defaultNow(),
+    publicadoAt: timestamp('publicado_at', { withTimezone: true }),
+    publicadoPor: uuid('publicado_por'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check('reportes_publico_token', sql`(not ${t.publico} or ${t.tokenPublicoHash} is not null)`),
   ],
 );

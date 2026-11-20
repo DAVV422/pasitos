@@ -14,6 +14,12 @@ export const ACCIONES_BITACORA = {
   'evento.cierre_programar': 'Programó el cierre del evento',
   'evento.ubicacion.update': 'Cambió la ubicación',
   'evento.intervalo_anclaje.update': 'Cambió cada cuánto se ancla en Stellar',
+  // Reporte (HU-402)
+  'reporte.publicar': 'Compartió el reporte con un enlace público',
+  'reporte.despublicar': 'Dejó de compartir el reporte',
+  'reporte.cambiar_enlace': 'Cambió el enlace público del reporte',
+  'reporte.descargar': 'Descargó el reporte',
+  'reporte.regenerar': 'Regeneró el reporte',
   // Contenido
   'lugar.create': 'Creó un lugar',
   'lugar.update': 'Editó un lugar',

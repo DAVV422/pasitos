@@ -34,5 +34,11 @@ export const appRoutes: Route[] = [
     path: 'eventos/:slug',
     loadComponent: () => import('./eventos/evento.page').then((m) => m.EventoPage),
   },
+  {
+    // HU-402: el reporte compartido con un enlace, aparte del paquete inicial.
+    path: 'reporte/:token',
+    title: 'Reporte del evento · Pasitos',
+    loadComponent: () => import('./reporte/reporte.page').then((m) => m.ReportePage),
+  },
   { path: '**', title: 'Página no encontrada · Pasitos', component: NoEncontradoPage },
 ];

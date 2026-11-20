@@ -70,6 +70,8 @@ export const canjes = pgTable(
       .on(t.expiraAt)
       .where(sql`${t.estado} = 'pendiente'`),
     index('canjes_asistente').on(t.asistenteId),
+    // El reporte por tramo (HU-402 §3.1) busca los canjes de un evento por fecha.
+    index('canjes_evento').on(t.eventoId, t.createdAt),
   ],
 );
 

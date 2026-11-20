@@ -84,6 +84,10 @@ export const PERMISOS = {
   'panel.read': [...DC, 'registrador', 'operador_stand', 'financiador'],
   'bitacora.read': DC,
   'reporte.read': [...DC, 'financiador'],
+  /** HU-402: volver a armar el reporte desde la base. */
+  'reporte.regenerate': DC,
+  /** HU-402 §5: hacerlo público, dejar de compartir y cambiar el enlace. */
+  'reporte.share': ['dueno'],
 } as const satisfies Record<string, readonly RolEvento[]>;
 
 export type AccionEvento = keyof typeof PERMISOS;

@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, inArray, lt, or, sql, type SQL } from 'drizzle-
 import { eventos, organizaciones, type Db } from '@pasitos/db';
 import type { Reloj } from '../auth/sesiones.service';
 import { getEventoPublico, getIdEventoPublico } from './evento-publico';
+import { getReportePublico } from './reporte-publico';
 
 export type MomentoEvento = 'proximos' | 'en_curso' | 'pasados';
 
@@ -30,11 +31,17 @@ export class EventosPublicosService {
   constructor(
     private readonly sistema: Db,
     private readonly reloj: Reloj,
+    private readonly opciones: { readonly red: 'local' | 'testnet'; readonly llaveDatos: string },
   ) {}
 
   /** La página pública de un evento (HU-406). */
   get(slug: string) {
-    return getEventoPublico(this.sistema, slug);
+    return getEventoPublico(this.sistema, slug, this.opciones.llaveDatos);
+  }
+
+  /** El reporte compartido con un enlace (HU-402 §5). `null`: no existe o ya no se comparte. */
+  getReporte(token: string) {
+    return getReportePublico(this.sistema, token, this.opciones.red);
   }
 
   /** El id del evento si tiene página pública; si no, `null` (HU-406, *Ir a mi entrada*). */

@@ -12,6 +12,16 @@ export const CATALOGO_ERRORES = {
     title: 'Sin página pública',
     mensaje: 'Este evento no tiene página pública.',
   },
+  REPORTE_NO_DISPONIBLE: {
+    status: 409,
+    title: 'Reporte no disponible',
+    mensaje: 'El reporte está listo cuando el evento se cierra.',
+  },
+  REPORTE_NO_COMPARTIBLE: {
+    status: 409,
+    title: 'Reporte no compartible',
+    mensaje: 'El reporte de un evento demo no se puede compartir.',
+  },
   DEMASIADOS_INTENTOS: {
     status: 429,
     title: 'Demasiados intentos',

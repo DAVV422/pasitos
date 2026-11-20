@@ -6,6 +6,7 @@ import { API_INTERNO_URL } from './config/servidor';
 import { FUENTE_EVENTO, fetchEvento } from './eventos/fuente-evento';
 import { FUENTE_EVENTOS, fetchEventos } from './eventos/fuente-eventos';
 import { FUENTE_LEGAL } from './fuente-legal';
+import { FUENTE_REPORTE, fetchReporte } from './reporte/fuente-reporte';
 import { serverRoutes } from './app.routes.server';
 
 const serverConfig: ApplicationConfig = {
@@ -21,6 +22,11 @@ const serverConfig: ApplicationConfig = {
     },
     // HU-406: la página de cada evento.
     { provide: FUENTE_EVENTO, useValue: (slug: string) => fetchEvento(API_INTERNO_URL, slug) },
+    // HU-402: el reporte compartido.
+    {
+      provide: FUENTE_REPORTE,
+      useValue: (token: string) => fetchReporte(API_INTERNO_URL, token),
+    },
   ],
 };
 

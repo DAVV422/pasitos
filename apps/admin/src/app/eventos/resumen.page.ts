@@ -194,6 +194,16 @@ const BOTON_POR_ESTADO: Readonly<Record<string, { transicion: TransicionPanel; t
             {{ c.cerradoAt | date: 'HH:mm' }}
             {{ c.cerradoPor ? 'por ' + c.cerradoPor : 'por Pasitos (automático)' }}.
           </p>
+          @if (puedeVerReporte()) {
+            <!-- HU-402. -->
+            <a
+              pxBoton="secundario"
+              class="my-2"
+              [routerLink]="['reporte']"
+              data-testid="ver-reporte"
+              >Ver el reporte</a
+            >
+          }
           @switch (c.cierreEstado) {
             @case ('listo') {
               <p class="text-success">Cierre registrado en Stellar ✓</p>
@@ -252,6 +262,10 @@ export class ResumenPage implements OnInit, OnDestroy {
     variante: 'ok' | 'peligro' | 'advertencia';
     texto: string;
   } | null>(null);
+  protected readonly puedeVerReporte = computed(() => {
+    const evento = this.actual.evento();
+    return !!evento && canDo(evento.miRol, 'reporte.read');
+  });
   protected readonly boton = computed(() => {
     const evento = this.actual.evento();
     if (!evento) return null;

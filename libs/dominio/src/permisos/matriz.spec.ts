@@ -43,6 +43,8 @@ const FLUJOS_2_4: Readonly<Record<AccionEvento, string>> = {
   'panel.read': 'DCRSF', // Panel en vivo (R: solo asistencia · S: sus pantallas · F: lectura)
   'bitacora.read': 'DC',
   'reporte.read': 'DCF',
+  'reporte.regenerate': 'DC', // Regenerar el reporte (HU-402)
+  'reporte.share': 'D', // Compartir el reporte con un enlace (HU-402)
 };
 
 const LETRA: Readonly<Record<RolEvento, string>> = {

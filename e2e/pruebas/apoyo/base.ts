@@ -269,3 +269,66 @@ export function seedEventoPublicoConInvitado(
     return { slug, token };
   });
 }
+
+/**
+ * Un evento `real` y *Público* ya cerrado, de la organización de esa persona (dueña), con tres
+ * presentes y un reto completado, para el reporte (HU-402). Los datos son inventados. Devuelve el
+ * id y el slug.
+ */
+export function seedEventoCerrado(
+  duena: { email: string },
+  nombre: string,
+): Promise<{ eventoId: string; slug: string }> {
+  return withCliente(async (cliente) => {
+    const { rows } = await cliente.query<{ organizacion_id: string }>(
+      `select m.organizacion_id from miembros_organizacion m join usuarios u on u.id = m.usuario_id
+        where u.email = $1 and m.rol = 'dueno'`,
+      [duena.email],
+    );
+    const organizacionId = rows[0]?.organizacion_id;
+    if (!organizacionId) throw new Error('La persona no es dueña de una organización');
+    const eventoId = uuidv7();
+    const retoId = uuidv7();
+    const slug = `cerrado-e2e-${eventoId.slice(-12)}`;
+    await cliente.query(
+      `insert into eventos (id, organizacion_id, slug, nombre, tipo, estado, visibilidad,
+                            inicio_at, fin_at, cerrado_at, cierre_estado)
+       values ($1, $2, $3, $4, 'real', 'cerrado', 'publico', now() - interval '9 hours',
+               now() - interval '1 hour', now() - interval '30 minutes', 'listo')`,
+      [eventoId, organizacionId, slug, nombre],
+    );
+    await cliente.query(
+      `insert into retos (id, organizacion_id, evento_id, numero, nombre, puntos, tope_total)
+       values ($1, $2, $3, 1, 'Visita el stand de ejemplo', 10, 100)`,
+      [retoId, organizacionId, eventoId],
+    );
+    for (let i = 1; i <= 3; i++) {
+      const asistenteId = uuidv7();
+      const movimientoId = uuidv7();
+      await cliente.query(
+        `insert into asistentes (id, organizacion_id, evento_id, codigo_asistente, nombre, estado)
+         values ($1, $2, $3, $4, $5, 'presente')`,
+        [asistenteId, organizacionId, eventoId, `A-000${i}`, `Persona Inventada ${i}`],
+      );
+      await cliente.query(
+        `insert into movimientos (id, organizacion_id, evento_id, asistente_id, tipo, puntos, origen,
+                                  created_at)
+         values ($1, $2, $3, $4, 'checkin', 0, 'equipo', now() - interval '8 hours')`,
+        [movimientoId, organizacionId, eventoId, asistenteId],
+      );
+      await cliente.query(
+        `insert into check_ins (id, organizacion_id, evento_id, asistente_id, metodo, movimiento_id,
+                                created_at)
+         values ($1, $2, $3, $4, 'escaneo_entrada', $5, now() - interval '8 hours')`,
+        [uuidv7(), organizacionId, eventoId, asistenteId, movimientoId],
+      );
+      await cliente.query(
+        `insert into movimientos (id, organizacion_id, evento_id, asistente_id, tipo, puntos,
+                                  reto_id, origen, created_at)
+         values ($1, $2, $3, $4, 'reto', 10, $5, 'asistente', now() - interval '5 hours')`,
+        [uuidv7(), organizacionId, eventoId, asistenteId, retoId],
+      );
+    }
+    return { eventoId, slug };
+  });
+}

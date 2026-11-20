@@ -13,6 +13,7 @@ import {
 } from '@pasitos/db';
 import { AppError } from '@pasitos/dominio';
 import { isPocosDisponibles } from '@pasitos/dominio/esquemas';
+import { getCaminoReporte } from './reporte-publico';
 
 /** Las secciones que el organizador puede hacer públicas (HU-206). El wifi nunca. */
 type Seccion =
@@ -57,7 +58,7 @@ function toEstadoPremio(total: number, disponible: number): EstadoPremio {
  * igual: no revela que el evento existe. Solo las secciones marcadas; nunca el wifi, el equipo, los
  * topes, los QR ni el stock exacto. Recibe la conexión de sistema (no hay organización).
  */
-export async function getEventoPublico(sistema: Db, slug: string) {
+export async function getEventoPublico(sistema: Db, slug: string, llaveDatos: string) {
   const [evento] = await sistema
     .select({
       id: eventos.id,
@@ -154,12 +155,17 @@ export async function getEventoPublico(sistema: Db, slug: string) {
     and(eq(qrRegistro.eventoId, id), eq(qrRegistro.estado, 'activo')),
   );
 
+  const estado = toEstado(evento.estado);
+  // *Ver reporte* (HU-402): solo terminado y si el dueño lo comparte.
+  const reporte = estado === 'terminado' ? await getCaminoReporte(sistema, id, llaveDatos) : null;
+
   return {
     slug: evento.slug,
     nombre: evento.nombre,
     organizacion: evento.organizacion,
     visibilidad: evento.visibilidad,
-    estado: toEstado(evento.estado),
+    estado,
+    reporte,
     logo: url(evento.logoArchivoId, '400'),
     portada: url(evento.portadaArchivoId, '1200'),
     zonaHoraria: evento.zonaHoraria,

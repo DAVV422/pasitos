@@ -19,7 +19,7 @@ const PERMITIDOS = [
   'pruebas/',
   // Los comandos de soporte (pnpm plataforma): actúan como la consola.
   'cli/',
-  // HU-405 y HU-406: lo público de los eventos *Público*, sin organización. Solo columnas de una
+  // HU-405, HU-406 y HU-402 (el reporte compartido): lo público, sin organización. Solo columnas de una
   // lista explícita (nunca la fila entera), en un solo archivo.
   'modules/publico/eventos-publicos.service.ts',
   'modules/publico/publico.module.ts',

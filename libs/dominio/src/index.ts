@@ -23,3 +23,4 @@ export * from './puntos/motivos-ajuste';
 export * from './alertas/reglas';
 export * from './app/estado-reto';
 export * from './app/agenda';
+export * from './reporte/reporte';

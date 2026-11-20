@@ -15,6 +15,9 @@ const esquemaListarEventos = z.object({
   limit: z.coerce.number().int().min(1).max(24).default(12),
 });
 
+/** El reporte compartido: 5 minutos (HU-402 §5). Dejar de compartir tarda eso en notarse. */
+const CACHE_REPORTE = 'public, max-age=300';
+
 /** Cloudflare y el navegador la guardan un minuto (HU-405 §1). */
 const CACHE_PUBLICA = 'public, max-age=60, stale-while-revalidate=300';
 
@@ -96,5 +99,23 @@ export class PublicoController {
     } catch {
       return { vinculado: false };
     }
+  }
+
+  /** El reporte compartido con un enlace (HU-402 §5). Sin él: `404 NO_ENCONTRADO`, siempre igual. */
+  @Get('reportes/:token')
+  @Publica()
+  async getReporte(
+    @Param('token') token: string,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const espera = this.porIp.hit(request.ip);
+    if (espera > 0) {
+      throw new AppError('DEMASIADOS_INTENTOS', { meta: { reintentarEnSegundos: espera } });
+    }
+    const reporte = await this.eventos.getReporte(token);
+    if (!reporte) throw new AppError('NO_ENCONTRADO');
+    void reply.header('Cache-Control', CACHE_REPORTE).header('X-Robots-Tag', 'noindex');
+    return reporte;
   }
 }

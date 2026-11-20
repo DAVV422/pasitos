@@ -115,6 +115,13 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/cierre.page').then((m) => m.CierrePage),
       },
       {
+        // HU-402: el reporte, con el evento cerrado (D C F).
+        path: 'reporte',
+        canActivate: [canDoActivate('reporte.read')],
+        title: 'Reporte del evento · Pasitos',
+        loadComponent: () => import('./eventos/reporte.page').then((m) => m.ReportePage),
+      },
+      {
         path: 'carnets',
         canActivate: [canDoActivate('ci.verify')],
         title: 'Verificar carnet · Pasitos',

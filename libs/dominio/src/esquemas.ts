@@ -16,3 +16,4 @@ export * from './acceso/esquemas';
 export * from './puerta/esquemas';
 export * from './registro/esquemas';
 export * from './grupos/esquemas';
+export * from './reporte/esquemas';
