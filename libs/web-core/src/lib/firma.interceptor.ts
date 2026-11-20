@@ -1,4 +1,4 @@
-import { HttpContextToken, type HttpInterceptorFn } from '@angular/common/http';
+import { HttpContextToken, type HttpInterceptorFn, type HttpRequest } from '@angular/common/http';
 import {
   HEADER_FIRMA,
   HEADER_IDEMPOTENCIA,
@@ -40,15 +40,26 @@ export const firmaInterceptor: HttpInterceptorFn = (pedido, siguiente) => {
         timestamp,
         hashCuerpo: await hashCuerpo(cuerpo),
       });
-      return pedido.clone({
-        body: cuerpo,
-        setHeaders: {
-          'Content-Type': 'application/json',
-          [HEADER_IDEMPOTENCIA]: clave,
-          [HEADER_TIMESTAMP]: String(timestamp),
-          [HEADER_FIRMA]: firma,
-        },
+      return buildPedidoFirmado(pedido, cuerpo, {
+        [HEADER_IDEMPOTENCIA]: clave,
+        [HEADER_TIMESTAMP]: String(timestamp),
+        [HEADER_FIRMA]: firma,
       });
     })(),
   ).pipe(switchMap((firmado) => siguiente(firmado)));
 };
+
+/**
+ * El pedido firmado. Sin cuerpo, no se manda cuerpo ni Content-Type: Fastify rechaza un JSON
+ * vacío con 400 (la app lo mostraba como "Revisa los campos marcados" al confirmar un canje). El
+ * servidor firma un cuerpo ausente como vacío, así que la firma coincide igual.
+ */
+export function buildPedidoFirmado<T>(
+  pedido: HttpRequest<T>,
+  cuerpo: string,
+  firmas: Readonly<Record<string, string>>,
+): HttpRequest<unknown> {
+  return cuerpo === ''
+    ? pedido.clone({ body: null, setHeaders: { ...firmas } })
+    : pedido.clone({ body: cuerpo, setHeaders: { 'Content-Type': 'application/json', ...firmas } });
+}
