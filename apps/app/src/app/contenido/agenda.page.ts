@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ChipComponent, EstadoComponent } from '@pasitos/ui';
+import { ChipComponent, EstadoComponent, IconoComponent } from '@pasitos/ui';
 import { formatDia, formatHora } from '../formato';
 import { getRetosVista } from '../retos-vista';
 import { SesionAsistente } from '../sesion-asistente';
@@ -20,8 +20,14 @@ import { getLugaresAgenda, groupAgenda } from './agenda-vista';
 @Component({
   selector: 'app-agenda-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChipComponent, EstadoComponent, RouterLink],
+  imports: [ChipComponent, EstadoComponent, IconoComponent, RouterLink],
   template: `
+    <a
+      routerLink="/cuenta"
+      class="text-muted inline-flex min-h-11 items-center gap-1 self-start font-semibold"
+    >
+      <px-icono nombre="back" [tamano]="18" />Más
+    </a>
     <h1 class="text-2xl font-extrabold">Agenda</h1>
     @if (sesion.errorEvento()) {
       <px-estado tipo="error" titulo="No pudimos cargar la agenda. Revisa tu conexión." />
@@ -31,11 +37,16 @@ import { getLugaresAgenda, groupAgenda } from './agenda-vista';
       <px-estado tipo="vacio" titulo="Este evento todavía no tiene agenda." />
     } @else {
       @if (lugares().length > 1) {
-        <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar por lugar">
+        <div
+          class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+          style="scrollbar-width: none"
+          role="group"
+          aria-label="Filtrar por lugar"
+        >
           @for (opcion of opcionesLugar(); track opcion.valor) {
             <button
               type="button"
-              class="border-line min-h-11 rounded-full border px-4 text-sm font-semibold"
+              class="border-line min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold whitespace-nowrap"
               [class.bg-points]="lugar() === opcion.valor"
               [class.text-on-points]="lugar() === opcion.valor"
               [attr.aria-pressed]="lugar() === opcion.valor"

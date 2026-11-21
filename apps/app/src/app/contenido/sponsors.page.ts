@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { EstadoComponent } from '@pasitos/ui';
+import { EstadoComponent, IconoComponent } from '@pasitos/ui';
 import { getRetosVista } from '../retos-vista';
 import { SesionAsistente } from '../sesion-asistente';
 
@@ -8,8 +8,14 @@ import { SesionAsistente } from '../sesion-asistente';
 @Component({
   selector: 'app-sponsors-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EstadoComponent, RouterLink],
+  imports: [EstadoComponent, IconoComponent, RouterLink],
   template: `
+    <a
+      routerLink="/cuenta"
+      class="text-muted inline-flex min-h-11 items-center gap-1 self-start font-semibold"
+    >
+      <px-icono nombre="back" [tamano]="18" />Más
+    </a>
     <h1 class="text-2xl font-extrabold">Sponsors</h1>
     @if (sesion.errorEvento()) {
       <px-estado tipo="error" titulo="No pudimos cargar los sponsors. Revisa tu conexión." />

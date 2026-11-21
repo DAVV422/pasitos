@@ -27,7 +27,7 @@ const DIGITOS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'] as
     @if (!abierto()) {
       <button
         type="button"
-        class="text-muted absolute right-3 bottom-3 rounded-full p-3 opacity-40"
+        class="text-muted hover:bg-surface2 focus-visible:opacity-100 absolute right-3 bottom-3 flex h-12 w-12 items-center justify-center rounded-full opacity-50 transition-opacity hover:opacity-100"
         aria-label="Controles de la pantalla"
         (click)="open()"
       >
@@ -98,10 +98,7 @@ const DIGITOS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'] as
             @if (opciones().length > 0 || fijado()) {
               <label class="flex flex-col gap-2 text-lg font-semibold">
                 Cambiar de reto
-                <select
-                  class="border-line h-14 rounded-lg border px-3"
-                  (change)="changeReto($any($event.target).value)"
-                >
+                <select class="px-control h-14" (change)="changeReto($any($event.target).value)">
                   <option value="">Según la agenda</option>
                   @for (o of opciones(); track o.id) {
                     <option [value]="o.id" [selected]="o.id === retoActual()">

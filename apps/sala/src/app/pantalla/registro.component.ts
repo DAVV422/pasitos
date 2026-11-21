@@ -32,9 +32,7 @@ const MOTIVOS: Readonly<Record<string, string>> = {
       <h1 class="font-display text-4xl font-extrabold">Escanea para entrar a {{ evento() }}</h1>
       @if (franja(); as f) {
         @if (f.url) {
-          <div class="rounded-2xl bg-white p-4">
-            <px-qr [texto]="f.url" [tamano]="tamano()" descripcion="QR para crear tu cuenta" />
-          </div>
+          <px-qr [texto]="f.url" [tamano]="tamano()" descripcion="QR para crear tu cuenta" />
           <p class="text-muted text-xl">Con la cámara del celular. No hace falta descargar nada.</p>
         } @else {
           <p class="text-2xl">{{ motivo(f.disponibilidad) }}</p>

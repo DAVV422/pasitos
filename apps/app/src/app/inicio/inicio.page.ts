@@ -9,7 +9,13 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { getAhoraYSiguiente } from '@pasitos/dominio';
-import { AvisoComponent, BotonDirective, EstadoComponent, IconoComponent } from '@pasitos/ui';
+import {
+  AvisoComponent,
+  BotonDirective,
+  ChipComponent,
+  EstadoComponent,
+  IconoComponent,
+} from '@pasitos/ui';
 import { formatDiaYHora, formatFalta, formatHora } from '../formato';
 import { RetoTarjetaComponent } from '../retos/reto-tarjeta.component';
 import { getRetosVista, groupRetos } from '../retos-vista';
@@ -25,6 +31,7 @@ import { SesionAsistente } from '../sesion-asistente';
   imports: [
     AvisoComponent,
     BotonDirective,
+    ChipComponent,
     EstadoComponent,
     IconoComponent,
     RetoTarjetaComponent,
@@ -71,23 +78,67 @@ import { SesionAsistente } from '../sesion-asistente';
         }
 
         <div
-          class="border-line bg-surface rounded-xl border p-5"
+          class="border-line bg-surface relative overflow-hidden rounded-xl border p-5"
           [class.border-points]="cambio()"
           aria-live="polite"
         >
-          <p class="text-muted text-sm">Tus {{ e.evento.nombrePuntos }}</p>
-          <p
-            class="font-display text-5xl font-extrabold transition-transform duration-500"
-            [class.scale-110]="cambio()"
-            [class.text-points]="cambio()"
-            [class.text-muted]="e.evento.estado === 'cerrado'"
-            data-testid="saldo"
-          >
-            {{ e.saldo }}
-          </p>
-          <p class="text-muted mt-2 text-sm">
-            {{ grupos().completados.length }} de {{ retos().length }} retos
-          </p>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-muted text-sm">Tus {{ e.evento.nombrePuntos }}</p>
+              <p
+                class="font-display text-points text-5xl font-extrabold tabular-nums transition-transform duration-500"
+                [class.scale-110]="cambio()"
+                [class.text-muted]="e.evento.estado === 'cerrado'"
+                data-testid="saldo"
+              >
+                {{ e.saldo }}
+              </p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              @if (e.evento.estado !== 'cerrado') {
+                <px-chip variante="atenuado">Vence al cierre</px-chip>
+              }
+              <svg
+                viewBox="0 0 64 64"
+                class="h-10 w-10 opacity-20"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <svg:path
+                  d="M13 11 L32 32 L13 53"
+                  fill="none"
+                  stroke="var(--logo-amarillo)"
+                  stroke-width="9"
+                />
+                <svg:path
+                  d="M32 11 L51 32 L32 53"
+                  fill="none"
+                  stroke="var(--logo-naranja)"
+                  stroke-width="9"
+                />
+              </svg>
+            </div>
+          </div>
+          @if (retos().length > 0) {
+            <div class="bg-track mt-3 h-2 w-full overflow-hidden rounded-full" aria-hidden="true">
+              <div
+                class="bg-points-fill h-full rounded-full transition-[width] duration-200"
+                [style.width.%]="(grupos().completados.length * 100) / retos().length"
+              ></div>
+            </div>
+          }
+          <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <p class="text-muted">
+              {{ grupos().completados.length }} de {{ retos().length }} retos
+            </p>
+            <a
+              routerLink="/info"
+              fragment="como-puntos"
+              class="text-points inline-flex items-center gap-1 font-semibold underline"
+            >
+              <px-icono nombre="info" [tamano]="16" />¿Cómo funciona?
+            </a>
+          </div>
         </div>
 
         @if (e.evento.estado === 'cerrado') {
@@ -100,9 +151,9 @@ import { SesionAsistente } from '../sesion-asistente';
           <a pxBoton="secundario" routerLink="/historial">Ver mi historial</a>
         } @else {
           @if (e.evento.requiereCheckIn && e.asistente.estado !== 'presente') {
-            <div class="border-line bg-surface flex flex-col gap-3 rounded-xl border p-4">
+            <div class="border-points bg-pts-bg/25 flex flex-col gap-3 rounded-xl border-2 p-4">
               <p class="font-semibold">Pasa por la puerta para empezar a ganar puntos.</p>
-              <a pxBoton="secundario" routerLink="/mi-entrada">
+              <a pxBoton routerLink="/mi-entrada">
                 <px-icono nombre="ticket" [tamano]="20" />Mi entrada
               </a>
             </div>

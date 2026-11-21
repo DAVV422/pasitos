@@ -36,21 +36,25 @@ const MENSAJES: Readonly<Record<string, string>> = {
   template: `
     @if (confirmado(); as c) {
       <!-- A9 -->
-      <section class="flex flex-col items-center gap-3 pt-4 text-center" role="status">
-        <p class="text-success text-2xl font-extrabold">Canje confirmado</p>
-        <p class="font-display text-7xl font-extrabold" data-testid="comprobante">
-          {{ c.comprobante }}
-        </p>
-        <p class="text-xl">Muéstralo en la mesa.</p>
-        <ul>
-          @for (i of c.items; track i.premioId) {
-            <li>{{ i.cantidad }} × {{ i.nombre }}</li>
-          }
-        </ul>
+      <section class="flex flex-col items-center gap-4 pt-4 text-center" role="status">
+        <div
+          class="border-ok-border bg-ok-bg/40 flex w-full flex-col items-center gap-2 rounded-2xl border-2 p-6"
+        >
+          <p class="text-success text-2xl font-extrabold">Canje confirmado</p>
+          <p class="font-display text-7xl font-extrabold" data-testid="comprobante">
+            {{ c.comprobante }}
+          </p>
+          <p class="text-xl font-semibold">Muéstralo en la mesa.</p>
+          <ul class="mt-2 flex flex-col gap-1 text-lg font-bold">
+            @for (i of c.items; track i.premioId) {
+              <li>{{ i.cantidad }} × {{ i.nombre }}</li>
+            }
+          </ul>
+        </div>
         <p class="text-muted">
           Te quedan <b class="text-text">{{ c.saldo }}</b> {{ nombrePuntos() }}.
         </p>
-        <a pxBoton="secundario" routerLink="/inicio">Volver a Inicio</a>
+        <a pxBoton="secundario" [bloque]="true" routerLink="/inicio">Volver a Inicio</a>
       </section>
     } @else if (vista(); as v) {
       <!-- A4 -->

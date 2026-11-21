@@ -68,39 +68,45 @@ const VOLVER_MS = 10_000;
         }
         @case ('confirmado') {
           <section class="flex flex-col items-center gap-3 text-center" role="status">
-            <p class="text-success flex items-center gap-2 text-3xl font-extrabold">
-              <px-icono nombre="check" [tamano]="36" />Confirmado ✓
-            </p>
-            <p class="font-display text-7xl font-extrabold" data-testid="comprobante">
-              {{ e.comprobante }}
-            </p>
-            @if (e.asistente; as a) {
-              <p class="text-2xl">{{ a.nombre }} · {{ a.codigo }}</p>
-            }
-            <ul>
-              @for (i of e.items; track i.premioId) {
-                <li class="text-xl">
-                  {{ i.cantidad }} × {{ i.nombre }}
-                  @if (i.grupo) {
-                    · {{ i.puntos * i.cantidad }} puntos · {{ i.grupo }} ✓
-                  }
-                </li>
-              }
-            </ul>
-            @if (e.requiereCi) {
-              <p class="text-xl font-bold" data-testid="carnet">
-                Pide el carnet:
-                @if (e.carnet; as c) {
-                  @if (c.ci) {
-                    {{ c.ci }} · {{ c.verificado ? 'verificado ✓' : 'sin verificar' }}
-                  } @else {
-                    no lo escribió
-                  }
-                }
+            <div
+              class="border-ok-border bg-ok-bg/40 flex w-full flex-col items-center gap-2 rounded-2xl border-2 p-6"
+            >
+              <p class="text-success flex items-center gap-2 text-3xl font-extrabold">
+                <px-icono nombre="check" [tamano]="36" />Confirmado ✓
               </p>
+              <p class="font-display text-7xl font-extrabold" data-testid="comprobante">
+                {{ e.comprobante }}
+              </p>
+              @if (e.asistente; as a) {
+                <p class="text-2xl font-bold">{{ a.nombre }} · {{ a.codigo }}</p>
+              }
+              <ul class="mt-1 flex flex-col gap-1">
+                @for (i of e.items; track i.premioId) {
+                  <li class="text-xl font-semibold">
+                    {{ i.cantidad }} × {{ i.nombre }}
+                    @if (i.grupo) {
+                      · {{ i.puntos * i.cantidad }} puntos · {{ i.grupo }} ✓
+                    }
+                  </li>
+                }
+              </ul>
+            </div>
+            @if (e.requiereCi) {
+              <px-aviso variante="advertencia" class="w-full text-left">
+                <span class="text-lg font-bold" data-testid="carnet">
+                  Pide el carnet:
+                  @if (e.carnet; as c) {
+                    @if (c.ci) {
+                      {{ c.ci }} · {{ c.verificado ? 'verificado ✓' : 'sin verificar' }}
+                    } @else {
+                      no lo escribió
+                    }
+                  }
+                </span>
+              </px-aviso>
             }
             <p class="text-muted">Entrega solo si el celular muestra el mismo comprobante.</p>
-            <button pxBoton type="button" class="min-h-14 text-xl" (click)="next()">
+            <button pxBoton type="button" [bloque]="true" class="min-h-14 text-xl" (click)="next()">
               Siguiente
             </button>
           </section>

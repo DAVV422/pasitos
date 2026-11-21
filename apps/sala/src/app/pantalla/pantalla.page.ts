@@ -48,41 +48,72 @@ function newNonce(): string {
       @switch (e.estado) {
         @case ('activa') {
           @if (e.reto; as r) {
-            <header class="flex items-baseline justify-between gap-4 px-8 pt-6">
-              <h1 class="font-display text-4xl font-extrabold">{{ r.nombre }}</h1>
-              <p class="text-points font-display text-4xl font-extrabold whitespace-nowrap">
-                +{{ r.puntos }} puntos
-              </p>
-            </header>
-            <section class="flex flex-1 items-center justify-center p-4">
-              @if (qr(); as texto) {
-                <px-qr [texto]="texto" [tamano]="tamanoQr()" descripcion="QR del reto" />
-              }
-            </section>
-            <footer class="flex items-center justify-between gap-6 px-8 pb-6">
-              @if (r.modo === 'por_tiempo') {
-                <div class="flex flex-1 flex-col gap-1" aria-hidden="true">
-                  <div class="bg-surface2 h-3 w-full overflow-hidden rounded-full">
-                    <div
-                      class="bg-points h-full transition-[width] duration-200"
-                      [style.width.%]="avance()"
-                    ></div>
-                  </div>
-                  <p class="text-muted text-sm">Cambia en {{ restantes() }} s</p>
+            <div
+              class="flex flex-1 flex-col justify-between gap-4 p-6 lg:grid lg:grid-cols-[1fr_auto] lg:items-center lg:gap-12 lg:px-16 lg:py-10"
+            >
+              <div class="flex flex-col gap-4 lg:gap-6">
+                <header
+                  class="flex flex-wrap items-baseline justify-between gap-4 lg:flex-col lg:items-start"
+                >
+                  <p class="text-muted text-lg font-semibold">{{ e.evento.nombre }}</p>
+                  <h1 class="font-display text-4xl font-extrabold lg:text-5xl">{{ r.nombre }}</h1>
+                  <p
+                    class="text-points font-display text-4xl font-extrabold whitespace-nowrap lg:text-5xl"
+                  >
+                    +{{ r.puntos }} puntos
+                  </p>
+                </header>
+                <p class="text-muted text-xl">
+                  Escanea el código QR con Pasitos para sumar tus puntos.
+                </p>
+                <div class="hidden flex-col gap-4 lg:flex">
+                  @if (r.modo === 'por_tiempo') {
+                    <div class="flex max-w-md flex-col gap-1.5" aria-hidden="true">
+                      <div class="bg-surface2 h-3 w-full overflow-hidden rounded-full">
+                        <div
+                          class="bg-points h-full transition-[width] duration-200"
+                          [style.width.%]="avance()"
+                        ></div>
+                      </div>
+                      <p class="text-muted text-sm">Cambia en {{ restantes() }} s</p>
+                    </div>
+                  } @else {
+                    <p class="text-muted text-lg">Un solo uso: cambia al escanearlo</p>
+                  }
                 </div>
-              } @else {
-                <p class="text-muted text-lg">Un solo uso: cambia al escanearlo</p>
-              }
-              <p
-                class="font-display text-3xl font-extrabold transition-transform duration-300"
-                [class.scale-125]="destello()"
-                [class.text-success]="destello()"
-                aria-live="polite"
-                data-testid="contador"
-              >
-                {{ contador() }} {{ contador() === 1 ? 'persona' : 'personas' }}
-              </p>
-            </footer>
+              </div>
+
+              <section class="flex flex-1 items-center justify-center">
+                @if (qr(); as texto) {
+                  <px-qr [texto]="texto" [tamano]="tamanoQr()" descripcion="QR del reto" />
+                }
+              </section>
+
+              <footer class="flex items-center justify-between gap-6 lg:col-span-2">
+                @if (r.modo === 'por_tiempo') {
+                  <div class="flex flex-1 flex-col gap-1 lg:hidden" aria-hidden="true">
+                    <div class="bg-surface2 h-3 w-full overflow-hidden rounded-full">
+                      <div
+                        class="bg-points h-full transition-[width] duration-200"
+                        [style.width.%]="avance()"
+                      ></div>
+                    </div>
+                    <p class="text-muted text-sm">Cambia en {{ restantes() }} s</p>
+                  </div>
+                } @else {
+                  <p class="text-muted text-lg lg:hidden">Un solo uso: cambia al escanearlo</p>
+                }
+                <p
+                  class="font-display text-3xl font-extrabold tabular-nums transition-transform duration-300 lg:text-4xl"
+                  [class.scale-125]="destello()"
+                  [class.text-success]="destello()"
+                  aria-live="polite"
+                  data-testid="contador"
+                >
+                  {{ contador() }} {{ contador() === 1 ? 'persona' : 'personas' }}
+                </p>
+              </footer>
+            </div>
           }
         }
         @case ('espera') {

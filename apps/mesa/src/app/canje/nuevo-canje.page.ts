@@ -47,19 +47,36 @@ import { MesaApi, type PremioMesa } from '../mesa-api.service';
       @if (premios.length === 0) {
         <px-estado tipo="vacio" titulo="No hay premios en el catálogo." />
       } @else {
-        <ul class="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <ul class="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3">
           @for (p of premios; track p.id) {
-            <li class="border-line bg-surface flex flex-col gap-2 rounded-xl border p-3">
+            <li
+              class="border-line bg-surface flex flex-col gap-2 rounded-xl border p-3 transition-colors"
+              [class.border-points]="cantidad(p.id) > 0"
+              [class.border-2]="cantidad(p.id) > 0"
+              [class.bg-pts-bg/20]="cantidad(p.id) > 0"
+              [class.opacity-60]="p.disponible === 0"
+            >
               @if (p.imagenUrl) {
                 <img
                   [src]="p.imagenUrl"
                   alt=""
-                  class="aspect-square w-full rounded-lg object-cover"
+                  class="aspect-square w-full cursor-pointer rounded-lg object-cover"
                   loading="lazy"
+                  (click)="change(p, 1)"
                 />
+              } @else {
+                <div
+                  class="bg-surface2 text-muted flex aspect-square w-full cursor-pointer items-center justify-center rounded-lg"
+                  aria-hidden="true"
+                  (click)="change(p, 1)"
+                >
+                  <px-icono nombre="gift" [tamano]="36" />
+                </div>
               }
-              <p class="text-lg leading-tight font-bold">{{ p.nombre }}</p>
-              <p class="text-points font-display text-xl font-extrabold">
+              <p class="cursor-pointer text-lg leading-tight font-bold" (click)="change(p, 1)">
+                {{ p.nombre }}
+              </p>
+              <p class="text-points font-display text-xl font-extrabold tabular-nums">
                 {{ p.puntos === 0 ? 'Gratis' : p.puntos + ' pts' }}
               </p>
               @if (p.grupo) {
@@ -75,7 +92,7 @@ import { MesaApi, type PremioMesa } from '../mesa-api.service';
                   }
                 }
               </p>
-              <div class="flex items-center justify-between gap-2">
+              <div class="mt-auto flex items-center justify-between gap-2 pt-1">
                 <button
                   pxBoton="secundario"
                   type="button"
@@ -87,7 +104,7 @@ import { MesaApi, type PremioMesa } from '../mesa-api.service';
                   −
                 </button>
                 <span
-                  class="font-display text-2xl font-extrabold"
+                  class="font-display text-2xl font-extrabold tabular-nums"
                   [attr.aria-label]="'Cantidad de ' + p.nombre"
                   >{{ cantidad(p.id) }}</span
                 >
@@ -105,15 +122,24 @@ import { MesaApi, type PremioMesa } from '../mesa-api.service';
             </li>
           }
         </ul>
-        <footer class="bg-bg sticky bottom-0 flex items-center justify-between gap-3 py-4">
-          <p class="font-display text-3xl font-extrabold" data-testid="total">
-            Total: {{ total() }} pts
-          </p>
+        <footer
+          class="border-line bg-surface sticky bottom-0 -mx-5 flex flex-wrap items-center justify-between gap-3 border-t px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg"
+        >
+          <div class="flex items-baseline gap-3">
+            <p class="font-display text-3xl font-extrabold tabular-nums" data-testid="total">
+              Total: {{ total() }} pts
+            </p>
+            @if (tieneSeleccion()) {
+              <button type="button" pxBoton="fantasma" [chico]="true" (click)="clear()">
+                Limpiar
+              </button>
+            }
+          </div>
           <button
             pxBoton
             type="button"
             class="min-h-14 text-xl"
-            [deshabilitado]="total() === 0 || sinRed()"
+            [deshabilitado]="!tieneSeleccion() || sinRed()"
             [cargando]="cobrando()"
             (click)="cobrar()"
           >
@@ -150,6 +176,9 @@ export class NuevoCanjePage {
       0,
     ),
   );
+  protected readonly tieneSeleccion = computed(() =>
+    Object.values(this.cantidades()).some((c) => c > 0),
+  );
 
   constructor() {
     void this.load();
@@ -182,6 +211,11 @@ export class NuevoCanjePage {
     const actual = this.cantidad(premio.id);
     const nueva = Math.max(0, Math.min(premio.disponible, actual + delta));
     this.cantidades.set({ ...this.cantidades(), [premio.id]: nueva });
+    this.clave = crypto.randomUUID();
+  }
+
+  protected clear(): void {
+    this.cantidades.set({});
     this.clave = crypto.randomUUID();
   }
 

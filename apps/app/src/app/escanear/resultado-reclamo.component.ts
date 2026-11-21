@@ -17,7 +17,11 @@ import { ReclamoService } from './reclamo.service';
       @case ('ganado') {
         @if (ganado(); as g) {
           <section class="flex flex-col items-center gap-3 pt-6 text-center" role="status">
-            <px-icono nombre="check" [tamano]="64" />
+            <span
+              class="bg-ok-bg text-ok-fg flex h-20 w-20 items-center justify-center rounded-full"
+            >
+              <px-icono nombre="check" [tamano]="48" />
+            </span>
             <p class="text-points font-display text-6xl font-extrabold" data-testid="ganados">
               +{{ g.puntos }}
             </p>
@@ -26,8 +30,10 @@ import { ReclamoService } from './reclamo.service';
               Ahora tienes <b class="text-text">{{ g.saldo }}</b>
               {{ sesion.estado()?.evento?.nombrePuntos ?? 'puntos' }}.
             </p>
-            <button pxBoton type="button" (click)="otro.emit()">Escanear otro</button>
-            <a pxBoton="secundario" routerLink="/inicio">Volver a Inicio</a>
+            <button pxBoton type="button" [bloque]="true" (click)="otro.emit()">
+              Escanear otro
+            </button>
+            <a pxBoton="secundario" [bloque]="true" routerLink="/inicio">Volver a Inicio</a>
           </section>
         }
       }

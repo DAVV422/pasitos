@@ -25,7 +25,9 @@ import { ResultadoReclamoComponent } from './resultado-reclamo.component';
       } @placeholder {
         <p class="text-muted">Abriendo la cámara…</p>
       }
-      <p class="text-muted text-center">Apunta al QR de la pantalla de la sala o del stand.</p>
+      <p class="text-muted text-center">
+        Apunta al QR de la pantalla de la sala, del stand o de la mesa de canje.
+      </p>
       @if (ajeno()) {
         <px-aviso variante="advertencia">Este código no es de Pasitos.</px-aviso>
       }

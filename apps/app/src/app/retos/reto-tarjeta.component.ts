@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ChipComponent, IconoComponent } from '@pasitos/ui';
+import { ChipComponent, IconoComponent, type NombreIcono } from '@pasitos/ui';
 import { formatHora } from '../formato';
 import { getComoSeCompleta, type RetoVista } from '../retos-vista';
 
@@ -32,22 +32,24 @@ import { getComoSeCompleta, type RetoVista } from '../retos-vista';
       @switch (r.estadoPersona.estado) {
         @case ('disponible') {
           <p class="text-muted flex items-center gap-2 text-sm">
-            <px-icono nombre="scan" [tamano]="16" />{{ como() }}
+            <px-icono [nombre]="iconoComo()" [tamano]="16" />{{ como() }}
           </p>
           @if (accion()) {
             @if (r.tipo === 'foto') {
               <a
                 [routerLink]="['/retos', r.id]"
-                class="text-points mt-1 inline-flex items-center gap-1 font-bold underline"
-                >{{ textoFoto() }}</a
+                class="bg-pts-bg text-points mt-1 inline-flex min-h-11 items-center gap-1.5 self-start rounded-lg px-3.5 text-sm font-bold"
               >
+                <px-icono nombre="image" [tamano]="18" />{{ textoFoto() }}
+              </a>
             }
             @if (r.tipo === 'qr') {
               <a
                 routerLink="/escanear"
-                class="text-points mt-1 inline-flex items-center gap-1 font-bold underline"
-                >Escanear</a
+                class="bg-pts-bg text-points mt-1 inline-flex min-h-11 items-center gap-1.5 self-start rounded-lg px-3.5 text-sm font-bold"
               >
+                <px-icono nombre="scan" [tamano]="18" />Escanear
+              </a>
             }
           }
         }
@@ -87,6 +89,13 @@ export class RetoTarjetaComponent {
   readonly enlace = input(true);
 
   protected readonly como = computed(() => getComoSeCompleta(this.reto()));
+  protected readonly iconoComo = computed<NombreIcono>(() => {
+    const tipo = this.reto().tipo;
+    if (tipo === 'foto') return 'image';
+    if (tipo === 'verificacion_ci') return 'badge';
+    if (tipo === 'otorgado') return 'user';
+    return 'scan';
+  });
   /** HU-322: *Sacar foto*, o en qué va la que mandó. */
   protected readonly textoFoto = computed(() => {
     const foto = this.reto().estadoPersona.foto;

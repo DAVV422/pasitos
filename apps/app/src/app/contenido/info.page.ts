@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { EstadoComponent, IconoComponent } from '@pasitos/ui';
 import { formatDiaYHora, formatHora } from '../formato';
 import { SesionAsistente } from '../sesion-asistente';
@@ -10,8 +11,14 @@ import { SesionAsistente } from '../sesion-asistente';
 @Component({
   selector: 'app-info-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EstadoComponent, IconoComponent],
+  imports: [EstadoComponent, IconoComponent, RouterLink],
   template: `
+    <a
+      routerLink="/cuenta"
+      class="text-muted inline-flex min-h-11 items-center gap-1 self-start font-semibold"
+    >
+      <px-icono nombre="back" [tamano]="18" />Más
+    </a>
     @if (sesion.errorEvento()) {
       <h1 class="text-2xl font-extrabold">Información</h1>
       <px-estado tipo="error" titulo="No pudimos cargar la información. Revisa tu conexión." />

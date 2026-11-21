@@ -32,7 +32,15 @@ import { FotosService } from './fotos.service';
 
       @switch (estadoActual()) {
         @case ('enviando') {
-          <p aria-live="polite">Enviando… {{ envio()?.progreso ?? 0 }} %</p>
+          <div class="flex flex-col gap-1.5" aria-live="polite">
+            <p class="font-semibold">Enviando… {{ envio()?.progreso ?? 0 }} %</p>
+            <div class="bg-track h-2.5 w-full overflow-hidden rounded-full" aria-hidden="true">
+              <div
+                class="bg-points-fill h-full rounded-full transition-[width] duration-200"
+                [style.width.%]="envio()?.progreso ?? 0"
+              ></div>
+            </div>
+          </div>
         }
         @case ('sin_conexion') {
           <px-aviso variante="advertencia" role="status">
@@ -67,10 +75,12 @@ import { FotosService } from './fotos.service';
             }
             @if (vista(); as v) {
               <img [src]="v.url" alt="Tu foto, antes de mandarla" class="w-full rounded-lg" />
-              <label class="flex items-start gap-2 text-sm">
+              <label
+                class="border-line bg-surface2 flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm"
+              >
                 <input
                   type="checkbox"
-                  class="mt-1 h-5 w-5"
+                  class="mt-0.5 h-5 w-5 shrink-0"
                   [checked]="autoriza()"
                   (change)="autoriza.set(!autoriza())"
                 />
@@ -96,7 +106,7 @@ import { FotosService } from './fotos.service';
               </div>
             } @else {
               <button type="button" pxBoton [bloque]="true" (click)="camara.click()">
-                <px-icono nombre="scan" [tamano]="20" />Sacar foto
+                <px-icono nombre="image" [tamano]="20" />Sacar foto
               </button>
               <input
                 #camara
