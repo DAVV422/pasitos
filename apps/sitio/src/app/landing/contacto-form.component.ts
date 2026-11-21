@@ -20,7 +20,7 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
       <form class="flex flex-col gap-4" (submit)="send($event)" data-testid="contacto-form">
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="flex flex-col gap-1"
-            ><b>Nombre</b>
+            ><b class="text-sm">Nombre</b>
             <input
               class="px-control"
               name="nombre"
@@ -32,7 +32,7 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
             <span class="text-danger text-sm">{{ errores()['nombre'] }}</span>
           </label>
           <label class="flex flex-col gap-1"
-            ><b>Correo</b>
+            ><b class="text-sm">Correo</b>
             <input
               class="px-control"
               name="email"
@@ -44,7 +44,9 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
             <span class="text-danger text-sm">{{ errores()['email'] }}</span>
           </label>
           <label class="flex flex-col gap-1 sm:col-span-2"
-            ><b>Organización <span class="text-muted font-normal">(opcional)</span></b>
+            ><b class="text-sm"
+              >Organización <span class="text-muted font-normal">(opcional)</span></b
+            >
             <input
               class="px-control"
               name="organizacion"
@@ -53,8 +55,10 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
             />
           </label>
           <label class="flex flex-col gap-1"
-            ><b>Tipo de evento <span class="text-muted font-normal">(opcional)</span></b>
-            <select class="px-control" name="tipoEvento">
+            ><b class="text-sm"
+              >Tipo de evento <span class="text-muted font-normal">(opcional)</span></b
+            >
+            <select class="px-control mt-auto" name="tipoEvento">
               <option value="">Elige uno</option>
               @for (t of tipos; track t.valor) {
                 <option [value]="t.valor">{{ t.texto }}</option>
@@ -62,8 +66,10 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
             </select>
           </label>
           <label class="flex flex-col gap-1"
-            ><b>Asistentes aproximados <span class="text-muted font-normal">(opcional)</span></b>
-            <select class="px-control" name="asistentesAprox">
+            ><b class="text-sm"
+              >Asistentes aproximados <span class="text-muted font-normal">(opcional)</span></b
+            >
+            <select class="px-control mt-auto" name="asistentesAprox">
               <option value="">Elige uno</option>
               @for (a of cantidades; track a.valor) {
                 <option [value]="a.valor">{{ a.texto }}</option>
@@ -72,7 +78,7 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
           </label>
         </div>
         <label class="flex flex-col gap-1"
-          ><b>Cuéntanos de tu evento</b>
+          ><b class="text-sm">Cuéntanos de tu evento</b>
           <textarea
             class="px-control"
             name="mensaje"
