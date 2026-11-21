@@ -22,24 +22,26 @@ const SIN_BARRA = /^\/(acceso|sin-acceso|anulado|sin-conexion)(\/|$)/;
   template: `
     <px-encabezado />
     @if (conBarra()) {
-      @if (sesion.estado()?.evento?.estado === 'pausado') {
-        <div class="sticky top-0 z-10 px-5 pt-2">
-          <px-aviso variante="advertencia">Pausamos un momento. Tus puntos están seguros.</px-aviso>
-        </div>
-      }
-      @if (cierreProximo(); as hora) {
-        <div class="sticky top-0 z-10 px-5 pt-2">
-          <px-aviso variante="advertencia" data-testid="cierre-proximo"
-            >Los {{ sesion.estado()?.evento?.nombrePuntos }} vencen a las {{ hora }}.
-            ¡Canjéalos!</px-aviso
-          >
-        </div>
-      }
-      @if (sesion.sinConexion()) {
-        <div class="sticky top-0 z-10 px-5 pt-2">
-          <px-aviso variante="advertencia"
-            >Sin conexión · actualizado {{ hace() }}. Tus puntos están a salvo.</px-aviso
-          >
+      @if (
+        sesion.estado()?.evento?.estado === 'pausado' || cierreProximo() || sesion.sinConexion()
+      ) {
+        <div class="bg-bg/95 sticky top-0 z-10 mx-auto flex max-w-xl flex-col gap-2 px-5 pt-2">
+          @if (sesion.estado()?.evento?.estado === 'pausado') {
+            <px-aviso variante="advertencia"
+              >Pausamos un momento. Tus puntos están seguros.</px-aviso
+            >
+          }
+          @if (cierreProximo(); as hora) {
+            <px-aviso variante="advertencia" data-testid="cierre-proximo"
+              >Los {{ sesion.estado()?.evento?.nombrePuntos }} vencen a las {{ hora }}.
+              ¡Canjéalos!</px-aviso
+            >
+          }
+          @if (sesion.sinConexion()) {
+            <px-aviso variante="advertencia"
+              >Sin conexión · actualizado {{ hace() }}. Tus puntos están a salvo.</px-aviso
+            >
+          }
         </div>
       }
     }

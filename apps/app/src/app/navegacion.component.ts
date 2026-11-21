@@ -29,21 +29,34 @@ interface Pestana {
               @if (activas()) {
                 <a
                   routerLink="/escanear"
-                  routerLinkActive="ring-2"
-                  class="bg-points text-on-points ring-line-strong -mt-6 flex h-16 w-16 flex-col items-center justify-center rounded-full font-bold shadow-lg"
+                  routerLinkActive="text-points font-bold"
+                  #activo="routerLinkActive"
+                  [attr.aria-current]="activo.isActive ? 'page' : null"
+                  class="text-muted flex min-h-14 w-full flex-col items-center justify-end gap-1 pb-1.5 text-xs"
                   aria-label="Escanear código QR"
                 >
-                  <px-icono nombre="scan" [tamano]="28" />
+                  <span
+                    class="bg-points text-on-points ring-line-strong -mt-6 flex h-14 w-14 items-center justify-center rounded-full shadow-lg"
+                    [class.ring-2]="activo.isActive"
+                  >
+                    <px-icono nombre="scan" [tamano]="26" />
+                  </span>
+                  <span>{{ pestana.texto }}</span>
                 </a>
               } @else {
                 <span
-                  class="bg-surface2 text-muted -mt-6 flex h-16 w-16 flex-col items-center justify-center rounded-full"
+                  class="text-muted flex min-h-14 w-full flex-col items-center justify-end gap-1 pb-1.5 text-xs"
                   role="link"
                   aria-disabled="true"
                   [attr.aria-label]="'Escanear no disponible: ' + motivo()"
                   [title]="motivo()"
                 >
-                  <px-icono nombre="scan" [tamano]="28" />
+                  <span
+                    class="bg-surface2 text-muted -mt-6 flex h-14 w-14 items-center justify-center rounded-full"
+                  >
+                    <px-icono nombre="scan" [tamano]="26" />
+                  </span>
+                  <span>{{ pestana.texto }}</span>
                 </span>
               }
             } @else {
@@ -52,10 +65,10 @@ interface Pestana {
                 routerLinkActive="text-points font-bold"
                 #activo="routerLinkActive"
                 [attr.aria-current]="activo.isActive ? 'page' : null"
-                class="text-muted flex min-h-14 w-full flex-col items-center justify-center gap-1 text-xs"
+                class="text-muted flex min-h-14 w-full flex-col items-center justify-end gap-1 pb-1.5 text-xs"
               >
                 <px-icono [nombre]="pestana.icono" [tamano]="22" />
-                {{ pestana.texto }}
+                <span>{{ pestana.texto }}</span>
               </a>
             }
           </li>

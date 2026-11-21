@@ -22,6 +22,9 @@ type Modo = 'inicio' | 'escanear' | 'buscar' | 'ficha';
 @Component({
   selector: 'adm-carnets-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    style: '--alto-control: 48px; --alto-boton: 52px; --radio-control: 12px',
+  },
   imports: [
     AvisoComponent,
     BotonDirective,

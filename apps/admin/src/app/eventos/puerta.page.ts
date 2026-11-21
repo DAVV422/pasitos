@@ -43,6 +43,9 @@ const ESPERA_BUSQUEDA_MS = 250;
 @Component({
   selector: 'adm-puerta-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    style: '--alto-control: 48px; --alto-boton: 52px; --radio-control: 12px',
+  },
   imports: [
     AccesoPuertaComponent,
     FotosAsistenteComponent,
@@ -311,6 +314,7 @@ const ESPERA_BUSQUEDA_MS = 250;
             ayuda="Desde la 3.ª letra."
           >
             <input
+              #inputBusqueda
               [id]="busqueda.idControl"
               [attr.aria-describedby]="busqueda.idDescripcion"
               type="search"
@@ -321,6 +325,11 @@ const ESPERA_BUSQUEDA_MS = 250;
               (focus)="setModo('buscar')"
             />
           </px-campo>
+          @if (modo() === 'buscar') {
+            <button pxBoton="secundario" type="button" (click)="setModo('escanear')">
+              <px-icono nombre="scan" [tamano]="18" />Escanear entrada
+            </button>
+          }
           @if (buscando()) {
             <px-estado tipo="cargando" titulo="Buscando…" />
           } @else if (consulta().trim().length >= 3 && resultados().length === 0) {
@@ -513,6 +522,11 @@ export class PuertaPage {
   protected setModo(modo: Modo): void {
     this.error.set(null);
     this.modo.set(modo);
+    if (modo === 'buscar') {
+      queueMicrotask(() =>
+        document.querySelector<HTMLInputElement>('input[type="search"]')?.focus(),
+      );
+    }
   }
 
   protected reset(): void {
@@ -644,10 +658,14 @@ export class PuertaPage {
     this.marcando.set(true);
     this.error.set(null);
     try {
-      this.ficha.set(await this.api.register(ficha.id, this.metodo));
+      const actualizada = await this.api.register(ficha.id, this.metodo);
+      this.ficha.set(actualizada);
       this.bumpPresentes(1);
-      // Vuelve sola a buscar: la fila sigue.
-      this.volver = setTimeout(() => this.reset(), VOLVER_MS);
+      // Si ya tiene su celular vinculado, vuelve sola a buscar: la fila sigue.
+      // Si no tiene celular vinculado, deja la ficha abierta para generar su QR de asistente.
+      if (actualizada.dispositivo) {
+        this.volver = setTimeout(() => this.reset(), VOLVER_MS);
+      }
     } catch (error) {
       if (error instanceof ErrorApi && error.code === 'CHECK_IN_YA_HECHO') {
         this.ficha.set(await this.api.getFicha(ficha.id).catch(() => ficha));

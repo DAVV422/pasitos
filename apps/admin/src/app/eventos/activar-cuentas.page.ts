@@ -50,30 +50,30 @@ const MARGEN_MS = 300;
             El organizador te asigna uno en QR de registro.
           </px-estado>
         } @else {
-          @if (qrs().length > 1) {
-            <label class="flex flex-col gap-1 font-semibold">
-              QR que muestras
-              <select (change)="choose($any($event.target).value)">
-                @for (qr of qrs(); track qr.id) {
-                  <option [value]="qr.id" [selected]="qr.id === elegido()">{{ qr.nombre }}</option>
-                }
-              </select>
-            </label>
-          }
           <section
-            class="bg-bg fixed inset-0 z-30 flex flex-col items-center justify-center gap-4 p-4 text-center"
+            class="bg-bg fixed inset-0 z-30 flex flex-col items-center justify-center gap-4 overflow-y-auto p-4 text-center"
             aria-live="polite"
           >
+            @if (qrs().length > 1) {
+              <label class="flex w-full max-w-xs flex-col gap-1 text-left font-semibold">
+                QR que muestras
+                <select (change)="choose($any($event.target).value)">
+                  @for (qr of qrs(); track qr.id) {
+                    <option [value]="qr.id" [selected]="qr.id === elegido()">
+                      {{ qr.nombre }}
+                    </option>
+                  }
+                </select>
+              </label>
+            }
             @if (franja(); as f) {
               <h1 class="text-2xl font-extrabold">{{ f.nombre }}</h1>
               @if (f.url) {
-                <div class="rounded-xl bg-white p-4">
-                  <px-qr
-                    [texto]="f.url"
-                    [tamano]="tamanoQr()"
-                    descripcion="QR para crear tu cuenta"
-                  />
-                </div>
+                <px-qr
+                  [texto]="f.url"
+                  [tamano]="tamanoQr()"
+                  descripcion="QR para crear tu cuenta"
+                />
                 <p class="text-muted">Escanéalo con la cámara para entrar al evento.</p>
                 <p class="text-lg font-bold" data-testid="activadas">
                   Activaste {{ f.registros }}

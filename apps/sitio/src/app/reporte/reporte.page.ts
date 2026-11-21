@@ -79,17 +79,22 @@ const formato = (zona: string, opciones: Intl.DateTimeFormatOptions) =>
         @if (porForma().length > 0) {
           <section class="flex flex-col gap-3" aria-labelledby="como-entraron">
             <h2 id="como-entraron" class="text-2xl font-extrabold">Cómo entraron</h2>
-            <ul class="flex flex-col gap-2">
+            <ul class="flex flex-col gap-3 sm:gap-2">
               @for (b of porForma(); track b.nombre) {
-                <li class="grid grid-cols-[minmax(0,12rem)_1fr_auto] items-center gap-3 text-sm">
-                  <span class="truncate">{{ b.nombre }}</span>
-                  <span class="bg-track h-3 rounded-full" aria-hidden="true">
+                <li
+                  class="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 text-sm sm:grid-cols-[minmax(0,12rem)_1fr_auto]"
+                >
+                  <span class="sm:truncate" [title]="b.nombre">{{ b.nombre }}</span>
+                  <span
+                    class="bg-track col-span-2 row-start-2 h-3 rounded-full sm:col-span-1 sm:row-start-auto"
+                    aria-hidden="true"
+                  >
                     <span
                       class="bg-points-fill block h-3 rounded-full"
                       [style.width.%]="(b.valor / maximo(porForma())) * 100"
                     ></span>
                   </span>
-                  <span class="tabular-nums">{{ b.valor }}</span>
+                  <span class="font-semibold tabular-nums sm:font-normal">{{ b.valor }}</span>
                 </li>
               }
             </ul>
@@ -128,17 +133,24 @@ const formato = (zona: string, opciones: Intl.DateTimeFormatOptions) =>
             {{ porcentaje(r.datos.participacion.conReto) }} de los presentes completó al menos un
             reto · {{ porcentaje(r.datos.participacion.conCanje) }} canjeó al menos un premio.
           </p>
-          <ul class="flex flex-col gap-2">
+          <ul class="flex flex-col gap-3 sm:gap-2">
             @for (b of porReto(); track b.nombre) {
-              <li class="grid grid-cols-[minmax(0,12rem)_1fr_auto] items-center gap-3 text-sm">
-                <span class="truncate">{{ b.nombre }}</span>
-                <span class="bg-track h-3 rounded-full" aria-hidden="true">
+              <li
+                class="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 text-sm sm:grid-cols-[minmax(0,12rem)_1fr_auto]"
+              >
+                <span class="sm:truncate" [title]="b.nombre">{{ b.nombre }}</span>
+                <span
+                  class="bg-track col-span-2 row-start-2 h-3 rounded-full sm:col-span-1 sm:row-start-auto"
+                  aria-hidden="true"
+                >
                   <span
                     class="bg-points-fill block h-3 rounded-full"
                     [style.width.%]="(b.valor / maximo(porReto())) * 100"
                   ></span>
                 </span>
-                <span class="tabular-nums">{{ b.valor }}{{ b.detalle }}</span>
+                <span class="font-semibold tabular-nums sm:font-normal"
+                  >{{ b.valor }}{{ b.detalle }}</span
+                >
               </li>
             }
           </ul>

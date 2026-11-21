@@ -68,6 +68,9 @@ const TEXTOS_ERROR: Readonly<Record<string, string>> = {
           <button type="button" pxBoton [bloque]="true" (click)="copy()">
             {{ copiado() ? 'Enlace copiado' : 'Copiar enlace' }}
           </button>
+          @if (esAndroid) {
+            <a pxBoton="secundario" [bloque]="true" [href]="enlaceChrome">Abrir en Chrome</a>
+          }
         </section>
       }
       @case ('computadora') {
@@ -195,6 +198,8 @@ export class RegistroPage implements OnInit {
   protected readonly incognito = signal(false);
   protected readonly copiado = signal(false);
   protected readonly enlace = location.href;
+  protected readonly esAndroid = /Android/.test(navigator.userAgent);
+  protected readonly enlaceChrome = `intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
 
   constructor() {
     const alVolver = () => void this.retry();
