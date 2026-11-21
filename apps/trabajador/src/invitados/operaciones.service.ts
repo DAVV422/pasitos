@@ -15,6 +15,7 @@ import {
   SIMILITUD_DUPLICADO,
   type FilaCsv,
 } from '@pasitos/dominio/esquemas';
+import { FORMATO_CELULAR } from '@pasitos/dominio';
 import type { Reloj } from '../comun/reloj';
 
 type Operacion = typeof operaciones.$inferSelect;
@@ -264,6 +265,7 @@ export class OperacionesTrabajoService {
         nombre: asistentes.nombre,
         email: asistentes.email,
         codigoExterno: asistentes.codigoExterno,
+        celular: asistentes.celular,
         estado: asistentes.estado,
         origen: asistentes.origen,
       })
@@ -277,8 +279,26 @@ export class OperacionesTrabajoService {
       .orderBy(sql`length(${asistentes.codigoAsistente})`, asc(asistentes.codigoAsistente));
     // "Presente desde" llega con el check-in (fase 3).
     const csv = buildCsv(
-      ['Código', 'Nombre', 'Correo', 'Código externo', 'Estado', 'Origen', 'Presente desde'],
-      filas.map((f) => [f.codigo, f.nombre, f.email, f.codigoExterno, f.estado, f.origen, null]),
+      [
+        'Código',
+        'Nombre',
+        'Correo',
+        'Celular',
+        'Código externo',
+        'Estado',
+        'Origen',
+        'Presente desde',
+      ],
+      filas.map((f) => [
+        f.codigo,
+        f.nombre,
+        f.email,
+        f.celular,
+        f.codigoExterno,
+        f.estado,
+        f.origen,
+        null,
+      ]),
     );
     const carpeta = join(this.archivosDir, 'exportaciones');
     await mkdir(carpeta, { recursive: true });
@@ -308,6 +328,7 @@ function getMotivoInvalida(fila: FilaCsv): string | null {
   if (normalizeTexto(fila.nombre).length < 2) return 'falta el nombre';
   if (fila.nombre.length > 120) return 'el nombre tiene más de 120 caracteres';
   if (fila.email && !esquemaEmail.safeParse(fila.email).success) return 'el correo no es válido';
+  if (fila.celular && !FORMATO_CELULAR.test(fila.celular)) return 'el celular no es válido';
   if (fila.codigoExterno && fila.codigoExterno.length > 60) {
     return 'el código tiene más de 60 caracteres';
   }

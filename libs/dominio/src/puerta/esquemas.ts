@@ -1,3 +1,4 @@
+import { esquemaCelularONulo } from '../registro/esquemas';
 import * as z from 'zod';
 import { TIPOS_MOTIVO_REVINCULAR } from '../acceso/motivos';
 
@@ -32,6 +33,8 @@ export const esquemaRegistroPuerta = z.object({
     .transform((valor) => (valor === '' ? undefined : valor))
     .pipe(z.email({ error: 'Revisa el correo.' }).optional())
     .optional(),
+  // HU-411: si es obligatorio lo decide el servicio, con la regla del evento.
+  celular: esquemaCelularONulo.optional(),
   confirmarDuplicado: z.boolean().optional(),
 });
 

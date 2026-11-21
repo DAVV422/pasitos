@@ -44,6 +44,8 @@ export interface EntradaBitacora {
  */
 export const CAMPOS_PROHIBIDOS = [
   'password',
+  // HU-411: el número del asistente nunca va a la bitácora.
+  'celular',
   'contrasena',
   'passwordhash',
   'token',

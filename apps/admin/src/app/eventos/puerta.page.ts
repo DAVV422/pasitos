@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { formatCelular, getEnlaceWhatsapp } from '@pasitos/dominio';
 import { ContextoEventoService, DialogoComponent, getMensajeError } from '@pasitos/panel';
 import {
   AvisoComponent,
@@ -142,6 +143,25 @@ const ESPERA_BUSQUEDA_MS = 250;
                 </h2>
                 @if (f.email) {
                   <p class="text-muted">{{ f.email }}</p>
+                }
+                @if (f.celular) {
+                  <p
+                    class="text-muted flex flex-wrap items-center gap-x-3"
+                    data-testid="celular-ficha"
+                  >
+                    {{ mostrarCelular(f.celular) }}
+                    @if (f.celular.startsWith('+')) {
+                      <!-- HU-411: el número completo solo le llega a D y C. -->
+                      <a
+                        class="underline"
+                        [href]="whatsapp(f.celular)"
+                        target="_blank"
+                        rel="noopener"
+                        >WhatsApp</a
+                      >
+                      <a class="underline" [href]="'tel:' + f.celular">Llamar</a>
+                    }
+                  </p>
                 }
               </div>
               <div class="flex flex-wrap gap-2">
@@ -517,6 +537,13 @@ export class PuertaPage {
       clearTimeout(this.esperaBusqueda);
       clearTimeout(this.volver);
     });
+  }
+
+  /** HU-411: el oculto (`•••• 4567`) tal cual; el completo, con espacios. */
+  protected readonly whatsapp = getEnlaceWhatsapp;
+
+  protected mostrarCelular(celular: string): string {
+    return celular.startsWith('+') ? (formatCelular(celular) ?? celular) : celular;
   }
 
   protected setModo(modo: Modo): void {

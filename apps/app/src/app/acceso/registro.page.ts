@@ -8,7 +8,14 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { isCelular, isNavegadorDeOtraApp, isNavegadorSoportado } from '@pasitos/dominio';
+import {
+  isCelular,
+  isNavegadorDeOtraApp,
+  isNavegadorSoportado,
+  MENSAJE_CELULAR_INVALIDO,
+  MENSAJE_CELULAR_REQUERIDO,
+  normalizeCelular,
+} from '@pasitos/dominio';
 import {
   AvisoComponent,
   BotonDirective,
@@ -136,6 +143,28 @@ const TEXTOS_ERROR: Readonly<Record<string, string>> = {
                 (input)="email.set($any($event.target).value)"
               />
             </px-campo>
+            @if (r.pideCelular !== 'no') {
+              <!-- HU-411. -->
+              <px-campo
+                etiqueta="Celular"
+                [opcional]="r.pideCelular === 'opcional'"
+                ayuda="Para que el organizador te pueda contactar. Ejemplo: 71234567; de otro país, con el código (+54…)."
+                [error]="errores()['celular'] ?? null"
+                #c9="pxCampo"
+              >
+                <input
+                  [id]="c9.idControl"
+                  [attr.aria-describedby]="c9.idDescripcion"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  maxlength="30"
+                  data-testid="celular"
+                  [value]="celular()"
+                  (input)="celular.set($any($event.target).value)"
+                />
+              </px-campo>
+            }
             @if (r.pideCarnet) {
               <px-campo
                 etiqueta="Carnet de identidad"
@@ -191,6 +220,7 @@ export class RegistroPage implements OnInit {
   protected readonly nombre = signal('');
   protected readonly email = signal('');
   protected readonly ci = signal('');
+  protected readonly celular = signal('');
   protected readonly errores = signal<Record<string, string | null>>({});
   protected readonly error = signal<string | null>(null);
   protected readonly entrando = signal(false);
@@ -245,6 +275,12 @@ export class RegistroPage implements OnInit {
     if (email && !/^[^\s@]+@[^\s@]+$/.test(email)) {
       errores['email'] = 'Escribe un correo como nombre@dominio.';
     }
+    // HU-411: el mismo control que hace el servidor, para avisar antes de enviar.
+    const celular = registro.pideCelular === 'no' ? '' : this.celular().trim();
+    if (celular && !normalizeCelular(celular)) errores['celular'] = MENSAJE_CELULAR_INVALIDO;
+    if (!celular && registro.pideCelular === 'obligatorio') {
+      errores['celular'] = MENSAJE_CELULAR_REQUERIDO;
+    }
     this.errores.set(errores);
     if (Object.keys(errores).length > 0) return;
     this.entrando.set(true);
@@ -261,6 +297,7 @@ export class RegistroPage implements OnInit {
           nombre,
           email: email || null,
           ci: this.ci().trim() || null,
+          celular: celular || null,
           deviceId,
           llavePublica,
           ...(senales ? { senales } : {}),

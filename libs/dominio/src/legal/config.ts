@@ -14,7 +14,7 @@ export const CONFIG_LEGAL = {
   /** La dirección pública del sitio, sin `/` al final. */
   sitio: 'https://pasitos.com.bo',
   /** Desde cuándo valen los textos publicados, `AAAA-MM-DD`. */
-  vigenteDesde: '2026-11-19',
+  vigenteDesde: '2026-11-21',
 } as const;
 
 export type ConfigLegal = { readonly [K in keyof typeof CONFIG_LEGAL]: string };

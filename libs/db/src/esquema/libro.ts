@@ -60,6 +60,8 @@ export const asistentes = pgTable(
     // acceso.ts) y el carnet que escribió, cifrado, con sus últimos 3 dígitos para mostrar.
     qrRegistroId: uuid('qr_registro_id'),
     ciCifrado: bytea('ci_cifrado'),
+    // HU-411: el celular, en formato internacional (`+59171234567`). Nunca a logs ni a la bitácora.
+    celular: text('celular'),
     ciUltimos: text('ci_ultimos'),
     // HU-321: la verificación. El hash (HMAC con la llave de carnets del evento, sobre el número
     // normalizado) no se repite en el evento: el mismo carnet no se verifica en dos cuentas.
@@ -87,6 +89,10 @@ export const asistentes = pgTable(
     check('asistentes_origen', sql`${t.origen} in ('lista', 'csv', 'puerta', 'autoregistro')`),
     check('asistentes_ci_ultimos', sql`${t.ciUltimos} is null or char_length(${t.ciUltimos}) <= 3`),
     check('asistentes_nombre', sql`char_length(${t.nombre}) between 2 and 120`),
+    check(
+      'asistentes_celular',
+      sql`${t.celular} is null or ${t.celular} ~ '^[+][1-9][0-9]{7,14}$'`,
+    ),
     // Ajuste 7: en el autorregistro el correo se repite sin problema (D60).
     uniqueIndex('asistentes_email')
       .on(t.eventoId, t.email)

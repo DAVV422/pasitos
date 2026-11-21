@@ -10,7 +10,7 @@ import {
   type Db,
   type Tx,
 } from '@pasitos/db';
-import { maskCi, AppError } from '@pasitos/dominio';
+import { maskCelular, maskCi, AppError } from '@pasitos/dominio';
 import {
   isCodigoAsistente,
   maskEmail,
@@ -32,6 +32,8 @@ export interface DatosAsistente {
   readonly nombre?: string | undefined;
   readonly email?: string | null | undefined;
   readonly codigoExterno?: string | null | undefined;
+  /** HU-411: ya normalizado (`+59171234567`); en la lista, siempre opcional. */
+  readonly celular?: string | null | undefined;
   readonly confirmarDuplicado?: boolean | undefined;
 }
 
@@ -176,6 +178,7 @@ export class AsistentesService {
         nombre: datos.nombre,
         email,
         codigoExterno,
+        celular: datos.celular ?? null,
         origen: 'lista',
         estado: 'invitado',
         emailEstado: email ? 'pendiente' : 'sin_correo',
@@ -214,6 +217,7 @@ export class AsistentesService {
         .set({
           ...(datos.nombre === undefined ? {} : { nombre: datos.nombre }),
           ...(datos.codigoExterno === undefined ? {} : { codigoExterno }),
+          ...(datos.celular === undefined ? {} : { celular: datos.celular }),
           ...(cambioCorreo ? { email, emailEstado: email ? 'pendiente' : 'sin_correo' } : {}),
           updatedAt: this.reloj.now(),
         })
@@ -431,6 +435,8 @@ export class AsistentesService {
       codigo: a.codigoAsistente,
       nombre: a.nombre,
       email: contexto.rol === 'registrador' ? maskEmail(a.email) : a.email,
+      // HU-411: completo para D y C; el registrador, oculto.
+      celular: contexto.rol === 'registrador' ? maskCelular(a.celular) : a.celular,
       codigoExterno: a.codigoExterno,
       estado: a.estado,
       emailEstado: a.emailEstado,

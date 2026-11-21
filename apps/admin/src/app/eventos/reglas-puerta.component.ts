@@ -6,6 +6,7 @@ import {
   type OnInit,
   signal,
 } from '@angular/core';
+import { MODOS_CELULAR, NOMBRES_MODO_CELULAR, type ModoCelular } from '@pasitos/dominio';
 import { esquemaEditarEvento } from '@pasitos/dominio/esquemas';
 import { AvisosService, getErrorCampo, getMensajeError, valorDe } from '@pasitos/panel';
 import { AvisoComponent, BotonDirective, CampoComponent, TarjetaComponent } from '@pasitos/ui';
@@ -25,6 +26,7 @@ interface Formulario {
   registroPuertaActivo: boolean;
   autoregistroActivo: boolean;
   pedirCi: 'no' | 'opcional';
+  pedirCelular: ModoCelular;
   verificacionCiActiva: boolean;
   puntosVerificacionCi: string;
   topeRegistrosPuerta: string;
@@ -78,6 +80,26 @@ const toNumero = (t: string) => (t.trim() === '' ? null : Number(t));
             (change)="set('autoregistroActivo', !form().autoregistroActivo)"
           />
         </label>
+        <h2 class="mt-2 text-xl font-bold">Celular de los asistentes</h2>
+        <!-- HU-411. -->
+        <px-campo
+          etiqueta="Pedir el celular al registrarse"
+          ayuda="Se pide al registrarse con el QR y en la puerta. Lo ven el organizador y el coorganizador; el registrador lo ve oculto."
+          #cce="pxCampo"
+        >
+          <select
+            [id]="cce.idControl"
+            [attr.aria-describedby]="cce.idDescripcion"
+            data-testid="pedir-celular"
+            (change)="set('pedirCelular', $any(valorDe($event)))"
+          >
+            @for (modo of modosCelular; track modo.valor) {
+              <option [value]="modo.valor" [selected]="form().pedirCelular === modo.valor">
+                {{ modo.texto }}
+              </option>
+            }
+          </select>
+        </px-campo>
         <h2 class="mt-2 text-xl font-bold">Carnet de identidad</h2>
         <px-campo etiqueta="Pedir el carnet al registrarse" #cci="pxCampo">
           <select [id]="cci.idControl" (change)="set('pedirCi', $any(valorDe($event)))">
@@ -257,6 +279,10 @@ export class ReglasPuertaComponent implements OnInit {
   );
   private readonly enMarcha = computed(() => EN_MARCHA.has(this.actual.evento()?.estado ?? ''));
   protected readonly valorDe = valorDe;
+  protected readonly modosCelular = MODOS_CELULAR.map((valor) => ({
+    valor,
+    texto: NOMBRES_MODO_CELULAR[valor],
+  }));
 
   ngOnInit(): void {
     this.form.set(this.toFormulario(this.actual.evento()?.reglas ?? null));
@@ -276,6 +302,7 @@ export class ReglasPuertaComponent implements OnInit {
       registroPuertaActivo: f.registroPuertaActivo,
       autoregistroActivo: f.autoregistroActivo,
       pedirCi: f.pedirCi,
+      pedirCelular: f.pedirCelular,
       verificacionCiActiva: f.verificacionCiActiva,
       ...(f.verificacionCiActiva ? { puntosVerificacionCi: Number(f.puntosVerificacionCi) } : {}),
       topeRegistrosPuerta: toNumero(f.topeRegistrosPuerta),
@@ -353,6 +380,7 @@ export class ReglasPuertaComponent implements OnInit {
       registroPuertaActivo: reglas?.registroPuertaActivo ?? true,
       autoregistroActivo: reglas?.autoregistroActivo ?? false,
       pedirCi: reglas?.pedirCi ?? 'no',
+      pedirCelular: reglas?.pedirCelular ?? 'opcional',
       verificacionCiActiva: reglas?.verificacionCiActiva ?? false,
       puntosVerificacionCi: String(reglas?.puntosVerificacionCi ?? 30),
       topeRegistrosPuerta: toTexto(reglas?.topeRegistrosPuerta ?? null),

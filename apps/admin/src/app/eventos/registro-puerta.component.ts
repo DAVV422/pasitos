@@ -10,6 +10,7 @@ import {
 import { getMensajeError } from '@pasitos/panel';
 import { AvisoComponent, BotonDirective, CampoComponent, ChipComponent } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
+import { EventoActualService } from './evento.layout';
 import { PuertaApi, type FichaPuerta } from './puerta-api.service';
 
 interface Candidato {
@@ -88,6 +89,28 @@ interface Candidato {
             (input)="email.set($any($event.target).value)"
           />
         </px-campo>
+        @if (pideCelular() !== 'no') {
+          <!-- HU-411. -->
+          <px-campo
+            #campoCelular="pxCampo"
+            etiqueta="Celular"
+            [opcional]="pideCelular() === 'opcional'"
+            ayuda="Ejemplo: 71234567. De otro país, con el código: +54…"
+            [error]="errorCelular()"
+          >
+            <input
+              [id]="campoCelular.idControl"
+              [attr.aria-describedby]="campoCelular.idDescripcion"
+              type="tel"
+              autocomplete="off"
+              inputmode="tel"
+              maxlength="30"
+              data-testid="celular"
+              [value]="celular()"
+              (input)="celular.set($any($event.target).value)"
+            />
+          </px-campo>
+        }
         <button
           pxBoton
           type="button"
@@ -107,6 +130,7 @@ interface Candidato {
 })
 export class RegistroPuertaComponent {
   private readonly api = inject(PuertaApi);
+  private readonly actual = inject(EventoActualService);
 
   readonly eventoId = input.required<string>();
   readonly restantes = input<number | null>(null);
@@ -118,6 +142,11 @@ export class RegistroPuertaComponent {
 
   protected readonly nombre = signal('');
   protected readonly email = signal('');
+  protected readonly celular = signal('');
+  /** HU-411: `no`, `opcional` u `obligatorio`, según las reglas del evento. */
+  protected readonly pideCelular = computed(
+    () => this.actual.evento()?.reglas?.pedirCelular ?? 'opcional',
+  );
   protected readonly candidatos = signal<readonly Candidato[]>([]);
   protected readonly guardando = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -127,6 +156,9 @@ export class RegistroPuertaComponent {
   );
   protected readonly errorEmail = computed(
     () => this.erroresCampo().find((e) => e.field === 'email')?.message ?? null,
+  );
+  protected readonly errorCelular = computed(
+    () => this.erroresCampo().find((e) => e.field === 'celular')?.message ?? null,
   );
   /** La misma clave para "Es otra persona": es el mismo intento. */
   private clave = crypto.randomUUID();
@@ -142,6 +174,9 @@ export class RegistroPuertaComponent {
         {
           nombre: this.nombre().trim(),
           ...(this.email().trim() ? { email: this.email().trim() } : {}),
+          ...(this.pideCelular() !== 'no' && this.celular().trim()
+            ? { celular: this.celular().trim() }
+            : {}),
           ...(confirmarDuplicado ? { confirmarDuplicado: true } : {}),
         },
         this.clave,

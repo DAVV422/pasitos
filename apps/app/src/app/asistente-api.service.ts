@@ -28,6 +28,8 @@ export interface EstadoApp {
     readonly estado: string;
     readonly grupos: readonly string[];
     readonly ci: { readonly cargado: boolean; readonly verificado: boolean };
+    /** HU-411. */
+    readonly celularCargado: boolean;
   };
   readonly saldo: number;
   /** HU-401: lo que venció al cierre. */
@@ -40,6 +42,8 @@ export interface EstadoApp {
     readonly finAt: string;
     readonly nombrePuntos: string;
     readonly requiereCheckIn: boolean;
+    /** HU-411. */
+    readonly pedirCelular: 'no' | 'opcional' | 'obligatorio';
     readonly zonaHoraria: string;
     /** HU-401: el cierre programado. */
     readonly cierreProgramadoAt: string | null;
@@ -270,6 +274,8 @@ export interface RegistroVisto {
   readonly permisoHasta: string;
   /** HU-321: si el evento pide el carnet (opcional). */
   readonly pideCarnet: boolean;
+  /** HU-411. */
+  readonly pideCelular: 'no' | 'opcional' | 'obligatorio';
 }
 
 /** Lo que manda el formulario del autorregistro (HU-320 §2). */
@@ -277,6 +283,7 @@ export interface DatosRegistro {
   readonly nombre: string;
   readonly email: string | null;
   readonly ci: string | null;
+  readonly celular: string | null;
   readonly deviceId: string;
   readonly llavePublica: LlavePublicaEc;
   readonly senales?: Record<string, string | number | boolean | null>;
@@ -300,6 +307,9 @@ export interface MisDatos {
   readonly email: string | null;
   readonly ci: string | null;
   readonly ciVerificado: boolean;
+  /** HU-411: `+59171234567`, o `null`. */
+  readonly celular: string | null;
+  readonly pideCelular: 'no' | 'opcional' | 'obligatorio';
 }
 
 /** El API del asistente: ningún componente usa HttpClient directo (AGENTS.md). */
@@ -359,7 +369,9 @@ export class AsistenteApi {
     return firstValueFrom(this.http.get<MisDatos>(`${BASE}/app/yo`));
   }
 
-  updateMisDatos(cambios: Partial<Pick<MisDatos, 'nombre' | 'email' | 'ci'>>): Promise<MisDatos> {
+  updateMisDatos(
+    cambios: Partial<Pick<MisDatos, 'nombre' | 'email' | 'ci' | 'celular'>>,
+  ): Promise<MisDatos> {
     return firstValueFrom(
       this.http.patch<MisDatos>(`${BASE}/app/yo`, cambios, {
         context: new HttpContext().set(FIRMAR, true),

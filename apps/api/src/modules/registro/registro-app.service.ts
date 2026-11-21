@@ -29,6 +29,8 @@ export interface AperturaRegistro {
   readonly permisoHasta: string;
   /** HU-321: el formulario muestra el carnet (opcional) solo si el evento lo pide. */
   readonly pideCarnet: boolean;
+  /** HU-411: `no`, `opcional` u `obligatorio`. */
+  readonly pideCelular: string;
 }
 
 const MOTIVOS: Partial<Record<CodigoError, string>> = {
@@ -84,6 +86,7 @@ export class RegistroAppService {
             estado: eventos.estado,
             autoregistroActivo: eventos.autoregistroActivo,
             pedirCi: eventos.pedirCi,
+            pedirCelular: eventos.pedirCelular,
           },
         })
         .from(qrRegistro)
@@ -144,6 +147,8 @@ export class RegistroAppService {
         terminos: { version: VERSION_TERMINOS, privacidad: VERSION_TERMINOS },
         permisoHasta: new Date(exp).toISOString(),
         pideCarnet: evento.pedirCi === 'opcional',
+        // HU-411: `no`, `opcional` u `obligatorio`.
+        pideCelular: evento.pedirCelular,
       },
       permiso: valor,
       expira: new Date(exp),

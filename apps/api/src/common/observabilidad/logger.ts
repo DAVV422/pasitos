@@ -9,6 +9,7 @@ export const CAMPOS_OCULTOS = [
   'req.remotePort',
   'res.headers["set-cookie"]',
   '*.email',
+  '*.celular',
   '*.nombre',
   '*.password',
   '*.token',

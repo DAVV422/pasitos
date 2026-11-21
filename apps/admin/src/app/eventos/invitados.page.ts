@@ -36,7 +36,7 @@ import {
   QrComponent,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
-import { canDo } from '@pasitos/dominio';
+import { canDo, formatCelular } from '@pasitos/dominio';
 import { EventoActualService } from './evento.layout';
 import { GruposApi, type GrupoPanel } from './grupos-api.service';
 import {
@@ -161,6 +161,25 @@ interface Candidato {
             (input)="email.set(valorDe($event))"
           />
         </px-campo>
+        <!-- HU-411: en la lista, siempre opcional. -->
+        <px-campo
+          etiqueta="Celular"
+          [opcional]="true"
+          ayuda="Ejemplo: 71234567. De otro país, con el código: +54…"
+          [error]="errores()['celular'] ?? null"
+          #cc="pxCampo"
+        >
+          <input
+            [id]="cc.idControl"
+            [attr.aria-describedby]="cc.idDescripcion"
+            type="tel"
+            inputmode="tel"
+            maxlength="30"
+            autocomplete="off"
+            [value]="celular()"
+            (input)="celular.set(valorDe($event))"
+          />
+        </px-campo>
         <px-campo
           etiqueta="Código externo"
           [opcional]="true"
@@ -277,8 +296,9 @@ interface Candidato {
                   <span class="text-muted">{{ a.codigo }}</span> · <b>{{ a.nombre }}</b>
                 </span>
                 <span class="text-muted block truncate text-sm">
-                  {{ a.email ?? 'Sin correo' }}{{ a.codigoExterno ? ' · ' + a.codigoExterno : ''
-                  }}{{ describeOrigen(a) }}
+                  {{ a.email ?? 'Sin correo'
+                  }}{{ a.celular ? ' · ' + mostrarCelular(a.celular) : ''
+                  }}{{ a.codigoExterno ? ' · ' + a.codigoExterno : '' }}{{ describeOrigen(a) }}
                 </span>
               </span>
               <span
@@ -399,6 +419,7 @@ export class InvitadosPage implements OnInit {
   protected readonly editando = signal<'nuevo' | AsistentePanel | null>(null);
   protected readonly nombre = signal('');
   protected readonly email = signal('');
+  protected readonly celular = signal('');
   protected readonly codigoExterno = signal('');
   protected readonly candidatos = signal<readonly Candidato[]>([]);
   protected readonly guardando = signal(false);
@@ -500,6 +521,12 @@ export class InvitadosPage implements OnInit {
     this.nombre.set(asistente?.nombre ?? '');
     this.email.set(asistente?.email ?? '');
     this.codigoExterno.set(asistente?.codigoExterno ?? '');
+    this.celular.set(asistente?.celular ? (formatCelular(asistente.celular) ?? '') : '');
+  }
+
+  /** HU-411: el oculto (`•••• 4567`) tal cual; el completo, con espacios. */
+  protected mostrarCelular(celular: string): string {
+    return celular.startsWith('+') ? (formatCelular(celular) ?? celular) : celular;
   }
 
   protected async save(evento: Event | null, igual: boolean): Promise<void> {
@@ -510,6 +537,7 @@ export class InvitadosPage implements OnInit {
       nombre: this.nombre(),
       email: this.email().trim() || null,
       codigoExterno: this.codigoExterno().trim() || null,
+      celular: this.celular().trim() || null,
       ...(igual ? { confirmarDuplicado: true } : {}),
     };
     this.guardando.set(true);
@@ -527,7 +555,7 @@ export class InvitadosPage implements OnInit {
       if (error instanceof ErrorApi && error.code === 'ASISTENTE_POSIBLE_DUPLICADO') {
         this.candidatos.set((error.meta['candidatos'] as Candidato[] | undefined) ?? []);
       } else {
-        const campos = ['nombre', 'email', 'codigoExterno'];
+        const campos = ['nombre', 'email', 'celular', 'codigoExterno'];
         this.errores.set(Object.fromEntries(campos.map((c) => [c, getErrorCampo(error, c)])));
         if (campos.every((c) => !getErrorCampo(error, c))) {
           this.mensaje.set({ variante: 'peligro', texto: getMensajeError(error) });

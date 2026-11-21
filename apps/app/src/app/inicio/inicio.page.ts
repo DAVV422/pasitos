@@ -150,6 +150,15 @@ import { SesionAsistente } from '../sesion-asistente';
           }
           <a pxBoton="secundario" routerLink="/historial">Ver mi historial</a>
         } @else {
+          @if (e.evento.pedirCelular === 'obligatorio' && !e.asistente.celularCargado) {
+            <!-- HU-411: no bloquea; quien vino de la lista lo completa en Mis datos. -->
+            <px-aviso variante="info" data-testid="completa-celular">
+              El organizador pide tu celular.
+              <a class="font-semibold underline" routerLink="/cuenta/datos"
+                >Complétalo en Mis datos</a
+              >
+            </px-aviso>
+          }
           @if (e.evento.requiereCheckIn && e.asistente.estado !== 'presente') {
             <div class="border-points bg-pts-bg/25 flex flex-col gap-3 rounded-xl border-2 p-4">
               <p class="font-semibold">Pasa por la puerta para empezar a ganar puntos.</p>

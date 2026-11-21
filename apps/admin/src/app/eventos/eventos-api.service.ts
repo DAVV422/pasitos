@@ -24,6 +24,8 @@ export interface ReglasEvento {
   readonly autoregistroActivo: boolean;
   /** HU-321: el carnet en el autorregistro y su verificación. */
   readonly pedirCi: 'no' | 'opcional';
+  /** HU-411. */
+  readonly pedirCelular: 'no' | 'opcional' | 'obligatorio';
   readonly verificacionCiActiva: boolean;
   readonly puntosVerificacionCi: number;
   readonly topeRegistrosPuerta: number | null;
@@ -148,6 +150,8 @@ export interface AsistentePanel {
   readonly nombre: string;
   readonly email: string | null;
   readonly codigoExterno: string | null;
+  /** HU-411: completo para D y C (`+59171234567`); el registrador, oculto. */
+  readonly celular: string | null;
   readonly estado: 'invitado' | 'registrado' | 'presente' | 'cancelado';
   readonly emailEstado: 'sin_correo' | 'pendiente' | 'en_cola' | 'enviado' | 'rebotado';
   readonly origen: 'lista' | 'csv' | 'puerta' | 'autoregistro';

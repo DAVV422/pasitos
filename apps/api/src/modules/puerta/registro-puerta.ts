@@ -16,6 +16,7 @@ import type { FirmaVerificada } from '../../common/sesion/asistente';
 import { runIdempotente } from '../acceso/idempotencia';
 import { formatFechaHora } from '../auth/auth.service';
 import { toActor } from '../bitacora/actores';
+import { resolveCelular } from '../registro/celular';
 import { BitacoraService } from '../bitacora/bitacora.service';
 import { normalizado } from '../invitados/asistentes.service';
 import { checkA3 } from '../acceso/reglas-alertas';
@@ -27,6 +28,7 @@ type Pedido = Pick<FirmaVerificada, 'clave' | 'hashCuerpo' | 'ruta'>;
 export interface DatosRegistroPuerta {
   readonly nombre: string;
   readonly email?: string | undefined;
+  readonly celular?: string | null | undefined;
   readonly confirmarDuplicado?: boolean | undefined;
 }
 
@@ -57,7 +59,16 @@ export class RegistroPuertaService {
       runIdempotente(tx, `usuario:${contexto.usuarioId}`, pedido, async () => {
         const evento = await this.lockTopes(tx, contexto);
         const email = datos.email ?? null;
-        await this.checkParecidos(tx, contexto, datos.nombre, email, datos.confirmarDuplicado);
+        // HU-411: el celular según la regla del evento.
+        const celular = resolveCelular(evento.pedirCelular, datos.celular);
+        await this.checkParecidos(
+          tx,
+          contexto,
+          datos.nombre,
+          email,
+          celular,
+          datos.confirmarDuplicado,
+        );
 
         const id = uuidv7();
         await tx.insert(asistentes).values({
@@ -66,6 +77,7 @@ export class RegistroPuertaService {
           eventoId: contexto.eventoId,
           nombre: datos.nombre,
           email,
+          celular,
           origen: 'puerta',
           estado: 'registrado',
           emailEstado: email ? 'en_cola' : 'sin_correo',
@@ -135,6 +147,7 @@ export class RegistroPuertaService {
         lugarNombre: eventos.lugarNombre,
         activo: eventos.registroPuertaActivo,
         tope: eventos.topeRegistrosPuerta,
+        pedirCelular: eventos.pedirCelular,
       })
       .from(eventos)
       .where(eq(eventos.id, contexto.eventoId))
@@ -174,14 +187,16 @@ export class RegistroPuertaService {
   }
 
   /**
-   * Los parecidos (la búsqueda de HU-210): nombre parecido o el mismo correo. Con el mismo correo
-   * no se registra aunque confirme: es la misma persona.
+   * Los parecidos (la búsqueda de HU-210): nombre parecido, el mismo correo o el mismo celular
+   * (HU-411). Con el mismo correo no se registra aunque confirme: es la misma persona. El mismo
+   * celular solo pregunta (una familia puede compartirlo).
    */
   private async checkParecidos(
     tx: Tx,
     contexto: ContextoEvento,
     nombre: string,
     email: string | null,
+    celular: string | null,
     confirmado: boolean | undefined,
   ): Promise<void> {
     const similitud = sql<number>`similarity(${normalizado(sql`${asistentes.nombre}`)}, ${normalizado(nombre)})`;
@@ -201,6 +216,7 @@ export class RegistroPuertaService {
           or(
             sql`${similitud} >= ${SIMILITUD_DUPLICADO}`,
             email ? sql`${asistentes.email} = ${email}` : undefined,
+            celular ? sql`${asistentes.celular} = ${celular}` : undefined,
           ),
         ),
       )

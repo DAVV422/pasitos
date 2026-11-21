@@ -41,7 +41,13 @@ describe('CSV de invitados (HU-210)', () => {
   it('junta nombres y apellidos, y numera las filas como la planilla', () => {
     const columnas = mapColumnas(['Nombres', 'Apellidos', 'Email']);
     expect(readFilas([['Valeria ', ' Quispe', 'va@example.com'.toUpperCase()]], columnas)).toEqual([
-      { fila: 2, nombre: 'Valeria Quispe', email: 'va@example.com', codigoExterno: null },
+      {
+        fila: 2,
+        nombre: 'Valeria Quispe',
+        email: 'va@example.com',
+        codigoExterno: null,
+        celular: null,
+      },
     ]);
   });
 

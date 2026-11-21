@@ -14,6 +14,7 @@ import {
 } from '@pasitos/db';
 import { maskCi, AppError, describeMotivoAnulacion } from '@pasitos/dominio';
 import { maskEmail } from '@pasitos/dominio/esquemas';
+import { maskCelular } from '@pasitos/dominio';
 import type { ContextoEvento } from '../../common/permisos/marcas';
 import type { FirmaVerificada } from '../../common/sesion/asistente';
 import { buildQrEntradaFija, verifyQrEntrada } from '../acceso/entrada';
@@ -32,6 +33,7 @@ export interface FichaPuerta {
   readonly nombre: string;
   /** Enmascarado para el registrador (HU-210 §3). */
   readonly email: string | null;
+  readonly celular: string | null;
   readonly estado: string;
   readonly saldo: number;
   readonly dispositivo: {
@@ -262,6 +264,7 @@ export class PuertaService {
         codigo: asistentes.codigoAsistente,
         nombre: asistentes.nombre,
         email: asistentes.email,
+        celular: asistentes.celular,
         estado: asistentes.estado,
         saldo: saldos.puntos,
       })
@@ -290,6 +293,8 @@ export class PuertaService {
       codigo: fila.codigo,
       nombre: fila.nombre,
       email: contexto.rol === 'registrador' ? maskEmail(fila.email) : fila.email,
+      // HU-411: completo para D y C; el registrador, oculto.
+      celular: contexto.rol === 'registrador' ? maskCelular(fila.celular) : fila.celular,
       estado: fila.estado,
       saldo: fila.saldo ?? 0,
       dispositivo: dispositivo

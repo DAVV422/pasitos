@@ -160,6 +160,7 @@ export class OperacionesService {
             nombre: f.nombre,
             email: f.email,
             codigoExterno: f.codigoExterno,
+            celular: f.celular ?? null,
             origen: 'csv',
             estado: 'invitado',
             emailEstado: f.email ? 'pendiente' : 'sin_correo',

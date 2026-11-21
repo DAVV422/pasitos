@@ -117,7 +117,13 @@ describe('process-operaciones', () => {
       ignoradas: ['Empresa'],
     });
     expect(vista.validas).toEqual([
-      { fila: 2, nombre: 'Ana Pérez', email: 'ana@example.com', codigoExterno: 'T-1' },
+      {
+        fila: 2,
+        nombre: 'Ana Pérez',
+        email: 'ana@example.com',
+        codigoExterno: 'T-1',
+        celular: null,
+      },
     ]);
   });
 

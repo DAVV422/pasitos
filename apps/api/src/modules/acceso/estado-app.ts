@@ -36,6 +36,8 @@ export interface EstadoApp {
     readonly grupos: readonly string[];
     /** HU-320 y HU-321. */
     readonly ci: { readonly cargado: boolean; readonly verificado: boolean };
+    /** HU-411: si ya dio su celular (el número no viaja aquí). */
+    readonly celularCargado: boolean;
   };
   readonly saldo: number;
   /** HU-401: lo que venció al cierre (*"Tus 120 pasos vencieron al cierre"*). */
@@ -48,6 +50,8 @@ export interface EstadoApp {
     readonly finAt: string;
     readonly nombrePuntos: string;
     readonly requiereCheckIn: boolean;
+    /** HU-411: `no`, `opcional` u `obligatorio`. */
+    readonly pedirCelular: string;
     readonly zonaHoraria: string;
     /** HU-401: el cierre programado, para el aviso *"Los puntos vencen a las 19:00"*. */
     readonly cierreProgramadoAt: string | null;
@@ -126,12 +130,14 @@ export async function getEstadoApp(
       finAt: eventos.finAt,
       nombrePuntos: eventos.nombrePuntos,
       requiereCheckIn: eventos.retosRequierenCheckIn,
+      pedirCelular: eventos.pedirCelular,
       zonaHoraria: eventos.zonaHoraria,
       cierreProgramadoAt: eventos.cierreProgramadoAt,
       vencidos: sql<number>`(select coalesce(-sum(${movimientos.puntos}), 0)::int from ${movimientos}
         where ${movimientos.asistenteId} = ${asistentes.id} and ${movimientos.tipo} = 'vencimiento')`,
       ciCargado: sql<boolean>`${asistentes.ciCifrado} is not null`,
       ciVerificado: sql<boolean>`${asistentes.ciVerificadoAt} is not null`,
+      celularCargado: sql<boolean>`${asistentes.celular} is not null`,
     })
     .from(asistentes)
     .innerJoin(eventos, eq(eventos.id, asistentes.eventoId))
@@ -235,6 +241,7 @@ export async function getEstadoApp(
       estado: fila.estado,
       grupos: gruposDeLaPersona.map((g) => g.nombre),
       ci: { cargado: fila.ciCargado, verificado: fila.ciVerificado },
+      celularCargado: fila.celularCargado,
     },
     saldo: fila.saldo ?? 0,
     vencidos: Number(fila.vencidos ?? 0),
@@ -246,6 +253,7 @@ export async function getEstadoApp(
       finAt: fila.finAt.toISOString(),
       nombrePuntos: fila.nombrePuntos,
       requiereCheckIn: fila.requiereCheckIn,
+      pedirCelular: fila.pedirCelular,
       zonaHoraria: fila.zonaHoraria,
       cierreProgramadoAt: fila.cierreProgramadoAt?.toISOString() ?? null,
     },

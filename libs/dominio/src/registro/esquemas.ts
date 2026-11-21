@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { esquemaDeviceId, esquemaSenales } from '../acceso/esquemas';
 import { esquemaLlavePublica } from '../terminales/esquemas';
+import { MENSAJE_CELULAR_INVALIDO, normalizeCelular } from './celular';
 import { MUESTRAS_QR_REGISTRO, TIPOS_QR_REGISTRO } from './qr-registro';
 
 const fecha = z.iso.datetime({ offset: true });
@@ -74,12 +75,33 @@ function vacioANulo(valor: unknown): unknown {
   return typeof valor === 'string' && valor.trim() === '' ? null : valor;
 }
 
+/**
+ * El celular (HU-411): vacío es `null`; si no, se normaliza a `+59171234567` o da el error de campo.
+ * Si es obligatorio lo decide el servicio, con la regla del evento.
+ */
+export const esquemaCelularONulo = z.preprocess(
+  vacioANulo,
+  z
+    .string({ error: MENSAJE_CELULAR_INVALIDO })
+    .max(30, { error: MENSAJE_CELULAR_INVALIDO })
+    .transform((texto, ctx) => {
+      const celular = normalizeCelular(texto);
+      if (!celular) {
+        ctx.addIssue({ code: 'custom', message: MENSAJE_CELULAR_INVALIDO });
+        return z.NEVER;
+      }
+      return celular;
+    })
+    .nullable(),
+);
+
 /** `POST /app/registro` (HU-320 §2), con el permiso `px_registro`. */
 export const esquemaAutoregistro = z
   .object({
     nombre: nombrePersona,
     email: z.preprocess(vacioANulo, correoLibre.nullable()).default(null),
     ci: z.preprocess(vacioANulo, carnetLibre.nullable()).default(null),
+    celular: esquemaCelularONulo.default(null),
     deviceId: esquemaDeviceId,
     llavePublica: esquemaLlavePublica,
     senales: esquemaSenales.optional(),
@@ -94,6 +116,7 @@ export const esquemaMisDatos = z
     nombre: nombrePersona,
     email: z.preprocess(vacioANulo, correoLibre.nullable()),
     ci: z.preprocess(vacioANulo, carnetLibre.nullable()),
+    celular: esquemaCelularONulo,
   })
   .partial()
   .strict()

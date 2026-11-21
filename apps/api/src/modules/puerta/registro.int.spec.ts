@@ -196,4 +196,42 @@ describe('Registro en la puerta (HU-303)', () => {
     expect(items.every((i) => i.origen === 'puerta')).toBe(true);
     expect(items.map((i) => i.registradoPor)).toContain('Luis C.');
   });
+
+  it('celular (HU-411): obligatorio en la puerta; la ficha lo muestra completo a D y oculto a R', async () => {
+    await setEvento({ topeRegistrosPuerta: null, pedirCelular: 'obligatorio' });
+    const nora = await createPersonaConSesion(base, 'Nora Registra');
+    await addRol(base, evento, nora, 'registrador');
+    const duena = await createPersonaConSesion(base, 'Dalia Dueña');
+    await addRol(base, evento, duena, 'dueno');
+
+    const sinCelular = await registrar(nora, { nombre: 'Celeste Puerta' });
+    expect(sinCelular.statusCode).toBe(400);
+    expect(sinCelular.json().errors[0]).toMatchObject({ field: 'celular' });
+
+    const registrada = await registrar(nora, { nombre: 'Celeste Puerta', celular: '71234567' });
+    expect(registrada.statusCode).toBe(201);
+    expect(registrada.json().celular).toBe('•••• 4567');
+    const id = registrada.json().id as string;
+    const fichaDuena = await api.app.inject({
+      method: 'GET',
+      url: `/api/v1/asistentes/${id}/ficha`,
+      headers: { cookie: duena.cookie },
+    });
+    expect(fichaDuena.json().celular).toBe('+59171234567');
+
+    // Mismo celular, otro nombre: pregunta si es la misma persona (no bloquea).
+    const parecido = await registrar(nora, { nombre: 'Otra Persona', celular: '7123-4567' });
+    expect(parecido.json().code).toBe('ASISTENTE_POSIBLE_DUPLICADO');
+
+    // La lista: completo para la dueña, oculto para el registrador.
+    const lista = (quien: PersonaDePrueba) =>
+      api.app.inject({
+        method: 'GET',
+        url: `/api/v1/eventos/${evento.eventoId}/asistentes?q=Celeste`,
+        headers: { cookie: quien.cookie },
+      });
+    expect((await lista(duena)).json().items[0].celular).toBe('+59171234567');
+    expect((await lista(nora)).json().items[0].celular).toBe('•••• 4567');
+    await setEvento({ pedirCelular: 'opcional' });
+  });
 });

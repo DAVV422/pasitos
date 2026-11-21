@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { esquemaEmail } from '../auth/esquemas';
+import { esquemaCelularONulo } from '../registro/esquemas';
 
 /** La lista de invitados (HU-210). La usan el API, el trabajador y el panel. */
 export const esquemaNombreAsistente = z
@@ -19,14 +20,21 @@ export const esquemaAsistente = z.object({
   nombre: esquemaNombreAsistente,
   email: emailONulo.optional(),
   codigoExterno: codigoExterno.optional(),
+  // HU-411: en la lista del organizador, siempre opcional.
+  celular: esquemaCelularONulo.optional(),
   confirmarDuplicado: z.boolean().optional(),
 });
 
 export const esquemaEditarAsistente = esquemaAsistente
   .partial()
-  .refine((d) => d.nombre !== undefined || d.email !== undefined || d.codigoExterno !== undefined, {
-    error: 'Indica qué cambiar.',
-  });
+  .refine(
+    (d) =>
+      d.nombre !== undefined ||
+      d.email !== undefined ||
+      d.codigoExterno !== undefined ||
+      d.celular !== undefined,
+    { error: 'Indica qué cambiar.' },
+  );
 
 export const esquemaCancelarAsistente = z.object({
   motivo: z.string().trim().max(300).optional(),

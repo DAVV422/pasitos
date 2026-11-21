@@ -27,6 +27,7 @@ function buildEvento(miRol: RolEvento): EventoDetalle {
       registroPuertaActivo: true,
       autoregistroActivo: false,
       pedirCi: 'no',
+      pedirCelular: 'opcional',
       verificacionCiActiva: false,
       puntosVerificacionCi: 30,
       topeRegistrosPuerta: null,

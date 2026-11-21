@@ -1,10 +1,11 @@
 import { and, eq } from 'drizzle-orm';
-import { asistentes, withOrganizacion, type Cifrador, type Db } from '@pasitos/db';
+import { asistentes, eventos, withOrganizacion, type Cifrador, type Db } from '@pasitos/db';
 import { AppError, getCiUltimos } from '@pasitos/dominio';
 import type { MisDatos } from '@pasitos/dominio/esquemas';
 import type { ContextoAsistente } from '../../common/sesion/asistente';
 import type { Reloj } from '../auth/sesiones.service';
 import { BitacoraService } from '../bitacora/bitacora.service';
+import { resolveCelular } from './celular';
 
 /** *Mis datos* (HU-320 §4): lo que ve y edita la persona. El carnet completo, solo ella. */
 export interface MisDatosApi {
@@ -13,9 +14,13 @@ export interface MisDatosApi {
   readonly ci: string | null;
   /** HU-321: un carnet verificado ya no se edita. */
   readonly ciVerificado: boolean;
+  /** HU-411: `+59171234567`, o `null`. */
+  readonly celular: string | null;
+  /** Si el evento lo pide: `no`, `opcional` u `obligatorio` (el formulario muestra el campo). */
+  readonly pideCelular: string;
 }
 
-/** *Mis datos* en *Mi cuenta*: ver y editar el nombre, el correo y el carnet. */
+/** *Mis datos* en *Mi cuenta*: ver y editar el nombre, el correo, el carnet y el celular. */
 export class MisDatosService {
   private readonly bitacora = new BitacoraService();
 
@@ -33,8 +38,11 @@ export class MisDatosService {
           email: asistentes.email,
           ci: asistentes.ciCifrado,
           verificadoAt: asistentes.ciVerificadoAt,
+          celular: asistentes.celular,
+          pedirCelular: eventos.pedirCelular,
         })
         .from(asistentes)
+        .innerJoin(eventos, eq(eventos.id, asistentes.eventoId))
         .where(eq(asistentes.id, asistente.asistenteId));
       if (!fila) throw new AppError('NO_ENCONTRADO');
       return this.toApi(fila);
@@ -50,15 +58,19 @@ export class MisDatosService {
           ci: asistentes.ciCifrado,
           origen: asistentes.origen,
           verificadoAt: asistentes.ciVerificadoAt,
+          celular: asistentes.celular,
+          pedirCelular: eventos.pedirCelular,
+          eventoEstado: eventos.estado,
         })
         .from(asistentes)
+        .innerJoin(eventos, eq(eventos.id, asistentes.eventoId))
         .where(
           and(
             eq(asistentes.id, asistente.asistenteId),
             eq(asistentes.eventoId, asistente.eventoId),
           ),
         )
-        .for('update');
+        .for('update', { of: asistentes });
       if (!actual) throw new AppError('NO_ENCONTRADO');
       // El correo de los invitados de la lista es el de la invitación: no se cambia desde aquí.
       if (datos.email !== undefined && actual.origen !== 'autoregistro') {
@@ -77,6 +89,15 @@ export class MisDatosService {
       if (datos.ci !== undefined && datos.ci !== ciAntes && actual.verificadoAt) {
         throw new AppError('CI_YA_VERIFICADO');
       }
+      // HU-411: borrarlo se puede, salvo que sea obligatorio con el evento abierto. Con `no`, un
+      // número nuevo no se guarda (el campo ni aparece).
+      let celular: string | null | undefined;
+      if (datos.celular === null) {
+        const abierto = actual.eventoEstado !== 'cerrado' && actual.eventoEstado !== 'archivado';
+        celular = resolveCelular(abierto ? actual.pedirCelular : 'opcional', null);
+      } else if (datos.celular !== undefined && actual.pedirCelular !== 'no') {
+        celular = datos.celular;
+      }
       const cambios = {
         ...(datos.nombre !== undefined && datos.nombre !== actual.nombre
           ? { nombre: datos.nombre }
@@ -84,6 +105,7 @@ export class MisDatosService {
         ...(datos.email !== undefined && datos.email !== actual.email
           ? { email: datos.email }
           : {}),
+        ...(celular !== undefined && celular !== actual.celular ? { celular } : {}),
         ...(datos.ci !== undefined && datos.ci !== ciAntes
           ? {
               ciCifrado: datos.ci ? this.cifrador.encrypt(datos.ci) : null,
@@ -112,6 +134,7 @@ export class MisDatosService {
             ...('nombre' in cambios ? { nombre: cambios.nombre } : {}),
             ...('email' in cambios ? { correo: 'cambiado' } : {}),
             ...('ciCifrado' in cambios ? { carnet: 'cambiado' } : {}),
+            ...('celular' in cambios ? { telefono: 'cambiado' } : {}),
           },
         });
       }
@@ -121,8 +144,11 @@ export class MisDatosService {
           email: asistentes.email,
           ci: asistentes.ciCifrado,
           verificadoAt: asistentes.ciVerificadoAt,
+          celular: asistentes.celular,
+          pedirCelular: eventos.pedirCelular,
         })
         .from(asistentes)
+        .innerJoin(eventos, eq(eventos.id, asistentes.eventoId))
         .where(eq(asistentes.id, asistente.asistenteId));
       if (!despues) throw new AppError('NO_ENCONTRADO');
       return this.toApi(despues);
@@ -134,12 +160,16 @@ export class MisDatosService {
     email: string | null;
     ci: Buffer | null;
     verificadoAt: Date | null;
+    celular: string | null;
+    pedirCelular: string;
   }): MisDatosApi {
     return {
       nombre: fila.nombre,
       email: fila.email,
       ci: fila.ci ? this.cifrador.decryptTexto(fila.ci) : null,
       ciVerificado: fila.verificadoAt !== null,
+      celular: fila.celular,
+      pideCelular: fila.pedirCelular,
     };
   }
 }

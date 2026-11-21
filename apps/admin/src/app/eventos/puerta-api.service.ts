@@ -20,6 +20,8 @@ export interface FichaPuerta {
   readonly codigo: string;
   readonly nombre: string;
   readonly email: string | null;
+  /** HU-411: completo para D y C; el registrador lo recibe oculto (`•••• 4567`). */
+  readonly celular: string | null;
   readonly estado: 'invitado' | 'registrado' | 'presente' | 'cancelado';
   readonly saldo: number;
   readonly dispositivo: {
@@ -134,7 +136,7 @@ export class PuertaApi {
   /** HU-303: la misma clave en el reintento ("Es otra persona") es el mismo intento. */
   registerNuevo(
     eventoId: string,
-    datos: { nombre: string; email?: string; confirmarDuplicado?: boolean },
+    datos: { nombre: string; email?: string; celular?: string; confirmarDuplicado?: boolean },
     clave: string,
   ): Promise<FichaPuerta> {
     return firstValueFrom(

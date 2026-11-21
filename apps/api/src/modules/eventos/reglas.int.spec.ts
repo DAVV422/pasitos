@@ -52,6 +52,8 @@ describe('Configurar la puerta (HU-212)', () => {
       registroPuertaActivo: true,
       autoregistroActivo: false,
       pedirCi: 'no',
+      // HU-411: el celular se pide por defecto, opcional.
+      pedirCelular: 'opcional',
       verificacionCiActiva: false,
       puntosVerificacionCi: 30,
       topeRegistrosPuerta: null,

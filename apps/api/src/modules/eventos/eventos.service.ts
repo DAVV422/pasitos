@@ -563,6 +563,7 @@ export class EventosService {
         registroPuertaActivo: evento.registroPuertaActivo,
         autoregistroActivo: evento.autoregistroActivo,
         pedirCi: evento.pedirCi,
+        pedirCelular: evento.pedirCelular,
         verificacionCiActiva: evento.verificacionCiActiva,
         puntosVerificacionCi: contadores.puntosVerificacionCi,
         topeRegistrosPuerta: evento.topeRegistrosPuerta,

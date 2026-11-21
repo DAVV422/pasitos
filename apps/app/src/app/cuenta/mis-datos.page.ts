@@ -7,6 +7,7 @@ import {
   EstadoComponent,
   IconoComponent,
 } from '@pasitos/ui';
+import { formatCelular, normalizeCelular } from '@pasitos/dominio';
 import { ErrorApi } from '@pasitos/web-core';
 import { AsistenteApi, type MisDatos } from '../asistente-api.service';
 import { SesionAsistente } from '../sesion-asistente';
@@ -96,6 +97,28 @@ import { SesionAsistente } from '../sesion-asistente';
               />
             </px-campo>
           }
+          @if (datos()?.pideCelular !== 'no' || datos()?.celular) {
+            <!-- HU-411. -->
+            <px-campo
+              etiqueta="Celular"
+              [opcional]="datos()?.pideCelular !== 'obligatorio'"
+              ayuda="Para que el organizador te pueda contactar. Ejemplo: 71234567; de otro país, con el código (+54…)."
+              [error]="errores()['celular'] ?? null"
+              #c9="pxCampo"
+            >
+              <input
+                [id]="c9.idControl"
+                [attr.aria-describedby]="c9.idDescripcion"
+                type="tel"
+                inputmode="tel"
+                autocomplete="tel"
+                maxlength="30"
+                data-testid="celular"
+                [value]="celular()"
+                (input)="celular.set($any($event.target).value)"
+              />
+            </px-campo>
+          }
           @if (mensaje(); as m) {
             <px-aviso [variante]="m.variante" role="status">{{ m.texto }}</px-aviso>
           }
@@ -114,6 +137,7 @@ export class MisDatosPage implements OnInit {
   protected readonly nombre = signal('');
   protected readonly email = signal('');
   protected readonly ci = signal('');
+  protected readonly celular = signal('');
   protected readonly errores = signal<Record<string, string | null>>({});
   protected readonly mensaje = signal<{ variante: 'ok' | 'peligro'; texto: string } | null>(null);
   protected readonly guardando = signal(false);
@@ -134,10 +158,14 @@ export class MisDatosPage implements OnInit {
     const nombre = this.nombre().trim();
     const email = this.email().trim() || null;
     const ci = this.ci().trim() || null;
+    // HU-411: se compara ya normalizado; si no se puede, va como está y el servidor dice qué falta.
+    const escrito = this.celular().trim();
+    const celular = escrito ? (normalizeCelular(escrito) ?? escrito) : null;
     const cambios = {
       ...(nombre !== actual.nombre ? { nombre } : {}),
       ...(email !== actual.email ? { email } : {}),
       ...(!actual.ciVerificado && ci !== actual.ci ? { ci } : {}),
+      ...(celular !== actual.celular ? { celular } : {}),
     };
     if (Object.keys(cambios).length === 0) {
       this.mensaje.set({ variante: 'ok', texto: 'No hay cambios.' });
@@ -171,5 +199,6 @@ export class MisDatosPage implements OnInit {
     this.nombre.set(datos.nombre);
     this.email.set(datos.email ?? '');
     this.ci.set(datos.ci ?? '');
+    this.celular.set(formatCelular(datos.celular) ?? '');
   }
 }

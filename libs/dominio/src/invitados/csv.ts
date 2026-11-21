@@ -1,3 +1,4 @@
+import { normalizeCelular } from '../registro/celular';
 /**
  * El CSV de la lista de invitados (HU-210 §4 y §5): leerlo, reconocer las columnas y escapar las
  * celdas al exportar. Sin dependencias: lo usan el trabajador (importar y exportar) y las pruebas.
@@ -71,6 +72,8 @@ const NOMBRES_COLUMNA = {
   apellidos: ['apellidos', 'apellido', 'last name'],
   email: ['correo', 'email', 'e-mail', 'mail', 'correo electronico'],
   codigoExterno: ['codigo', 'codigo externo', 'id', 'ticket'],
+  // HU-411.
+  celular: ['celular', 'telefono', 'whatsapp', 'movil', 'cel', 'phone', 'mobile'],
 } as const;
 
 export type ColumnaReconocida = keyof typeof NOMBRES_COLUMNA;
@@ -111,6 +114,11 @@ export interface FilaCsv {
   readonly nombre: string;
   readonly email: string | null;
   readonly codigoExterno: string | null;
+  /**
+   * HU-411: normalizado (`+59171234567`). Si no se pudo, queda como vino y la fila se marca
+   * inválida. Las importaciones de antes de HU-411 no lo traen.
+   */
+  readonly celular?: string | null;
 }
 
 /** Lee las filas de datos con las columnas reconocidas; junta `nombres` y `apellidos`. */
@@ -125,11 +133,13 @@ export function readFilas(filas: readonly string[][], columnas: Columnas): FilaC
         : `${celda(f, indices.nombres)} ${celda(f, indices.apellidos)}`.trim();
     const email = celda(f, indices.email).toLowerCase();
     const codigo = celda(f, indices.codigoExterno);
+    const celular = celda(f, indices.celular);
     return {
       fila: i + 2,
       nombre,
       email: email === '' ? null : email,
       codigoExterno: codigo === '' ? null : codigo,
+      celular: celular === '' ? null : (normalizeCelular(celular) ?? celular),
     };
   });
 }

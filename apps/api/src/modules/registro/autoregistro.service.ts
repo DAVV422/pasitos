@@ -26,6 +26,7 @@ import { BitacoraService } from '../bitacora/bitacora.service';
 import type { CheckInService } from '../puerta/check-in.service';
 import { readPermisoRegistro } from './firma-registro';
 import { getDisponibilidadQr } from './qr-registro.service';
+import { resolveCelular } from './celular';
 
 /** Lo que responde `POST /app/registro`: el estado de la app, y la sesión para la cookie. */
 export interface Autoregistrado {
@@ -90,6 +91,7 @@ export class AutoregistroService {
               estado: eventos.estado,
               finAt: eventos.finAt,
               autoregistroActivo: eventos.autoregistroActivo,
+              pedirCelular: eventos.pedirCelular,
             },
           })
           .from(qrRegistro)
@@ -137,7 +139,8 @@ export class AutoregistroService {
           };
         }
 
-        // 3. La cuenta, con el carnet cifrado y sus últimos 3 dígitos.
+        // 3. La cuenta, con el carnet cifrado y sus últimos 3 dígitos, y el celular si se pide.
+        const celular = resolveCelular(evento.pedirCelular, datos.celular);
         const asistenteId = uuidv7();
         await tx.insert(asistentes).values({
           id: asistenteId,
@@ -145,6 +148,7 @@ export class AutoregistroService {
           eventoId: evento.id,
           nombre: datos.nombre,
           email: datos.email,
+          celular,
           estado: 'registrado',
           origen: 'autoregistro',
           qrRegistroId: qr.id,

@@ -28,7 +28,8 @@ describe('términos y privacidad (HU-407)', () => {
       expect(html).not.toContain('Textos cortos');
       expect(html).not.toContain('.md');
       expect(titulo).toMatch(/Pasitos$/);
-      expect(version).toBe('piloto 1.1');
+      // HU-411: la privacidad pasó a la 1.2 (el celular); los términos siguen en la 1.1.
+      expect(version).toBe(tipo === 'privacidad' ? 'piloto 1.2' : 'piloto 1.1');
     }
   });
 

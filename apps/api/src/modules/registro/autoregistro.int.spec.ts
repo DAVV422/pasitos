@@ -120,7 +120,9 @@ describe('Autorregistro en la app (HU-320)', () => {
 
   async function registrar(
     navegador: Navegador,
-    datos: { nombre: string; email?: string; ci?: string } = { nombre: 'Valeria Quispe' },
+    datos: { nombre: string; email?: string; ci?: string; celular?: string | null } = {
+      nombre: 'Valeria Quispe',
+    },
     senales?: Record<string, string | number | boolean>,
   ) {
     const respuesta = await api.app.inject({
@@ -327,6 +329,8 @@ describe('Autorregistro en la app (HU-320)', () => {
       email: null,
       ci: '1234567 CB',
       ciVerificado: false,
+      celular: null,
+      pideCelular: 'opcional',
     });
 
     const cuerpo = JSON.stringify({ ci: '7654321 SC', email: 'carla@example.com' });
@@ -366,6 +370,108 @@ describe('Autorregistro en la app (HU-320)', () => {
     expect(JSON.stringify(cambios)).not.toContain('7654321');
   });
 
+  async function setPedirCelular(modo: 'no' | 'opcional' | 'obligatorio') {
+    await base.sistema.db
+      .update(eventos)
+      .set({ pedirCelular: modo })
+      .where(eq(eventos.id, evento.eventoId));
+  }
+
+  async function getCelular(nombre: string) {
+    const [fila] = await base.sistema.db
+      .select({ celular: asistentes.celular })
+      .from(asistentes)
+      .where(eq(asistentes.nombre, nombre));
+    return fila?.celular;
+  }
+
+  /** `PATCH /app/yo` firmado por el celular de la persona. */
+  async function editMisDatos(navegador: Navegador, cambios: object) {
+    const cuerpo = JSON.stringify(cambios);
+    const pedido = {
+      metodo: 'PATCH',
+      ruta: '/api/v1/app/yo',
+      clave: uuidv7(),
+      timestamp: api.reloj.now().getTime(),
+      hashCuerpo: await hashCuerpo(cuerpo),
+    };
+    return api.app.inject({
+      method: 'PATCH',
+      url: '/api/v1/app/yo',
+      headers: {
+        cookie: navegador.cookie ?? '',
+        'content-type': 'application/json',
+        'idempotency-key': pedido.clave,
+        'x-pasitos-timestamp': String(pedido.timestamp),
+        'x-pasitos-firma': await signPedido(navegador.par.privateKey, pedido),
+      },
+      payload: cuerpo,
+    });
+  }
+
+  it('celular (HU-411): opcional se guarda normalizado; obligatorio lo exige; con No pedir se ignora', async () => {
+    const qrId = await newQr();
+    // Opcional (por defecto): sin celular entra; con celular, normalizado.
+    const sinCelular = await newNavegador();
+    await abrir(qrId, sinCelular);
+    expect((await registrar(sinCelular, { nombre: 'Celia Sin' })).statusCode).toBe(201);
+    expect(await getCelular('Celia Sin')).toBeNull();
+    const conCelular = await newNavegador();
+    await abrir(qrId, conCelular);
+    expect(
+      (await registrar(conCelular, { nombre: 'Celia Con', celular: '7123 4567' })).statusCode,
+    ).toBe(201);
+    expect(await getCelular('Celia Con')).toBe('+59171234567');
+    const malo = await newNavegador();
+    await abrir(qrId, malo);
+    const invalido = await registrar(malo, { nombre: 'Celia Mal', celular: '123' });
+    expect(invalido.statusCode).toBe(400);
+    expect(invalido.json().errors[0]).toMatchObject({ field: 'celular' });
+
+    // Obligatorio: sin celular, VALIDACION en el campo.
+    await setPedirCelular('obligatorio');
+    const falta = await newNavegador();
+    await abrir(qrId, falta);
+    const sinNumero = await registrar(falta, { nombre: 'Celia Falta' });
+    expect(sinNumero.statusCode).toBe(400);
+    expect(sinNumero.json().errors[0]).toMatchObject({
+      field: 'celular',
+      code: 'CELULAR_REQUERIDO',
+    });
+    expect(
+      (await registrar(falta, { nombre: 'Celia Falta', celular: '+54 9 11 2345 6789' })).statusCode,
+    ).toBe(201);
+    expect(await getCelular('Celia Falta')).toBe('+5491123456789');
+
+    // Mis datos con obligatorio: se cambia, pero no se deja vacío.
+    expect((await editMisDatos(falta, { celular: '' })).statusCode).toBe(400);
+    const cambiado = await editMisDatos(falta, { celular: '61234567' });
+    expect(cambiado.json()).toMatchObject({ celular: '+59161234567', pideCelular: 'obligatorio' });
+
+    // No pedir: el número que llega no se guarda.
+    await setPedirCelular('no');
+    const ignorado = await newNavegador();
+    await abrir(qrId, ignorado);
+    expect(
+      (await registrar(ignorado, { nombre: 'Celia Ignorada', celular: '71112222' })).statusCode,
+    ).toBe(201);
+    expect(await getCelular('Celia Ignorada')).toBeNull();
+    // ...y quien ya lo tenía lo puede borrar.
+    expect((await editMisDatos(conCelular, { celular: null })).json()).toMatchObject({
+      celular: null,
+    });
+    await setPedirCelular('opcional');
+
+    // Nunca en la bitácora.
+    const filas = await base.sistema.db
+      .select()
+      .from(bitacora)
+      .where(eq(bitacora.eventoId, evento.eventoId));
+    for (const numero of ['71234567', '61234567', '1123456789']) {
+      expect(JSON.stringify(filas)).not.toContain(numero);
+    }
+  });
+
   it('A9: 3 cuentas con la misma huella desde el mismo QR en 10 minutos (sin bloquear)', async () => {
     const qrId = await newQr();
     const senales = {
@@ -396,7 +502,8 @@ describe('Autorregistro en la app (HU-320)', () => {
   it('el carnet no aparece en los logs', () => {
     const salida = logs.join('');
     expect(salida.length).toBeGreaterThan(0);
-    for (const numero of ['4567890', '1234567', '7654321']) {
+    // HU-411: tampoco el celular.
+    for (const numero of ['4567890', '1234567', '7654321', '71234567', '61234567']) {
       expect(salida).not.toContain(numero);
     }
   });

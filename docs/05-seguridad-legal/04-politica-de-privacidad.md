@@ -1,12 +1,13 @@
 # Política de privacidad de Pasitos
 
 > **Estado:** 📝 versión para el piloto, **antes de constituir la empresa** · ✅ aprobada · 🔍 conviene una revisión legal antes de los eventos con público abierto y al constituirse · **Última revisión:** 2026-11-19
-> ✅ **Aprobada el 19/11/2026.** Puesta al día con lo que la app hace desde la fase 3: el **carnet**, las **fotos de los retos**, el **autorregistro**, los **grupos** y el formulario de contacto. El responsable es el equipo del proyecto (ver los [Términos §13](03-terminos-y-condiciones.md#13-si-pasitos-se-constituye-como-empresa)). Las notas para el equipo están en el [anexo](#anexo-notas-para-el-equipo-no-se-publica), que no se publica.
+> 📝 **1.2 (21/11/2026), por aprobar:** suma el **número de celular** del asistente (HU-411): solo si el evento lo pide, para que el organizador lo contacte; Pasitos no manda mensajes. Cambian §2, §4, §6, §7, §8 y §11.
+> ✅ **1.1 aprobada el 19/11/2026.** Puesta al día con lo que la app hace desde la fase 3: el **carnet**, las **fotos de los retos**, el **autorregistro**, los **grupos** y el formulario de contacto. El responsable es el equipo del proyecto (ver los [Términos §13](03-terminos-y-condiciones.md#13-si-pasitos-se-constituye-como-empresa)). Las notas para el equipo están en el [anexo](#anexo-notas-para-el-equipo-no-se-publica), que no se publica.
 > **Lo que va entre llaves** (`{correoPrivacidad}`, `{sitio}`, `{vigenteDesde}`) se completa solo con [`libs/dominio/src/legal/config.ts`](../../libs/dominio/src/legal/config.ts). Después de cambiar este texto: `pnpm legal`.
 
 ---
 
-**Versión:** piloto 1.1 · **Vigente desde:** {vigenteDesde}
+**Versión:** piloto 1.2 · **Vigente desde:** {vigenteDesde}
 
 En Pasitos te explicamos qué datos tuyos usamos, para qué, por cuánto tiempo y qué puedes hacer con ellos. Lo escribimos en palabras simples.
 
@@ -30,6 +31,7 @@ Contacto para temas de privacidad: **{correoPrivacidad}**.
 |---|---|---|
 | Nombre | De la lista del organizador, de lo que le dices al registrador o de lo que escribes al registrarte con el QR del evento | Sí |
 | Correo electrónico | De la lista del organizador, del registrador o de lo que escribes | No |
+| **Número de celular** | De la lista del organizador, de lo que le dices al registrador o de lo que escribes, si el evento lo pide | **Solo si el evento lo pide como obligatorio** |
 | **Carnet de identidad** | Lo escribes tú, si el evento lo pide, o el registrador desde tu documento | **Solo si el evento lo pide** |
 | Código de asistente (por ejemplo `A-0231`) | Lo crea Pasitos para ese evento | Sí |
 | Grupo (por ejemplo *VIP*) | Lo asigna el organizador | No |
@@ -96,8 +98,9 @@ Tu entrada en Pasitos queda **vinculada al navegador de tu celular**. Para que n
 | Comprobar que participas una sola vez, si el evento lo pide | Carnet |
 | Darte los puntos de los retos con foto y, si lo autorizaste, usar la foto en redes | Fotos |
 | Avisarte: invitación, confirmación de que te registraste, recordatorio la víspera | Correo, si lo diste |
+| Que el **organizador** te pueda contactar sobre el evento, por ejemplo por WhatsApp. **Pasitos no te manda mensajes al celular** | Celular, si lo diste |
 | Evitar trampas y proteger tu entrada | Datos técnicos del dispositivo, fotos repetidas, carnet repetido |
-| Darle al organizador y a los sponsors el **reporte del evento** | Solo totales, por ejemplo *"287 asistentes, 140 en la charla de las 10:00"*. Nunca tu nombre, tu correo ni tu carnet |
+| Darle al organizador y a los sponsors el **reporte del evento** | Solo totales, por ejemplo *"287 asistentes, 140 en la charla de las 10:00"*. Nunca tu nombre, tu correo, tu celular ni tu carnet |
 | Guardar tu **historial de participación**, para que más adelante lo veas en tu cuenta (sección 7) | Nombre, correo, asistencia y movimientos |
 | Atender reclamos y resolver problemas | Lo necesario para cada caso |
 
@@ -112,15 +115,15 @@ Tratamos tus datos conforme a la **Constitución Política del Estado** y las no
 
 Para que nadie pueda inflar los números del evento, Pasitos guarda cada pocos minutos una **huella** de los movimientos de puntos en **Stellar**, una red pública que nadie puede modificar. En el piloto se usa su **red de pruebas (testnet)**.
 
-- **En Stellar no hay datos personales:** ni tu nombre, ni tu correo, ni tu carnet, ni tu dispositivo, ni tus fotos. Solo huellas y totales.
+- **En Stellar no hay datos personales:** ni tu nombre, ni tu correo, ni tu celular, ni tu carnet, ni tu dispositivo, ni tus fotos. Solo huellas y totales.
 - El **archivo público de cada lote** usa un identificador anónimo distinto en cada evento, no tu nombre. En eventos de menos de 30 personas, solo se publican los totales.
 - Lo que se registra en Stellar **no se puede borrar**, por la forma en que funciona la red. Por eso nunca registramos ahí nada que te identifique.
 - **La relación entre tu nombre y ese identificador anónimo nunca se publica.** Solo la conoce Pasitos.
 
 ## 6. Con quién compartimos tus datos
 
-- **El organizador del evento:** tu nombre, correo, código, grupo, asistencia, puntos, canjes, tus fotos, si autorizaste su uso, y las alertas de seguridad de tu entrada. Tu carnet, solo oculto (`•••567`).
-- **El equipo del evento**, según su rol. Por ejemplo, el registrador ve tu nombre y tu correo parcialmente oculto (`va•••@gmail.com`); quien verifica carnets ve el tuyo completo solo en esa pantalla; el responsable de un reto ve las fotos de ese reto.
+- **El organizador del evento:** tu nombre, correo, celular, código, grupo, asistencia, puntos, canjes, tus fotos, si autorizaste su uso, y las alertas de seguridad de tu entrada. Tu carnet, solo oculto (`•••567`).
+- **El equipo del evento**, según su rol. Por ejemplo, el registrador ve tu nombre, tu correo y tu celular parcialmente ocultos (`va•••@gmail.com`, `•••• 4567`); quien verifica carnets ve el tuyo completo solo en esa pantalla; el responsable de un reto ve las fotos de ese reto.
 - **Sponsors y financiadores:** solo los totales del reporte, nunca tus datos personales.
 - **El público, si el organizador lo publica:** el reporte del evento (solo totales) y, si autorizaste su uso, tu foto en las redes del organizador o de Pasitos.
 - **Proveedores que nos ayudan a operar.** Solo usan los datos para darnos su servicio. **Algunos están fuera de Bolivia:**
@@ -128,7 +131,7 @@ Para que nadie pueda inflar los números del evento, Pasitos guarda cada pocos m
   - **Red de distribución y protección del sitio:** Cloudflare. Todo el tráfico pasa por sus servidores, que ven tu dirección IP para entregar el contenido y frenar ataques.
   - **Copias de seguridad:** Google Drive. Las copias se cifran antes de subirse: Google no puede leer su contenido.
   - **Envío de correos:** Resend, cuando lo activemos para los correos de Pasitos.
-  - **Monitoreo de errores:** Sentry, cuando se active. Recibe los errores técnicos de la app, sin tu nombre, tu correo, tu carnet ni tu dirección IP.
+  - **Monitoreo de errores:** Sentry, cuando se active. Recibe los errores técnicos de la app, sin tu nombre, tu correo, tu celular, tu carnet ni tu dirección IP.
   - **Mapas:** Google Maps. La app muestra una imagen del mapa que genera Pasitos, así que Google no recibe tus datos. Solo si tocas *Cómo llegar* se abre Google Maps, con sus propias condiciones.
 - **Autoridades,** solo si una ley u orden judicial lo exige.
 
@@ -142,7 +145,7 @@ Para que nadie pueda inflar los números del evento, Pasitos guarda cada pocos m
 | **Número del carnet** | Se borra **30 días después del cierre**. Queda solo que fue verificado |
 | **Fotos de los retos** | Inapropiadas: **7 días** después del cierre. Sin autorización de uso: **30 días**. Con autorización: **90 días** |
 | Mensajes del formulario de contacto | **12 meses** |
-| Nombre, correo, código, grupo, asistencia y movimientos | **Se conservan** como tu historial de participación y para los reportes del evento |
+| Nombre, correo, celular, código, grupo, asistencia y movimientos | **Se conservan** como tu historial de participación y para los reportes del evento |
 | Bitácora del equipo | **Se conserva** |
 | Reporte del evento (solo totales) | Mientras el organizador lo mantenga publicado |
 | Huellas en Stellar | Para siempre. No contienen datos personales |
@@ -154,7 +157,7 @@ Para que nadie pueda inflar los números del evento, Pasitos guarda cada pocos m
 
 Puedes pedirnos:
 - **Saber** qué datos tuyos tenemos.
-- **Corregirlos** si están mal, por ejemplo tu nombre, tu correo o tu carnet. El nombre, el correo y el carnet (si todavía no se verificó) los puedes corregir tú en *Mi cuenta → Mis datos*.
+- **Corregirlos** si están mal, por ejemplo tu nombre, tu correo, tu celular o tu carnet. El nombre, el correo, el celular y el carnet (si todavía no se verificó) los puedes corregir tú en *Mi cuenta → Mis datos*. El celular también lo puedes **borrar** ahí, salvo que el evento lo pida como obligatorio y todavía no haya cerrado.
 - **Borrar** tus fotos, tu carnet y los datos técnicos de tu dispositivo antes de los plazos, una vez cerrado el evento.
 - **Retirar la autorización** de uso de una foto, en *Mi cuenta → Mis fotos*.
 - **Oponerte** a que usemos tus datos para algo en particular.
@@ -180,7 +183,7 @@ Si borras los datos del navegador, pierdes el acceso, pero no tus puntos: pide u
 
 ## 11. Datos que no pedimos
 
-Como asistente, solo te pedimos tu **nombre** y, si quieres, tu **correo**. **El carnet, solo si el evento lo pide**, y las fotos, solo en los retos que las piden. **No pedimos tu edad, tu teléfono, tu dirección ni datos de pago.**
+Como asistente, solo te pedimos tu **nombre** y, si quieres, tu **correo**. **El carnet y el celular, solo si el evento los pide**, y las fotos, solo en los retos que las piden. **No pedimos tu edad, tu dirección ni datos de pago.**
 
 **Menores de edad:** el piloto no pide la edad. Si un menor participa, lo hace con el permiso de sus padres o tutores, y las fotos donde aparezcan menores solo se mandan con ese permiso.
 
