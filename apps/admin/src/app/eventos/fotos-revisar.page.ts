@@ -73,7 +73,7 @@ const MOTIVOS: readonly { readonly valor: MotivoRechazo; readonly texto: string 
               <img
                 [src]="f.foto.url1200"
                 [alt]="'Foto de ' + f.asistente.nombre"
-                class="border-line w-full rounded-xl border object-contain"
+                class="border-line max-h-[55dvh] w-full rounded-xl border object-contain"
               />
             </a>
             <div class="flex flex-col gap-1">

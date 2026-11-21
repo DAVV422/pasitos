@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, type OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ASISTENTES_CONTACTO, TIPOS_EVENTO_CONTACTO } from '@pasitos/dominio/esquemas';
-import { valorDe } from '@pasitos/panel';
+import { EncabezadoPaginaComponent, FiltrosComponent, valorDe } from '@pasitos/panel';
 import { BotonDirective, ChipComponent, EstadoComponent } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { PlataformaApi, type ContactoFila } from './plataforma-api.service';
@@ -25,16 +25,28 @@ export function textoAsistentes(valor: string | null): string {
 @Component({
   selector: 'plt-contactos-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, BotonDirective, ChipComponent, EstadoComponent],
+  imports: [
+    DatePipe,
+    RouterLink,
+    BotonDirective,
+    ChipComponent,
+    EncabezadoPaginaComponent,
+    EstadoComponent,
+    FiltrosComponent,
+  ],
   template: `
-    <h1 class="font-display text-3xl font-extrabold">Contactos</h1>
-    <p class="text-muted">Los mensajes del formulario de la landing. Se borran a los 12 meses.</p>
-    <select aria-label="Estado" (change)="setEstado(valorDe($event))">
-      <option value="">Todos</option>
-      <option value="nuevo">Nuevos</option>
-      <option value="respondido">Respondidos</option>
-      <option value="descartado">Descartados</option>
-    </select>
+    <pnl-encabezado-pagina
+      titulo="Contactos"
+      descripcion="Los mensajes del formulario de la landing. Se borran a los 12 meses."
+    />
+    <pnl-filtros>
+      <select class="px-control sm:w-56" aria-label="Estado" (change)="setEstado(valorDe($event))">
+        <option value="">Todos</option>
+        <option value="nuevo">Nuevos</option>
+        <option value="respondido">Respondidos</option>
+        <option value="descartado">Descartados</option>
+      </select>
+    </pnl-filtros>
     @switch (estado()) {
       @case ('cargando') {
         <px-estado tipo="cargando" />

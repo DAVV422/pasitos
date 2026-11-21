@@ -1,6 +1,6 @@
 import { KeyValuePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, type OnInit, signal } from '@angular/core';
-import { valorDe } from '@pasitos/panel';
+import { EncabezadoPaginaComponent, valorDe } from '@pasitos/panel';
 import { CampoComponent, EstadoComponent, FilaDatoComponent, TarjetaComponent } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { PlataformaApi, type CostoRed } from './plataforma-api.service';
@@ -9,18 +9,30 @@ import { PlataformaApi, type CostoRed } from './plataforma-api.service';
 @Component({
   selector: 'plt-costo-red-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [KeyValuePipe, CampoComponent, EstadoComponent, FilaDatoComponent, TarjetaComponent],
+  imports: [
+    KeyValuePipe,
+    CampoComponent,
+    EncabezadoPaginaComponent,
+    EstadoComponent,
+    FilaDatoComponent,
+    TarjetaComponent,
+  ],
   template: `
-    <h1 class="font-display text-3xl font-extrabold">Costo de red</h1>
-    <px-campo etiqueta="Mes" #cm="pxCampo">
-      <input
-        [id]="cm.idControl"
-        [attr.aria-describedby]="cm.idDescripcion"
-        type="month"
-        [value]="mes()"
-        (change)="mes.set(valorDe($event)); load()"
-      />
-    </px-campo>
+    <pnl-encabezado-pagina
+      titulo="Costo de red"
+      descripcion="Comisiones consumidas en Stellar por mes y por tipo de operación."
+    />
+    <div class="sm:max-w-xs">
+      <px-campo etiqueta="Mes" #cm="pxCampo">
+        <input
+          [id]="cm.idControl"
+          [attr.aria-describedby]="cm.idDescripcion"
+          type="month"
+          [value]="mes()"
+          (change)="mes.set(valorDe($event)); load()"
+        />
+      </px-campo>
+    </div>
     @if (costo(); as c) {
       <px-tarjeta [destacada]="true">
         <px-fila-dato etiqueta="Total">{{ c.comisionXlm }} XLM</px-fila-dato>

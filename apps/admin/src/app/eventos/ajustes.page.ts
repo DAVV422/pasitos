@@ -1,12 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CATEGORIAS_AJUSTE, TIPOS_MOTIVO_AJUSTE, type TipoMotivoAjuste } from '@pasitos/dominio';
-import { AvisosService, EncabezadoPaginaComponent, getMensajeError } from '@pasitos/panel';
+import {
+  AvisosService,
+  EncabezadoPaginaComponent,
+  getMensajeError,
+  PestanasComponent,
+} from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
   CampoComponent,
   ChipComponent,
   EstadoComponent,
+  TarjetaComponent,
 } from '@pasitos/ui';
 import {
   AjustesApi,
@@ -42,202 +48,203 @@ const RESULTADOS: Readonly<Record<ResultadoOtorgamiento['resultado'], string>> =
     ChipComponent,
     EncabezadoPaginaComponent,
     EstadoComponent,
+    PestanasComponent,
+    TarjetaComponent,
   ],
   template: `
     <pnl-encabezado-pagina
       titulo="Ajustes"
       descripcion="Corrige puntos, otorga un reto o anula un canje. Todo queda en el libro y la bitácora."
     />
-    <div class="flex flex-wrap gap-2" role="tablist">
-      @for (p of pestanas; track p.id) {
-        <button
-          type="button"
-          role="tab"
-          [attr.aria-selected]="pestana() === p.id"
-          [pxBoton]="pestana() === p.id ? 'primario' : 'secundario'"
-          (click)="pestana.set(p.id)"
-        >
-          {{ p.texto }}
-        </button>
-      }
-    </div>
     @if (error(); as e) {
       <px-aviso variante="peligro">{{ e }}</px-aviso>
     }
 
-    @switch (pestana()) {
-      @case ('ajustar') {
-        <section class="flex max-w-lg flex-col gap-3">
-          <px-campo #cBuscar="pxCampo" etiqueta="Persona" ayuda="Nombre, código o correo.">
-            <input
-              [id]="cBuscar.idControl"
-              [attr.aria-describedby]="cBuscar.idDescripcion"
-              type="search"
-              [value]="q()"
-              (input)="onBuscar($any($event.target).value)"
-            />
-          </px-campo>
-          @if (!persona()) {
-            <ul class="flex flex-col gap-1">
-              @for (r of resultados(); track r.id) {
-                <li>
-                  <button
-                    type="button"
-                    class="border-line w-full rounded-lg border p-2 text-left"
-                    (click)="persona.set(r)"
-                  >
-                    <b>{{ r.nombre }}</b> · {{ r.codigo }}
-                  </button>
-                </li>
-              }
-            </ul>
-          } @else {
-            <p>
-              <b>{{ persona()?.nombre }}</b> · {{ persona()?.codigo }}
-              <button type="button" class="text-points underline" (click)="persona.set(null)">
-                cambiar
-              </button>
-            </p>
-            <px-campo #cPuntos="pxCampo" etiqueta="Puntos" ayuda="Positivo suma, negativo resta.">
-              <input
-                [id]="cPuntos.idControl"
-                [attr.aria-describedby]="cPuntos.idDescripcion"
-                type="number"
-                [value]="puntos()"
-                (input)="puntos.set(+$any($event.target).value)"
-              />
-            </px-campo>
-            <px-campo #cMotivo="pxCampo" etiqueta="Motivo">
-              <select [id]="cMotivo.idControl" (change)="motivo.set($any($event.target).value)">
-                @for (t of tiposMotivo; track t) {
-                  <option [value]="t" [selected]="motivo() === t">{{ categorias[t] }}</option>
-                }
-              </select>
-            </px-campo>
-            @if (motivo() === 'otro') {
-              <px-campo
-                #cTexto="pxCampo"
-                etiqueta="Cuéntalo"
-                ayuda="Queda para el equipo; no se publica."
-              >
+    <pnl-pestanas etiqueta="Tipo de ajuste" [pestanas]="pestanas" [(activa)]="pestana">
+      @switch (pestana()) {
+        @case ('ajustar') {
+          <px-tarjeta>
+            <section class="flex max-w-lg flex-col gap-3">
+              <px-campo #cBuscar="pxCampo" etiqueta="Persona" ayuda="Nombre, código o correo.">
                 <input
-                  [id]="cTexto.idControl"
-                  [attr.aria-describedby]="cTexto.idDescripcion"
-                  maxlength="300"
-                  [value]="texto()"
-                  (input)="texto.set($any($event.target).value)"
+                  [id]="cBuscar.idControl"
+                  [attr.aria-describedby]="cBuscar.idDescripcion"
+                  type="search"
+                  [value]="q()"
+                  (input)="onBuscar($any($event.target).value)"
                 />
               </px-campo>
-            }
-            <button
-              pxBoton
-              type="button"
-              [deshabilitado]="!ajusteListo()"
-              [cargando]="enviando()"
-              (click)="adjust()"
-            >
-              Ajustar
-            </button>
-          }
-        </section>
-      }
-      @case ('otorgar') {
-        <section class="flex max-w-lg flex-col gap-3">
-          <px-campo #cReto="pxCampo" etiqueta="Reto">
-            <select [id]="cReto.idControl" (change)="retoId.set($any($event.target).value)">
-              <option value="">Elige un reto</option>
-              @for (r of retos(); track r.id) {
-                <option [value]="r.id">{{ r.nombre }} · +{{ r.puntos }}</option>
-              }
-            </select>
-          </px-campo>
-          <px-campo
-            #cCodigos="pxCampo"
-            etiqueta="Códigos de asistente"
-            ayuda="Pega los códigos, separados por espacios, comas o líneas (hasta 200)."
-          >
-            <textarea
-              [id]="cCodigos.idControl"
-              [attr.aria-describedby]="cCodigos.idDescripcion"
-              rows="4"
-              [value]="codigos()"
-              (input)="codigos.set($any($event.target).value)"
-            ></textarea>
-          </px-campo>
-          <button
-            pxBoton
-            type="button"
-            [deshabilitado]="!retoId() || listaCodigos().length === 0"
-            [cargando]="enviando()"
-            (click)="grant()"
-          >
-            Otorgar a {{ listaCodigos().length }}
-          </button>
-          @if (otorgados().length > 0) {
-            <ul class="flex flex-col gap-1">
-              @for (r of otorgados(); track r.codigo) {
-                <li class="flex justify-between">
-                  <span>{{ r.codigo }}</span>
-                  <px-chip [variante]="r.resultado === 'ok' ? 'ok' : 'atenuado'">{{
-                    nombresResultado[r.resultado]
-                  }}</px-chip>
-                </li>
-              }
-            </ul>
-          }
-        </section>
-      }
-      @case ('canjes') {
-        <section class="flex max-w-lg flex-col gap-3">
-          <px-campo
-            #cCanje="pxCampo"
-            etiqueta="Comprobante o código de asistente"
-            ayuda="Por ejemplo C-4821 o A-0231."
-          >
-            <input
-              [id]="cCanje.idControl"
-              [attr.aria-describedby]="cCanje.idDescripcion"
-              type="search"
-              (change)="searchCanjes($any($event.target).value)"
-            />
-          </px-campo>
-          <ul class="flex flex-col gap-2">
-            @for (c of canjes(); track c.id) {
-              <li class="border-line flex flex-col gap-2 rounded-lg border p-3">
-                <p class="flex justify-between">
-                  <b>{{ c.comprobante }}</b>
-                  <px-chip [variante]="c.estado === 'anulado' ? 'atenuado' : 'ok'">{{
-                    c.estado
-                  }}</px-chip>
+              @if (!persona()) {
+                <ul class="flex flex-col gap-1">
+                  @for (r of resultados(); track r.id) {
+                    <li>
+                      <button
+                        type="button"
+                        class="border-line hover:bg-surface2 w-full rounded-lg border p-2.5 text-left"
+                        (click)="persona.set(r)"
+                      >
+                        <b>{{ r.nombre }}</b> · {{ r.codigo }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p>
+                  <b>{{ persona()?.nombre }}</b> · {{ persona()?.codigo }}
+                  <button type="button" class="text-points underline" (click)="persona.set(null)">
+                    cambiar
+                  </button>
                 </p>
-                <p class="text-muted text-sm">
-                  {{ c.asistente?.nombre }} · {{ c.asistente?.codigo }} · {{ c.total }} pts
-                </p>
-                @if (c.estado === 'confirmado') {
-                  <px-campo #cMot="pxCampo" etiqueta="Motivo">
+                <px-campo
+                  #cPuntos="pxCampo"
+                  etiqueta="Puntos"
+                  ayuda="Positivo suma, negativo resta."
+                >
+                  <input
+                    [id]="cPuntos.idControl"
+                    [attr.aria-describedby]="cPuntos.idDescripcion"
+                    type="number"
+                    [value]="puntos()"
+                    (input)="puntos.set(+$any($event.target).value)"
+                  />
+                </px-campo>
+                <px-campo #cMotivo="pxCampo" etiqueta="Motivo">
+                  <select [id]="cMotivo.idControl" (change)="motivo.set($any($event.target).value)">
+                    @for (t of tiposMotivo; track t) {
+                      <option [value]="t" [selected]="motivo() === t">{{ categorias[t] }}</option>
+                    }
+                  </select>
+                </px-campo>
+                @if (motivo() === 'otro') {
+                  <px-campo
+                    #cTexto="pxCampo"
+                    etiqueta="Cuéntalo"
+                    ayuda="Queda para el equipo; no se publica."
+                  >
                     <input
-                      [id]="cMot.idControl"
+                      [id]="cTexto.idControl"
+                      [attr.aria-describedby]="cTexto.idDescripcion"
                       maxlength="300"
-                      [value]="motivoAnulacion()"
-                      (input)="motivoAnulacion.set($any($event.target).value)"
+                      [value]="texto()"
+                      (input)="texto.set($any($event.target).value)"
                     />
                   </px-campo>
-                  <button
-                    pxBoton="peligro"
-                    type="button"
-                    [deshabilitado]="motivoAnulacion().trim().length < 5"
-                    [cargando]="enviando()"
-                    (click)="cancelCanje(c)"
-                  >
-                    Anular y devolver {{ c.total }} pts
-                  </button>
                 }
-              </li>
-            }
-          </ul>
-        </section>
+                <button
+                  pxBoton
+                  type="button"
+                  [deshabilitado]="!ajusteListo()"
+                  [cargando]="enviando()"
+                  (click)="adjust()"
+                >
+                  Ajustar
+                </button>
+              }
+            </section>
+          </px-tarjeta>
+        }
+        @case ('otorgar') {
+          <px-tarjeta>
+            <section class="flex max-w-lg flex-col gap-3">
+              <px-campo #cReto="pxCampo" etiqueta="Reto">
+                <select [id]="cReto.idControl" (change)="retoId.set($any($event.target).value)">
+                  <option value="">Elige un reto</option>
+                  @for (r of retos(); track r.id) {
+                    <option [value]="r.id">{{ r.nombre }} · +{{ r.puntos }}</option>
+                  }
+                </select>
+              </px-campo>
+              <px-campo
+                #cCodigos="pxCampo"
+                etiqueta="Códigos de asistente"
+                ayuda="Pega los códigos, separados por espacios, comas o líneas (hasta 200)."
+              >
+                <textarea
+                  [id]="cCodigos.idControl"
+                  [attr.aria-describedby]="cCodigos.idDescripcion"
+                  rows="4"
+                  [value]="codigos()"
+                  (input)="codigos.set($any($event.target).value)"
+                ></textarea>
+              </px-campo>
+              <button
+                pxBoton
+                type="button"
+                [deshabilitado]="!retoId() || listaCodigos().length === 0"
+                [cargando]="enviando()"
+                (click)="grant()"
+              >
+                Otorgar a {{ listaCodigos().length }}
+              </button>
+              @if (otorgados().length > 0) {
+                <ul class="flex flex-col gap-1">
+                  @for (r of otorgados(); track r.codigo) {
+                    <li class="flex justify-between">
+                      <span>{{ r.codigo }}</span>
+                      <px-chip [variante]="r.resultado === 'ok' ? 'ok' : 'atenuado'">{{
+                        nombresResultado[r.resultado]
+                      }}</px-chip>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+          </px-tarjeta>
+        }
+        @case ('canjes') {
+          <px-tarjeta>
+            <section class="flex max-w-lg flex-col gap-3">
+              <px-campo
+                #cCanje="pxCampo"
+                etiqueta="Comprobante o código de asistente"
+                ayuda="Por ejemplo C-4821 o A-0231."
+              >
+                <input
+                  [id]="cCanje.idControl"
+                  [attr.aria-describedby]="cCanje.idDescripcion"
+                  type="search"
+                  (input)="onBuscarCanjes($any($event.target).value)"
+                />
+              </px-campo>
+              <ul class="flex flex-col gap-2">
+                @for (c of canjes(); track c.id) {
+                  <li class="border-line flex flex-col gap-2 rounded-lg border p-3">
+                    <p class="flex justify-between">
+                      <b>{{ c.comprobante }}</b>
+                      <px-chip [variante]="c.estado === 'anulado' ? 'atenuado' : 'ok'">{{
+                        c.estado
+                      }}</px-chip>
+                    </p>
+                    <p class="text-muted text-sm">
+                      {{ c.asistente?.nombre }} · {{ c.asistente?.codigo }} · {{ c.total }} pts
+                    </p>
+                    @if (c.estado === 'confirmado') {
+                      <px-campo #cMot="pxCampo" etiqueta="Motivo">
+                        <input
+                          [id]="cMot.idControl"
+                          maxlength="300"
+                          [value]="motivoAnulacion()"
+                          (input)="motivoAnulacion.set($any($event.target).value)"
+                        />
+                      </px-campo>
+                      <button
+                        pxBoton="peligro"
+                        type="button"
+                        [deshabilitado]="motivoAnulacion().trim().length < 5"
+                        [cargando]="enviando()"
+                        (click)="cancelCanje(c)"
+                      >
+                        Anular y devolver {{ c.total }} pts
+                      </button>
+                    }
+                  </li>
+                }
+              </ul>
+            </section>
+          </px-tarjeta>
+        }
       }
-    }
+    </pnl-pestanas>
 
     <section class="flex flex-col gap-2">
       <h2 class="mt-4 text-xl font-bold">Historial</h2>
@@ -272,16 +279,16 @@ export class AjustesPage {
   private readonly avisos = inject(AvisosService);
   private readonly eventoId = computed(() => this.actual.evento()?.id ?? '');
 
-  protected readonly pestanas = [
-    { id: 'ajustar', texto: 'Ajustar puntos' },
-    { id: 'otorgar', texto: 'Otorgar un reto' },
-    { id: 'canjes', texto: 'Canjes' },
-  ] as const;
+  protected readonly pestanas: readonly { clave: Pestana; texto: string }[] = [
+    { clave: 'ajustar', texto: 'Ajustar puntos' },
+    { clave: 'otorgar', texto: 'Otorgar un reto' },
+    { clave: 'canjes', texto: 'Canjes' },
+  ];
   protected readonly tiposMotivo = TIPOS_MOTIVO_AJUSTE;
   protected readonly categorias = CATEGORIAS_AJUSTE;
   protected readonly nombresResultado = RESULTADOS;
 
-  protected readonly pestana = signal<Pestana>('ajustar');
+  protected readonly pestana = signal<string>('ajustar');
   protected readonly error = signal<string | null>(null);
   protected readonly enviando = signal(false);
   protected readonly historial = signal<readonly MovimientoAjuste[] | null>(null);
@@ -375,6 +382,15 @@ export class AjustesPage {
       this.otorgados.set(resultados);
       this.avisos.ok(`Otorgado a ${resultados.filter((r) => r.resultado === 'ok').length}.`);
     });
+  }
+
+  protected onBuscarCanjes(q: string): void {
+    clearTimeout(this.esperaBusqueda);
+    if (q.trim().length < 2) {
+      this.canjes.set([]);
+      return;
+    }
+    this.esperaBusqueda = setTimeout(() => void this.searchCanjes(q), 250);
   }
 
   protected async searchCanjes(q: string): Promise<void> {

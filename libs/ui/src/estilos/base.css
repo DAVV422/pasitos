@@ -82,10 +82,16 @@ h3 {
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
+  touch-action: manipulation;
   transition:
     background-color 0.15s,
     border-color 0.15s,
-    filter 0.15s;
+    filter 0.15s,
+    transform 0.12s;
+}
+
+.px-boton:active:not(:disabled, [aria-disabled='true']) {
+  transform: scale(0.98);
 }
 
 .px-boton--primario {
@@ -188,7 +194,7 @@ h3 {
   min-height: 26px;
   padding: 0 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -228,7 +234,7 @@ h3 {
   align-items: flex-start;
   padding: 12px 14px;
   border-radius: var(--radio-control);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.4;
 }
@@ -277,7 +283,7 @@ h3 {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 0;
-  font-size: 16px;
+  font-size: 1rem;
   border-top: 1px solid var(--line);
 }
 
@@ -299,7 +305,7 @@ h3 {
 }
 
 .px-campo__etiqueta {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
@@ -309,12 +315,12 @@ h3 {
 }
 
 .px-campo__ayuda {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
 .px-campo__error {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--danger);
 }
@@ -544,6 +550,8 @@ textarea::placeholder {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  max-width: 72rem;
+  margin: 0 auto;
   min-height: 52px;
   padding: 4px 20px 0;
 }

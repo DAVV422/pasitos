@@ -21,21 +21,40 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="flex flex-col gap-1"
             ><b>Nombre</b>
-            <input name="nombre" required minlength="2" maxlength="100" autocomplete="name" />
+            <input
+              class="px-control"
+              name="nombre"
+              required
+              minlength="2"
+              maxlength="100"
+              autocomplete="name"
+            />
             <span class="text-danger text-sm">{{ errores()['nombre'] }}</span>
           </label>
           <label class="flex flex-col gap-1"
             ><b>Correo</b>
-            <input name="email" type="email" required maxlength="254" autocomplete="email" />
+            <input
+              class="px-control"
+              name="email"
+              type="email"
+              required
+              maxlength="254"
+              autocomplete="email"
+            />
             <span class="text-danger text-sm">{{ errores()['email'] }}</span>
           </label>
-          <label class="flex flex-col gap-1"
+          <label class="flex flex-col gap-1 sm:col-span-2"
             ><b>Organización <span class="text-muted font-normal">(opcional)</span></b>
-            <input name="organizacion" maxlength="120" autocomplete="organization" />
+            <input
+              class="px-control"
+              name="organizacion"
+              maxlength="120"
+              autocomplete="organization"
+            />
           </label>
           <label class="flex flex-col gap-1"
             ><b>Tipo de evento <span class="text-muted font-normal">(opcional)</span></b>
-            <select name="tipoEvento">
+            <select class="px-control" name="tipoEvento">
               <option value="">Elige uno</option>
               @for (t of tipos; track t.valor) {
                 <option [value]="t.valor">{{ t.texto }}</option>
@@ -44,7 +63,7 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
           </label>
           <label class="flex flex-col gap-1"
             ><b>Asistentes aproximados <span class="text-muted font-normal">(opcional)</span></b>
-            <select name="asistentesAprox">
+            <select class="px-control" name="asistentesAprox">
               <option value="">Elige uno</option>
               @for (a of cantidades; track a.valor) {
                 <option [value]="a.valor">{{ a.texto }}</option>
@@ -54,7 +73,14 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
         </div>
         <label class="flex flex-col gap-1"
           ><b>Cuéntanos de tu evento</b>
-          <textarea name="mensaje" required minlength="10" maxlength="2000" rows="4"></textarea>
+          <textarea
+            class="px-control"
+            name="mensaje"
+            required
+            minlength="10"
+            maxlength="2000"
+            rows="4"
+          ></textarea>
           <span class="text-danger text-sm">{{ errores()['mensaje'] }}</span>
         </label>
         <!-- La trampa: fuera de la vista de las personas; los robots la llenan. -->
@@ -79,20 +105,14 @@ import { ASISTENTES, sendContacto, TIPOS_EVENTO, TURNSTILE_LLAVE_SITIO } from '.
           <p class="text-danger" role="alert">{{ e }}</p>
         }
         <div>
-          <button type="submit" pxBoton [cargando]="enviando()">Enviar</button>
+          <button type="submit" pxBoton class="w-full sm:w-auto" [cargando]="enviando()">
+            Enviar
+          </button>
         </div>
       </form>
     }
   `,
   styles: `
-    sit-contacto-form input:not([type='checkbox']),
-    sit-contacto-form select,
-    sit-contacto-form textarea {
-      padding: 0.75rem;
-      border: 1px solid var(--line);
-      border-radius: 0.5rem;
-      background: var(--surface);
-    }
     .sit-trampa {
       position: absolute;
       left: -9999px;

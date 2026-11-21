@@ -185,14 +185,28 @@ type Accion = 'dueno' | 'prueba' | null;
 
       <px-tarjeta>
         <h2 class="mb-2 text-xl font-bold">Eventos</h2>
-        @for (e of org.eventos; track e.id) {
-          <p>
-            <b>{{ e.nombre }}</b> · {{ e.tipo }} · {{ e.estado }} ·
-            {{ e.inicioAt | date: 'dd/MM/yyyy' }}
-          </p>
-        } @empty {
-          <p class="text-muted">Todavía no tiene eventos.</p>
-        }
+        <div class="flex flex-col divide-y">
+          @for (e of org.eventos; track e.id) {
+            <div
+              class="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0"
+            >
+              <div class="flex flex-col">
+                <b>{{ e.nombre }}</b>
+                <span class="text-muted text-sm">{{ e.inicioAt | date: 'dd/MM/yyyy' }}</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                <px-chip [variante]="e.tipo === 'prueba' ? 'puntos' : 'atenuado'">{{
+                  e.tipo
+                }}</px-chip>
+                <px-chip [variante]="e.estado === 'en_curso' ? 'ok' : 'atenuado'">{{
+                  e.estado
+                }}</px-chip>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-muted">Todavía no tiene eventos.</p>
+          }
+        </div>
       </px-tarjeta>
     } @else if (error()) {
       <px-estado tipo="error" titulo="No pudimos cargar la organización" [traceId]="traceId()" />

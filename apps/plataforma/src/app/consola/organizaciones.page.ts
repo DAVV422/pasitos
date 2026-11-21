@@ -180,6 +180,8 @@ import { PlataformaApi, type OrganizacionFila } from './plataforma-api.service';
                       }
                       @if (org.estado === 'suspendida') {
                         <px-chip variante="peligro">Suspendida</px-chip>
+                      } @else {
+                        <px-chip variante="ok">Activa</px-chip>
                       }
                     </span>
                   </td>

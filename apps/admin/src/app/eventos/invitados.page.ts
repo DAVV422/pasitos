@@ -282,7 +282,8 @@ interface Candidato {
                 </span>
               </span>
               <span
-                class="col-start-1 row-start-2 flex gap-2 overflow-hidden md:col-start-auto md:row-start-auto"
+                class="col-start-1 row-start-2 flex gap-2 overflow-x-auto md:col-start-auto md:row-start-auto"
+                style="scrollbar-width: none"
               >
                 <px-chip [variante]="a.estado === 'cancelado' ? 'atenuado' : 'ok'">
                   {{ nombreEstado(a.estado) }}

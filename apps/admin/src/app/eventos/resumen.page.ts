@@ -223,7 +223,6 @@ const BOTON_POR_ESTADO: Readonly<Record<string, { transicion: TransicionPanel; t
               <p>Registrando el cierre en Stellar…</p>
             }
           }
-          <p class="text-muted mt-2 text-sm">El reporte del evento llega en una próxima versión.</p>
         </px-tarjeta>
       } @else if (evento.cierre.programadoAt) {
         <px-aviso variante="info" data-testid="cierre-programado"

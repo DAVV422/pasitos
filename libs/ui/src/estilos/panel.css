@@ -128,7 +128,7 @@
   border-top: 1px solid var(--line);
 }
 
-/* Pestañas: subrayadas y desplazables, con sombra en el borde si hay más; select en el celular. */
+/* Pestañas: subrayadas y desplazables, con sombra en el borde si hay más. */
 pnl-pestanas {
   display: flex;
   flex-direction: column;
@@ -136,7 +136,7 @@ pnl-pestanas {
 }
 
 .pnl-pestanas {
-  display: none;
+  display: flex;
   overflow-x: auto;
   scrollbar-width: none;
   border-bottom: 1px solid var(--line);
@@ -183,21 +183,11 @@ pnl-pestanas {
 }
 
 .pnl-pestanas__select {
-  display: block;
+  display: none;
 }
 
 .pnl-pestanas__select select {
   width: 100%;
-}
-
-@media (width >= 768px) {
-  .pnl-pestanas {
-    display: flex;
-  }
-
-  .pnl-pestanas__select {
-    display: none;
-  }
 }
 
 /* El panel lateral y el diálogo, cerrados, no ocupan lugar (ni el espacio entre bloques). */

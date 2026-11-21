@@ -15,6 +15,7 @@ import {
   EncabezadoPaginaComponent,
   getErrorCampo,
   getMensajeError,
+  MenuAccionesComponent,
   PanelLateralComponent,
   SubidaImagenComponent,
   valorDe,
@@ -145,6 +146,7 @@ function toLocal(iso: unknown): string {
     TarjetaComponent,
     SubidaImagenComponent,
     EncabezadoPaginaComponent,
+    MenuAccionesComponent,
     PanelLateralComponent,
   ],
   template: `
@@ -310,7 +312,7 @@ function toLocal(iso: unknown): string {
                   </span>
                 </span>
                 @if (puedeEditar()) {
-                  <span class="flex gap-2">
+                  <span class="flex items-center gap-1.5">
                     @if (c.ordenable) {
                       <button
                         type="button"
@@ -333,17 +335,13 @@ function toLocal(iso: unknown): string {
                         ↓
                       </button>
                     }
-                    <button type="button" pxBoton="secundario" [chico]="true" (click)="start(fila)">
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      pxBoton="peligro-contorno"
-                      [chico]="true"
-                      (click)="remove(fila)"
-                    >
-                      Borrar
-                    </button>
+                    <pnl-menu-acciones [etiqueta]="'Acciones de ' + fila[c.principal]">
+                      <button type="button" (click)="start(fila)">Editar</button>
+                      <hr />
+                      <button type="button" class="pnl-acciones__peligro" (click)="remove(fila)">
+                        Borrar
+                      </button>
+                    </pnl-menu-acciones>
                   </span>
                 }
               </div>

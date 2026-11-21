@@ -1,6 +1,6 @@
 import { DatePipe, JsonPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, type OnInit, signal } from '@angular/core';
-import { valorDe } from '@pasitos/panel';
+import { EncabezadoPaginaComponent, valorDe } from '@pasitos/panel';
 import { BotonDirective, CampoComponent, EstadoComponent, TarjetaComponent } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
@@ -10,9 +10,17 @@ import { EventosApi, type FilaBitacoraEvento } from './eventos-api.service';
 @Component({
   selector: 'adm-bitacora-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, JsonPipe, BotonDirective, CampoComponent, EstadoComponent, TarjetaComponent],
+  imports: [
+    DatePipe,
+    JsonPipe,
+    BotonDirective,
+    CampoComponent,
+    EncabezadoPaginaComponent,
+    EstadoComponent,
+    TarjetaComponent,
+  ],
   template: `
-    <h1 class="font-display text-3xl font-extrabold">Bitácora</h1>
+    <pnl-encabezado-pagina titulo="Bitácora" />
     <px-campo etiqueta="Buscar por persona" ayuda="Al menos 3 letras del nombre." #cb="pxCampo">
       <input
         [id]="cb.idControl"
@@ -41,8 +49,16 @@ import { EventosApi, type FilaBitacoraEvento } from './eventos-api.service';
               <b>{{ fila.texto }}</b>{{ fila.objeto?.nombre ? ': ' + fila.objeto.nombre : '' }}
             </p>
             @if (fila.despues) {
-              <p class="text-muted text-sm break-all">
-                {{ fila.antes ? (fila.antes | json) + ' → ' : '' }}{{ fila.despues | json }}
+              <p class="text-muted mt-1 flex flex-wrap items-center gap-1.5 text-sm break-all">
+                @if (fila.antes) {
+                  <code class="bg-code-bg rounded px-1.5 py-0.5 text-xs">{{
+                    fila.antes | json
+                  }}</code>
+                  <span>→</span>
+                }
+                <code class="bg-code-bg rounded px-1.5 py-0.5 text-xs">{{
+                  fila.despues | json
+                }}</code>
               </p>
             }
           </px-tarjeta>

@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, type OnInit, signal } from '@angular/core';
 import { INTERVALOS_ANCLAJE_MIN } from '@pasitos/dominio';
-import { AvisosService, getMensajeError, valorDe } from '@pasitos/panel';
+import { AvisosService, EncabezadoPaginaComponent, getMensajeError, valorDe } from '@pasitos/panel';
 import {
   AvisoComponent,
   BotonDirective,
@@ -22,11 +22,15 @@ import { PlataformaApi, type CostoRed, type EventoFila } from './plataforma-api.
     AvisoComponent,
     BotonDirective,
     CampoComponent,
+    EncabezadoPaginaComponent,
     EstadoComponent,
     TarjetaComponent,
   ],
   template: `
-    <h1 class="font-display text-3xl font-extrabold">Eventos</h1>
+    <pnl-encabezado-pagina
+      titulo="Eventos"
+      descripcion="Eventos de todas las organizaciones, intervalo de anclaje en Stellar y costo de red."
+    />
     @if (mensaje(); as aviso) {
       <px-aviso [variante]="aviso.variante">{{ aviso.texto }}</px-aviso>
     }

@@ -93,7 +93,7 @@ function formatFecha(evento: EventoPublico): string {
             <li>
               <a
                 [href]="'/eventos/' + e.slug"
-                class="border-line bg-surface flex h-full flex-col overflow-hidden rounded-xl border"
+                class="border-line bg-surface hover:border-points flex h-full flex-col overflow-hidden rounded-xl border transition-colors"
               >
                 @if (e.imagen) {
                   <img
@@ -105,7 +105,11 @@ function formatFecha(evento: EventoPublico): string {
                     class="aspect-[2/1] w-full object-cover"
                   />
                 } @else {
-                  <div class="bg-surface2 aspect-[2/1] w-full"></div>
+                  <div
+                    class="bg-surface2 text-muted flex aspect-[2/1] w-full items-center justify-center text-sm font-bold tracking-wider uppercase"
+                  >
+                    {{ e.organizacion }}
+                  </div>
                 }
                 <span class="flex flex-col gap-1 p-4">
                   @if (e.estado === 'en_curso') {

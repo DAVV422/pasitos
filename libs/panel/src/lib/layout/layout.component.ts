@@ -62,6 +62,13 @@ interface GrupoMenu {
       >
         <px-icono nombre="menu" />
         <span>Menú</span>
+        @if (pendientes() > 0) {
+          <span
+            class="bg-danger text-surface rounded-full px-1.5 text-xs font-bold"
+            [attr.aria-label]="pendientes() + ' sin revisar'"
+            >{{ pendientes() }}</span
+          >
+        }
       </button>
       <span class="pnl-barra__donde">
         @if (contexto()) {
@@ -164,6 +171,9 @@ export class LayoutComponent {
   private readonly router = inject(Router);
   protected readonly menuAbierto = signal(false);
   private readonly url = signal(this.router.url);
+  protected readonly pendientes = computed(() =>
+    this.menu().reduce((suma, item) => suma + (item.contador ?? 0), 0),
+  );
 
   protected readonly grupos = computed((): readonly GrupoMenu[] => {
     const grupos: { titulo: string | null; items: ItemMenu[] }[] = [];

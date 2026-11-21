@@ -56,7 +56,11 @@ import { GruposApi, type GrupoPanel } from './grupos-api.service';
         </p>
       </div>
       @if (puedeEditar()) {
-        <form class="mt-4 flex flex-wrap items-end gap-3" (submit)="create($event)" novalidate>
+        <form
+          class="mt-4 grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto_auto]"
+          (submit)="create($event)"
+          novalidate
+        >
           <px-campo etiqueta="Nombre del grupo" [error]="errores()['nombre'] ?? null" #c1="pxCampo">
             <input
               [id]="c1.idControl"
@@ -111,6 +115,33 @@ import { GruposApi, type GrupoPanel } from './grupos-api.service';
         }
         <div>
           <button type="submit" pxBoton [cargando]="guardando()">Agregar</button>
+        </div>
+      </form>
+    </pnl-dialogo>
+
+    <pnl-dialogo
+      [titulo]="'Cambiar el nombre de «' + (renombrando()?.nombre ?? '') + '»'"
+      [abierto]="!!renombrando()"
+      (cerrado)="renombrando.set(null)"
+    >
+      <form class="flex flex-col gap-4" (submit)="saveRename($event)" novalidate>
+        <px-campo etiqueta="Nombre del grupo" #cRen="pxCampo">
+          <input
+            [id]="cRen.idControl"
+            maxlength="40"
+            [value]="nuevoNombre()"
+            (input)="nuevoNombre.set(valorDe($event))"
+          />
+        </px-campo>
+        <div>
+          <button
+            type="submit"
+            pxBoton
+            [cargando]="guardando()"
+            [deshabilitado]="nuevoNombre().trim().length < 2"
+          >
+            Guardar
+          </button>
         </div>
       </form>
     </pnl-dialogo>
@@ -185,6 +216,8 @@ export class GruposComponent implements OnInit {
   protected readonly mensaje = signal<string | null>(null);
   protected readonly guardando = signal(false);
   protected readonly agregando = signal<GrupoPanel | null>(null);
+  protected readonly renombrando = signal<GrupoPanel | null>(null);
+  protected readonly nuevoNombre = signal('');
   protected readonly codigos = signal('');
   protected readonly resultado = signal<{
     agregados: readonly string[];
@@ -230,10 +263,30 @@ export class GruposComponent implements OnInit {
     }
   }
 
-  protected async rename(grupo: GrupoPanel): Promise<void> {
-    const nombre = window.prompt('El nombre nuevo del grupo', grupo.nombre)?.trim();
-    if (!nombre || nombre === grupo.nombre) return;
-    await this.run(() => this.api.update(grupo.id, { nombre }));
+  protected rename(grupo: GrupoPanel): void {
+    this.nuevoNombre.set(grupo.nombre);
+    this.renombrando.set(grupo);
+  }
+
+  protected async saveRename(evento: Event): Promise<void> {
+    evento.preventDefault();
+    const grupo = this.renombrando();
+    const nombre = this.nuevoNombre().trim();
+    if (!grupo || nombre.length < 2) return;
+    if (nombre === grupo.nombre) {
+      this.renombrando.set(null);
+      return;
+    }
+    this.guardando.set(true);
+    try {
+      await this.api.update(grupo.id, { nombre });
+      this.renombrando.set(null);
+      await this.load();
+    } catch (error) {
+      this.mensaje.set(getMensajeError(error));
+    } finally {
+      this.guardando.set(false);
+    }
   }
 
   protected async setColor(grupo: GrupoPanel, color: ColorGrupo): Promise<void> {

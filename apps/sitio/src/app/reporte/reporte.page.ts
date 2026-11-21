@@ -212,7 +212,12 @@ const formato = (zona: string, opciones: Intl.DateTimeFormatOptions) =>
             >
           }
           @if (r.stellar.huellaFinal; as huella) {
-            <p class="text-muted text-sm break-all">Huella final: {{ huella }}</p>
+            <p class="text-muted text-sm">
+              Huella final:
+              <code class="px-codigo bg-code-bg mt-1 block rounded-lg p-2 text-xs break-all">{{
+                huella
+              }}</code>
+            </p>
           }
           <p class="text-muted text-sm">
             {{ r.stellar.lotes.length }}

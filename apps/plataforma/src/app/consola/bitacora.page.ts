@@ -1,5 +1,6 @@
 import { DatePipe, JsonPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, type OnInit, signal } from '@angular/core';
+import { EncabezadoPaginaComponent } from '@pasitos/panel';
 import { BotonDirective, EstadoComponent, TarjetaComponent } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { PlataformaApi, type FilaBitacora } from './plataforma-api.service';
@@ -8,9 +9,19 @@ import { PlataformaApi, type FilaBitacora } from './plataforma-api.service';
 @Component({
   selector: 'plt-bitacora-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, JsonPipe, BotonDirective, EstadoComponent, TarjetaComponent],
+  imports: [
+    DatePipe,
+    JsonPipe,
+    BotonDirective,
+    EncabezadoPaginaComponent,
+    EstadoComponent,
+    TarjetaComponent,
+  ],
   template: `
-    <h1 class="font-display text-3xl font-extrabold">Bitácora de la consola</h1>
+    <pnl-encabezado-pagina
+      titulo="Bitácora de la consola"
+      descripcion="Registro inmutable de las acciones realizadas por el equipo de plataforma."
+    />
     @switch (estado()) {
       @case ('cargando') {
         <px-estado tipo="cargando" />
@@ -29,8 +40,16 @@ import { PlataformaApi, type FilaBitacora } from './plataforma-api.service';
               <b>{{ fila.texto }}</b>{{ fila.objeto?.nombre ? ': ' + fila.objeto?.nombre : '' }}
             </p>
             @if (fila.despues) {
-              <p class="text-muted text-sm break-all">
-                {{ fila.antes ? (fila.antes | json) + ' → ' : '' }}{{ fila.despues | json }}
+              <p class="text-muted mt-1 flex flex-wrap items-center gap-1.5 text-sm break-all">
+                @if (fila.antes) {
+                  <code class="px-codigo bg-code-bg rounded px-1.5 py-0.5 text-xs">{{
+                    fila.antes | json
+                  }}</code>
+                  <span>→</span>
+                }
+                <code class="px-codigo bg-code-bg rounded px-1.5 py-0.5 text-xs">{{
+                  fila.despues | json
+                }}</code>
               </p>
             }
           </px-tarjeta>

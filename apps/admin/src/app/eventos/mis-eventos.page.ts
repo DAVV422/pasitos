@@ -128,8 +128,8 @@ import { EventosApi, type EventoResumen } from './eventos-api.service';
         }
         @default {
           @for (evento of eventos(); track evento.id) {
-            <a [routerLink]="['/eventos', evento.id]" class="block">
-              <px-tarjeta>
+            <a [routerLink]="['/eventos', evento.id]" class="group block">
+              <px-tarjeta class="group-hover:border-line-strong transition-colors">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <b>{{ evento.nombre }}</b>
                   <span class="flex gap-2">

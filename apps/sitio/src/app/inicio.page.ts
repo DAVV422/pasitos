@@ -20,12 +20,16 @@ const ICONOS_PASOS: readonly NombreIcono[] = ['scan', 'puntos', 'check'];
   template: `
     <section class="grid items-center gap-8 md:grid-cols-[1fr_auto]" aria-labelledby="portada">
       <div class="flex flex-col gap-5">
-        <h1 id="portada" class="text-5xl font-extrabold tracking-tight">{{ t.portada.slogan }}</h1>
+        <h1 id="portada" class="text-3xl font-extrabold tracking-tight sm:text-5xl">
+          {{ t.portada.slogan }}
+        </h1>
         <p class="text-points text-2xl font-bold">{{ t.portada.apoyo }}</p>
         <p class="text-muted text-lg">{{ t.portada.bajada }}</p>
         <div class="flex flex-wrap gap-3">
-          <a pxBoton href="/#contacto">{{ t.portada.principal }}</a>
-          <a pxBoton="secundario" href="/eventos">{{ t.portada.secundario }}</a>
+          <a pxBoton class="w-full sm:w-auto" href="/#contacto">{{ t.portada.principal }}</a>
+          <a pxBoton="secundario" class="w-full sm:w-auto" href="/eventos">{{
+            t.portada.secundario
+          }}</a>
         </div>
       </div>
       <div

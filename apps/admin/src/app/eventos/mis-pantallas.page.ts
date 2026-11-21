@@ -98,7 +98,7 @@ const RESULTADOS: Readonly<Record<string, string>> = {
                 }
                 @if (p.opciones.length > 0 || p.fijado) {
                   <select
-                    class="border-line h-11 rounded-lg border px-3"
+                    class="px-control h-11"
                     aria-label="Cambiar de reto"
                     (change)="run(p, 'cambiar_reto', $any($event.target).value || null)"
                   >

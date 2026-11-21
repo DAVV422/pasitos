@@ -84,7 +84,11 @@ function formatFecha(inicio: string, fin: string, zona: string): string {
           >
             @if (vinculado()) {
               <h2 id="como-entrar" class="text-2xl font-extrabold">Ya tienes tu entrada</h2>
-              <div><a pxBoton href="/app/" data-testid="ir-a-mi-entrada">Ir a mi entrada</a></div>
+              <div>
+                <a pxBoton class="w-full sm:w-auto" href="/app/" data-testid="ir-a-mi-entrada"
+                  >Ir a mi entrada</a
+                >
+              </div>
             } @else {
               <h2 id="como-entrar" class="text-2xl font-extrabold">Cómo entrar</h2>
               <p>¿Te invitaron? Abre el enlace de tu correo en el celular.</p>

@@ -43,9 +43,17 @@ const PLANTILLA = '\uFEFFnombre,correo,codigo\r\nValeria Quispe,valeria@example.
       }
       @switch (paso()) {
         @case ('elegir') {
-          <label class="mt-3 flex flex-col gap-2">
-            <span class="font-bold">Archivo .csv</span>
-            <input type="file" accept=".csv,text/csv" (change)="upload($event)" />
+          <label
+            class="border-line hover:bg-surface2 mt-3 flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors"
+          >
+            <span class="px-boton px-boton--secundario px-boton--chico">Elegir archivo .csv</span>
+            <span class="text-muted text-sm">Separado por comas o punto y coma</span>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              class="px-sr-only"
+              (change)="upload($event)"
+            />
           </label>
         }
         @case ('revisando') {
