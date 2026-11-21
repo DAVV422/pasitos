@@ -23,6 +23,13 @@ body {
   min-height: 100dvh;
 }
 
+/* Las páginas insertadas por Angular detrás de <router-outlet> heredan disposición vertical con aire. */
+main > router-outlet + * {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 h1,
 h2,
 h3 {
