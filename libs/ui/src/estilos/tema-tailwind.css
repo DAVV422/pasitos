@@ -17,6 +17,17 @@
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-on-points: var(--on-points);
+
+  /* Fondos suaves de los estados (también los usan las barras y los avisos hechos a mano). */
+  --color-track: var(--track);
+  --color-pts-bg: var(--pts-bg);
+  --color-pts-fg: var(--pts-fg);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-fg: var(--ok-fg);
+  --color-ok-border: var(--ok-border);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-fg: var(--warn-fg);
+  --color-code-bg: var(--code-bg);
   --color-transparent: transparent;
   --font-display: var(--font-display);
   --font-body: var(--font-body);

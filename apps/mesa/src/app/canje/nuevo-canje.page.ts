@@ -56,26 +56,30 @@ import { MesaApi, type PremioMesa } from '../mesa-api.service';
               [class.bg-pts-bg/20]="cantidad(p.id) > 0"
               [class.opacity-60]="p.disponible === 0"
             >
-              @if (p.imagenUrl) {
-                <img
-                  [src]="p.imagenUrl"
-                  alt=""
-                  class="aspect-square w-full cursor-pointer rounded-lg object-cover"
-                  loading="lazy"
-                  (click)="change(p, 1)"
-                />
-              } @else {
-                <div
-                  class="bg-surface2 text-muted flex aspect-square w-full cursor-pointer items-center justify-center rounded-lg"
-                  aria-hidden="true"
-                  (click)="change(p, 1)"
-                >
-                  <px-icono nombre="gift" [tamano]="36" />
-                </div>
-              }
-              <p class="cursor-pointer text-lg leading-tight font-bold" (click)="change(p, 1)">
-                {{ p.nombre }}
-              </p>
+              <!-- Tocar la foto o el nombre suma uno, como el botón +. -->
+              <button
+                type="button"
+                class="flex cursor-pointer flex-col gap-2 text-left"
+                [attr.aria-label]="'Agregar ' + p.nombre"
+                (click)="change(p, 1)"
+              >
+                @if (p.imagenUrl) {
+                  <img
+                    [src]="p.imagenUrl"
+                    alt=""
+                    class="aspect-square w-full rounded-lg object-cover"
+                    loading="lazy"
+                  />
+                } @else {
+                  <span
+                    class="bg-surface2 text-muted flex aspect-square w-full items-center justify-center rounded-lg"
+                    aria-hidden="true"
+                  >
+                    <px-icono nombre="gift" [tamano]="36" />
+                  </span>
+                }
+                <span class="text-lg leading-tight font-bold">{{ p.nombre }}</span>
+              </button>
               <p class="text-points font-display text-xl font-extrabold tabular-nums">
                 {{ p.puntos === 0 ? 'Gratis' : p.puntos + ' pts' }}
               </p>
