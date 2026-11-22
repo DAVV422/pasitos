@@ -60,6 +60,8 @@ const MENU_EVENTO: readonly (ItemMenu & { accion: AccionEvento })[] = [
   // HU-402: con el evento cerrado.
   { ruta: 'reporte', texto: 'Reporte', grupo: 'Evento', accion: 'reporte.read' },
   { ruta: 'lugares', texto: 'Lugares', grupo: 'Contenido', accion: 'contenido.read' },
+  // HU-414.
+  { ruta: 'mapa', texto: 'Mapa', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'agenda', texto: 'Agenda', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'sponsors', texto: 'Sponsors', grupo: 'Contenido', accion: 'contenido.read' },
   { ruta: 'preguntas', texto: 'Preguntas', grupo: 'Contenido', accion: 'contenido.read' },

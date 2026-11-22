@@ -253,6 +253,13 @@ export class ContenidoService {
     recurso: RecursoContenido,
     datos: Datos,
   ) {
+    // HU-414: la marca en el plano va con sus dos coordenadas, o sin ninguna.
+    if (
+      recurso === 'lugares' &&
+      ((datos['mapaX'] ?? null) === null) !== ((datos['mapaY'] ?? null) === null)
+    ) {
+      throw errorCampo('mapaX', 'Marca el lugar en el plano con sus dos coordenadas.');
+    }
     const delEvento = async (
       tabla: typeof lugares | typeof sponsors | typeof retos,
       campo: string,

@@ -63,6 +63,13 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./eventos/contenido.page').then((m) => m.ContenidoPage),
       })),
       {
+        // HU-414: marcar los lugares en el plano.
+        path: 'mapa',
+        canActivate: [canDoActivate('contenido.read')],
+        title: 'Mapa del evento · Pasitos',
+        loadComponent: () => import('./eventos/mapa.page').then((m) => m.MapaPage),
+      },
+      {
         path: 'alertas',
         canActivate: [canDoActivate('bitacora.read')],
         title: 'Alertas · Pasitos',

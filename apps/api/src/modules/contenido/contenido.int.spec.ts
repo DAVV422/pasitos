@@ -150,6 +150,34 @@ describe('Información del evento (HU-206)', () => {
     });
   });
 
+  it('mapa (HU-414): marcar un lugar en el plano, moverlo y quitarlo; las dos coordenadas o ninguna', async () => {
+    const stand = await pedir('POST', `/eventos/${evento.eventoId}/lugares`, dueno, {
+      tipo: 'stand',
+      nombre: 'Stand del mapa',
+    });
+    expect(stand.json()).toMatchObject({ mapaX: null, mapaY: null });
+    const id = stand.json().id as string;
+
+    const marcado = await pedir('PATCH', `/lugares/${id}`, dueno, { mapaX: 0.25, mapaY: 0.75 });
+    expect(marcado.statusCode).toBe(200);
+    expect(marcado.json()).toMatchObject({ mapaX: 0.25, mapaY: 0.75 });
+
+    const sinY = await pedir('PATCH', `/lugares/${id}`, dueno, { mapaX: 0.5, mapaY: null });
+    expect(sinY.json()).toMatchObject({ code: 'VALIDACION', errors: [{ field: 'mapaX' }] });
+    const afuera = await pedir('PATCH', `/lugares/${id}`, dueno, { mapaX: 1.5, mapaY: 0.5 });
+    expect(afuera.statusCode).toBe(400);
+
+    // Editar otro campo no borra la marca.
+    const editado = await pedir('PATCH', `/lugares/${id}`, dueno, { nombre: 'Stand del mapa 2' });
+    expect(editado.json()).toMatchObject({ mapaX: 0.25, mapaY: 0.75 });
+
+    const quitado = await pedir('PATCH', `/lugares/${id}`, dueno, { mapaX: null, mapaY: null });
+    expect(quitado.json()).toMatchObject({ mapaX: null, mapaY: null });
+    expect(
+      (await pedir('PATCH', `/lugares/${id}`, financiador, { mapaX: 0.1, mapaY: 0.1 })).statusCode,
+    ).toBe(403);
+  });
+
   it('una actividad fuera de las fechas del evento se rechaza con el campo marcado', async () => {
     const fuera = await pedir('POST', `/eventos/${evento.eventoId}/actividades`, dueno, {
       titulo: 'Fuera de fecha',

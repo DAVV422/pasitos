@@ -133,6 +133,9 @@ export interface LugarApp {
   readonly tipo: string;
   readonly numeroMapa: number | null;
   readonly descripcion: string | null;
+  /** HU-414: dónde está en el plano (de 0 a 1), o `null` si no se marcó. */
+  readonly mapaX: number | null;
+  readonly mapaY: number | null;
 }
 
 export interface SponsorApp {
@@ -143,6 +146,8 @@ export interface SponsorApp {
   readonly descripcion: string | null;
   readonly enlace: string | null;
   readonly lugar: string | null;
+  /** HU-414: para mostrarlo al tocar su lugar en el mapa. */
+  readonly lugarId: string | null;
 }
 
 export interface DefinicionReto {

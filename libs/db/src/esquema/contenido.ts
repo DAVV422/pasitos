@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  doublePrecision,
   index,
   integer,
   pgTable,
@@ -37,8 +38,15 @@ export const lugares = pgTable(
     nombre: text('nombre').notNull(),
     numeroMapa: integer('numero_mapa'),
     descripcion: text('descripcion'),
+    // HU-414: dónde está en el plano, de 0 a 1 (del ancho y del alto). Los dos o ninguno.
+    mapaX: doublePrecision('mapa_x'),
+    mapaY: doublePrecision('mapa_y'),
   },
   (t) => [
+    check(
+      'lugares_mapa',
+      sql`(${t.mapaX} is null and ${t.mapaY} is null) or (${t.mapaX} between 0 and 1 and ${t.mapaY} between 0 and 1)`,
+    ),
     check('lugares_tipo', sql`${t.tipo} in ('sala', 'stand', 'mesa', 'servicio')`),
     check('lugares_numero_mapa', sql`${t.numeroMapa} is null or ${t.numeroMapa} between 1 and 99`),
     uniqueIndex('lugares_numero_mapa_unico')

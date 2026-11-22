@@ -124,6 +124,9 @@ export const ESQUEMAS_CONTENIDO = {
     nombre: z.string().trim().min(2).max(80),
     numeroMapa: z.number().int().min(1).max(99).nullable().default(null),
     descripcion: textoOpcional(300).default(null),
+    // HU-414: dónde está en el plano (de 0 a 1 del ancho y del alto). Los dos o ninguno.
+    mapaX: z.number().min(0).max(1).nullable().default(null),
+    mapaY: z.number().min(0).max(1).nullable().default(null),
   }),
   actividades: z.object({
     titulo: z.string().trim().min(3).max(120),

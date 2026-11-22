@@ -46,6 +46,9 @@ export interface EventoApp {
     readonly tipo: string;
     readonly numeroMapa: number | null;
     readonly descripcion: string | null;
+    /** HU-414: dónde está en el plano (de 0 a 1), o `null` si no se marcó. */
+    readonly mapaX: number | null;
+    readonly mapaY: number | null;
   }[];
   readonly sponsors: readonly {
     readonly id: string;
@@ -54,6 +57,8 @@ export interface EventoApp {
     readonly descripcion: string | null;
     readonly enlace: string | null;
     readonly lugar: string | null;
+    /** HU-414: para mostrar el sponsor al tocar su lugar en el mapa. */
+    readonly lugarId: string | null;
   }[];
   readonly preguntas: readonly { readonly pregunta: string; readonly respuesta: string }[];
   readonly retos: readonly {
@@ -196,6 +201,8 @@ export async function getEventoApp(
           tipo: lugares.tipo,
           numeroMapa: lugares.numeroMapa,
           descripcion: lugares.descripcion,
+          mapaX: lugares.mapaX,
+          mapaY: lugares.mapaY,
         })
         .from(lugares)
         .where(eq(lugares.eventoId, eventoId))
@@ -208,6 +215,7 @@ export async function getEventoApp(
           descripcion: sponsors.descripcion,
           enlace: sponsors.enlace,
           lugar: lugares.nombre,
+          lugarId: sponsors.lugarId,
         })
         .from(sponsors)
         .leftJoin(lugares, eq(lugares.id, sponsors.lugarId))

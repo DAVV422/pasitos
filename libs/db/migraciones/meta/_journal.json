@@ -337,6 +337,13 @@
       "when": 1795317963338,
       "tag": "0047_horario_premios",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1795320487015,
+      "tag": "0048_mapa_lugares",
+      "breakpoints": true
     }
   ]
 }

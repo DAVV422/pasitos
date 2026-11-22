@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Algorithm, hash } from '@node-rs/argon2';
 import { Client } from 'pg';
@@ -379,5 +379,92 @@ export function seedEventoParaAjustes(
     );
     await cliente.query('update saldos set puntos = 100 where asistente_id = $1', [asistenteId]);
     return { eventoId, codigo: 'A-0001', asistente, premio, reto };
+  });
+}
+
+/**
+ * Un evento en curso (privado) de la organización de esa persona (dueña), con su **plano**, un
+ * stand con su sponsor y una asistente invitada, para el mapa (HU-414). El plano es una imagen
+ * gris armada aquí, guardada donde el API de las pruebas lee los archivos (`e2e/.archivos`).
+ */
+export async function seedEventoConPlano(
+  duena: { email: string },
+  nombre: string,
+): Promise<{ eventoId: string; token: string; stand: string; sponsor: string }> {
+  const { default: sharp } = await import('sharp');
+  return withCliente(async (cliente) => {
+    const { rows } = await cliente.query<{ organizacion_id: string }>(
+      `select m.organizacion_id from miembros_organizacion m join usuarios u on u.id = m.usuario_id
+        where u.email = $1 and m.rol = 'dueno'`,
+      [duena.email],
+    );
+    const organizacionId = rows[0]?.organizacion_id;
+    if (!organizacionId) throw new Error('La persona no es dueña de una organización');
+    const eventoId = uuidv7();
+    const planoId = uuidv7();
+    const lugarId = uuidv7();
+    const asistenteId = uuidv7();
+    const stand = 'Stand de Café Ejemplo';
+    const sponsor = 'Café de Ejemplo';
+    await cliente.query(
+      `insert into eventos (id, organizacion_id, slug, nombre, tipo, estado, inicio_at, fin_at)
+       values ($1, $2, $3, $4, 'real', 'en_curso', now() - interval '1 hour',
+               now() + interval '6 hours')`,
+      [eventoId, organizacionId, `mapa-e2e-${eventoId.slice(-12)}`, nombre],
+    );
+    // El plano: 1200 × 800, gris claro, en sus tres tamaños.
+    const relativa = `eventos/${organizacionId}/${eventoId}/${planoId}`;
+    const carpeta = resolve(__dirname, '../../.archivos', relativa);
+    mkdirSync(carpeta, { recursive: true });
+    const imagen = await sharp({
+      create: { width: 1200, height: 800, channels: 3, background: '#e2e8f0' },
+    })
+      .webp()
+      .toBuffer();
+    const variantes: Record<string, string> = {};
+    for (const variante of ['original', '1200', '400']) {
+      writeFileSync(resolve(carpeta, `${variante}.webp`), imagen);
+      variantes[variante] = `${relativa}/${variante}.webp`;
+    }
+    await cliente.query(
+      `insert into archivos (id, organizacion_id, evento_id, proposito, nombre_original, mime,
+                             tamano_bytes, ancho, alto, estado, variantes)
+       values ($1, $2, $3, 'plano', 'plano.webp', 'image/webp', $4, 1200, 800, 'aprobado', $5)`,
+      [planoId, organizacionId, eventoId, imagen.length, JSON.stringify(variantes)],
+    );
+    await cliente.query('update eventos set plano_archivo_id = $1 where id = $2', [
+      planoId,
+      eventoId,
+    ]);
+    await cliente.query(
+      `insert into lugares (id, organizacion_id, evento_id, tipo, nombre, numero_mapa)
+       values ($1, $2, $3, 'stand', $4, 7)`,
+      [lugarId, organizacionId, eventoId, stand],
+    );
+    await cliente.query(
+      `insert into sponsors (id, organizacion_id, evento_id, nombre, lugar_id)
+       values ($1, $2, $3, $4, $5)`,
+      [uuidv7(), organizacionId, eventoId, sponsor, lugarId],
+    );
+    await cliente.query(
+      `insert into asistentes (id, organizacion_id, evento_id, codigo_asistente, nombre, estado)
+       values ($1, $2, $3, 'A-0001', 'Paula Inventada', 'presente')`,
+      [asistenteId, organizacionId, eventoId],
+    );
+    const token = randomBytes(32).toString('base64url');
+    await cliente.query(
+      `insert into invitaciones (id, organizacion_id, evento_id, asistente_id, token_hash,
+                                 token_cifrado, estado)
+       values ($1, $2, $3, $4, $5, $6, 'enviada')`,
+      [
+        uuidv7(),
+        organizacionId,
+        eventoId,
+        asistenteId,
+        createHash('sha256').update(token, 'utf8').digest(),
+        Buffer.from('cifrado-de-prueba'),
+      ],
+    );
+    return { eventoId, token, stand, sponsor };
   });
 }
