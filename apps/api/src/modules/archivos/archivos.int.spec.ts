@@ -3,9 +3,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { and, eq } from 'drizzle-orm';
 import sharp from 'sharp';
-import { archivos, bitacora, eventos } from '@pasitos/db';
+import { archivos, asistentes, bitacora, eventos, invitaciones, mesas } from '@pasitos/db';
 import { startBaseDePrueba, type BaseDePrueba } from '@pasitos/db/pruebas';
+import { VERSION_TERMINOS } from '@pasitos/dominio';
+import { createParLlaves, exportLlavePublica } from '@pasitos/firmas';
+import { uuidv7 } from 'uuidv7';
 import { startApiDePrueba, type ApiDePrueba } from '../../pruebas/api-de-prueba';
+import { createTokenAleatorio } from '../auth/auth.repository';
 import {
   addRol,
   createEventoDePrueba,
@@ -22,6 +26,9 @@ import {
   SVG_CON_SCRIPT,
   ZIP_PEGADO,
 } from './pruebas/archivos-de-prueba';
+
+const CHROME_ANDROID =
+  'Mozilla/5.0 (Linux; Android 14; SM-A145M) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
 
 /** Subida, validación y entrega de archivos (HU-214, V23). Requiere Docker. */
 describe('Archivos (HU-214)', () => {
@@ -197,6 +204,72 @@ describe('Archivos (HU-214)', () => {
       .update(eventos)
       .set({ visibilidad: 'privado' })
       .where(eq(eventos.id, evento.eventoId));
+  });
+
+  /** Un asistente con su celular vinculado a ese evento: devuelve la cookie de su sesión. */
+  async function vincularAsistente(de: EventoDePrueba): Promise<string> {
+    const asistenteId = uuidv7();
+    await base.sistema.db.insert(asistentes).values({
+      id: asistenteId,
+      organizacionId: de.organizacionId,
+      eventoId: de.eventoId,
+      nombre: `Valeria ${asistenteId.slice(-5)}`,
+      estado: 'presente',
+    });
+    const { token, hash } = createTokenAleatorio();
+    await base.sistema.db.insert(invitaciones).values({
+      id: uuidv7(),
+      organizacionId: de.organizacionId,
+      eventoId: de.eventoId,
+      asistenteId,
+      tokenHash: hash,
+      tokenCifrado: Buffer.from('cifrado-de-prueba'),
+      estado: 'enviada',
+    });
+    const par = await createParLlaves();
+    const respuesta = await api.app.inject({
+      method: 'POST',
+      url: '/api/v1/acceso/vincular',
+      remoteAddress: `10.9.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250) + 1}`,
+      headers: { 'user-agent': CHROME_ANDROID },
+      payload: {
+        tipo: 'invitacion',
+        token,
+        llavePublica: await exportLlavePublica(par),
+        deviceId: Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64url'),
+        terminos: { version: VERSION_TERMINOS, privacidad: VERSION_TERMINOS },
+      },
+    });
+    expect(respuesta.statusCode).toBe(201);
+    return `px_asistente=${respuesta.cookies.find((c) => c.name === 'px_asistente')?.value ?? ''}`;
+  }
+
+  it('evento privado: el celular vinculado y la mesa del evento ven sus imágenes; los de otro evento, no', async () => {
+    const subida = (
+      await subir('premio.png', 'image/png', await createImagen('png'), 'imagen_premio')
+    ).json();
+    const url = subida.variantes['400'] as string;
+    expect((await descargar(url)).statusCode).toBe(404);
+
+    const deEste = await vincularAsistente(evento);
+    const respuesta = await descargar(url, deEste);
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.headers['cache-control']).toBe('private, max-age=300');
+
+    const otro = await createEventoDePrueba(base, { estado: 'en_curso' });
+    expect((await descargar(url, await vincularAsistente(otro))).statusCode).toBe(404);
+
+    const { token, hash } = createTokenAleatorio();
+    await base.sistema.db.insert(mesas).values({
+      id: uuidv7(),
+      organizacionId: evento.organizacionId,
+      eventoId: evento.eventoId,
+      nombre: 'Mesa de premios',
+      estado: 'activa',
+      sessionTokenHash: hash,
+    });
+    expect((await descargar(url, `px_terminal=${token}`)).statusCode).toBe(200);
+    expect((await descargar(url, 'px_terminal=inventado')).statusCode).toBe(404);
   });
 
   it('CSV: en Latin-1 se rechaza con cómo guardarlo; en UTF-8 queda en cuarentena y no se sirve', async () => {

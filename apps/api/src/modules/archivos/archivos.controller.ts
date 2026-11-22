@@ -23,7 +23,9 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import * as z from 'zod';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
 import { Publica } from '../../common/sesion/sesion';
+import { COOKIE_ASISTENTE, SesionesAsistenteService } from '../acceso/sesiones-asistente';
 import { COOKIE_EQUIPO, SesionesService } from '../auth/sesiones.service';
+import { COOKIE_TERMINAL, ConexionService } from '../terminales/conexion.service';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
 import { ArchivosService } from './archivos.service';
 import { UbicacionService } from './ubicacion.service';
@@ -79,6 +81,8 @@ export class ArchivosController {
     private readonly archivos: ArchivosService,
     private readonly ubicacion: UbicacionService,
     private readonly sesiones: SesionesService,
+    private readonly asistentes: SesionesAsistenteService,
+    private readonly conexion: ConexionService,
   ) {}
 
   /**
@@ -118,8 +122,11 @@ export class ArchivosController {
     if (!(VARIANTES_IMAGEN as readonly string[]).includes(variante)) {
       throw new AppError('NO_ENCONTRADO');
     }
-    const archivo = await this.archivos.open(id, variante as VarianteImagen, () =>
-      this.sesiones.authenticate(request.cookies[COOKIE_EQUIPO]).catch(() => null),
+    const archivo = await this.archivos.open(
+      id,
+      variante as VarianteImagen,
+      () => this.sesiones.authenticate(request.cookies[COOKIE_EQUIPO]).catch(() => null),
+      () => this.getEventoDelDispositivo(request),
     );
     await reply
       .header('Content-Type', 'image/webp')
@@ -128,6 +135,24 @@ export class ArchivosController {
       .header('X-Content-Type-Options', 'nosniff')
       .header('Content-Disposition', 'inline')
       .send(archivo.stream);
+  }
+
+  /**
+   * El evento del celular vinculado (cookie del asistente, no anulada) o de la pantalla o mesa
+   * conectada. `null` si no hay ninguno: entonces decide la sesión del equipo.
+   */
+  private async getEventoDelDispositivo(request: FastifyRequest): Promise<string | null> {
+    const asistente = request.cookies[COOKIE_ASISTENTE];
+    if (asistente) {
+      const sesion = await this.asistentes.authenticate(asistente).catch(() => null);
+      if (sesion && !sesion.anulada) return sesion.eventoId;
+    }
+    const terminal = request.cookies[COOKIE_TERMINAL];
+    if (terminal) {
+      const conectada = await this.conexion.beat(terminal).catch(() => null);
+      if (conectada) return conectada.evento.id;
+    }
+    return null;
   }
 
   @Put('eventos/:eventoId/ubicacion')

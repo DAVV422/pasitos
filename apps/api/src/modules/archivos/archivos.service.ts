@@ -181,11 +181,18 @@ export class ArchivosService {
   }
 
   /**
-   * `GET /archivos/:id/:variante` (HU-214 §4): evento privado, solo el equipo (caché privado);
-   * con enlace o público, cualquiera (caché largo: el id cambia si se reemplaza). La ruta de disco
-   * sale de la fila y tiene que quedar dentro de `eventos/`.
+   * `GET /archivos/:id/:variante` (HU-214 §4): evento privado, el equipo y también los
+   * dispositivos de ese evento (el celular vinculado de un asistente y las pantallas y mesas, que
+   * muestran los premios, los sponsors y el logo); caché privado. Con enlace o público, cualquiera
+   * (caché largo: el id cambia si se reemplaza). La ruta de disco sale de la fila y tiene que
+   * quedar dentro de `eventos/`.
    */
-  async open(id: string, variante: VarianteImagen, sesion: () => Promise<ContextoSesion | null>) {
+  async open(
+    id: string,
+    variante: VarianteImagen,
+    sesion: () => Promise<ContextoSesion | null>,
+    eventoDelDispositivo: () => Promise<string | null> = () => Promise.resolve(null),
+  ) {
     const archivo = await this.roles.findArchivoServible(id);
     const relativa = (archivo?.variantes as Partial<Record<VarianteImagen, string>> | null)?.[
       variante
@@ -200,7 +207,7 @@ export class ArchivosService {
       throw new AppError('NO_ENCONTRADO');
     }
     const privado = archivo.visibilidad === 'privado';
-    if (privado) {
+    if (privado && (await eventoDelDispositivo()) !== archivo.eventoId) {
       const persona = await sesion();
       const rol = persona
         ? await this.roles.findRol(persona.usuario.id, {

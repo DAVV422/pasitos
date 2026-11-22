@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { RolesRepository } from '../../common/permisos/roles.repository';
 import { APP_CONFIG, type AppConfig } from '../../config/app.config';
 import { DbService } from '../../infra/db/db.module';
+import { SesionesAsistenteService } from '../acceso/sesiones-asistente';
 import { AuthModule } from '../auth/auth.module';
+import { TerminalesModule } from '../terminales/terminales.module';
 import { RELOJ, type Reloj } from '../auth/sesiones.service';
 import { ArchivosController } from './archivos.controller';
 import { ArchivosService } from './archivos.service';
@@ -12,7 +14,7 @@ export const TRAER_MAPA = Symbol('TRAER_MAPA');
 
 /** Subida, validación y entrega de archivos (HU-214) y la ubicación con su mapa. */
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, TerminalesModule],
   controllers: [ArchivosController],
   providers: [
     {
@@ -20,6 +22,12 @@ export const TRAER_MAPA = Symbol('TRAER_MAPA');
       inject: [DbService, RolesRepository, RELOJ, APP_CONFIG],
       useFactory: (db: DbService, roles: RolesRepository, reloj: Reloj, config: AppConfig) =>
         new ArchivosService(db.db, roles, reloj, config.ARCHIVOS_DIR),
+    },
+    {
+      // Para servir las imágenes de un evento privado al celular vinculado (sin estado propio).
+      provide: SesionesAsistenteService,
+      inject: [DbService, RELOJ],
+      useFactory: (db: DbService, reloj: Reloj) => new SesionesAsistenteService(db.db, reloj),
     },
     {
       provide: TRAER_MAPA,
