@@ -12,6 +12,11 @@ export const CATALOGO_ERRORES = {
     title: 'Sin página pública',
     mensaje: 'Este evento no tiene página pública.',
   },
+  PREMIO_FUERA_DE_HORARIO: {
+    status: 409,
+    title: 'Premio fuera de horario',
+    mensaje: 'Este premio no se puede canjear a esta hora.',
+  },
   REPORTE_NO_DISPONIBLE: {
     status: 409,
     title: 'Reporte no disponible',

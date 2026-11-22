@@ -27,6 +27,7 @@ import {
   CampoComponent,
   ChipComponent,
   EstadoComponent,
+  FechaHoraDirective,
   IconoComponent,
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
@@ -43,6 +44,17 @@ interface FormularioPremio {
   maxPorPersona: string;
   grupoId: string;
   requiereCi: boolean;
+  /** HU-413: `AAAA-MM-DDTHH:mm` en hora de Bolivia, o vacío. */
+  desde: string;
+  hasta: string;
+}
+
+/** `2026-11-21T19:00:00Z` → `2026-11-21T15:00` (hora de Bolivia, como el resto del panel). */
+function toLocal(iso: string | null): string {
+  return iso ? new Date(new Date(iso).getTime() - 4 * 3_600_000).toISOString().slice(0, 16) : '';
+}
+function toIso(local: string): string | null {
+  return local ? new Date(`${local}:00-04:00`).toISOString() : null;
 }
 
 const VACIO: FormularioPremio = {
@@ -54,6 +66,8 @@ const VACIO: FormularioPremio = {
   maxPorPersona: '',
   grupoId: '',
   requiereCi: false,
+  desde: '',
+  hasta: '',
 };
 
 const CAMPOS = [
@@ -63,6 +77,8 @@ const CAMPOS = [
   'stockTotal',
   'maxPorPersona',
   'grupoId',
+  'disponibleDesde',
+  'disponibleHasta',
 ] as const;
 
 /** Catálogo de canje (O5, HU-208 §3): grilla de premios y crear o editar en un panel. */
@@ -76,6 +92,7 @@ const CAMPOS = [
     CampoComponent,
     ChipComponent,
     EstadoComponent,
+    FechaHoraDirective,
     SubidaImagenComponent,
     EncabezadoPaginaComponent,
     IconoComponent,
@@ -198,6 +215,40 @@ const CAMPOS = [
             />
           </px-campo>
         </div>
+        <!-- HU-413: desde una hora en adelante, o de tal hora a tal hora. -->
+        <pnl-seccion titulo="Cuándo se puede canjear">
+          <div class="grid gap-4 @sm:grid-cols-2">
+            <px-campo
+              etiqueta="Desde"
+              [opcional]="true"
+              ayuda="Sin horario: todo el evento."
+              [error]="errores()['disponibleDesde'] ?? null"
+              #fd="pxCampo"
+            >
+              <input
+                [id]="fd.idControl"
+                [attr.aria-describedby]="fd.idDescripcion"
+                data-testid="premio-desde"
+                [pxFechaHora]="form().desde"
+                (fechaHora)="set('desde', $event)"
+              />
+            </px-campo>
+            <px-campo
+              etiqueta="Hasta"
+              [opcional]="true"
+              [error]="errores()['disponibleHasta'] ?? null"
+              #fh="pxCampo"
+            >
+              <input
+                [id]="fh.idControl"
+                [attr.aria-describedby]="fh.idDescripcion"
+                data-testid="premio-hasta"
+                [pxFechaHora]="form().hasta"
+                (fechaHora)="set('hasta', $event)"
+              />
+            </px-campo>
+          </div>
+        </pnl-seccion>
         <pnl-seccion
           titulo="Avanzado"
           [plegable]="true"
@@ -305,6 +356,11 @@ const CAMPOS = [
                     · máximo {{ premio.maxPorPersona }} por persona
                   }
                 </p>
+                @if (premio.disponibleDesde || premio.disponibleHasta) {
+                  <p class="text-muted text-sm" data-testid="horario-premio">
+                    {{ describeHorario(premio) }}
+                  </p>
+                }
                 @if (premio.stockReservado + premio.stockEntregado > 0) {
                   <p class="text-muted text-sm">
                     Reservados: {{ premio.stockReservado }} · Entregados:
@@ -385,6 +441,24 @@ export class CatalogoPage implements OnInit {
     this.form.set({ ...this.form(), [campo]: valor });
   }
 
+  /** HU-413: *"Desde el 21/11 15:00"*, *"Hasta las 18:00"* o *"De 15:00 a 18:00 · 21/11"*. */
+  protected describeHorario(premio: PremioPanel): string {
+    const formato = (iso: string, opciones: Intl.DateTimeFormatOptions) =>
+      new Intl.DateTimeFormat('es-BO', {
+        timeZone: this.actual.evento()?.zonaHoraria ?? 'America/La_Paz',
+        hourCycle: 'h23',
+        ...opciones,
+      }).format(new Date(iso));
+    const hora = { hour: '2-digit', minute: '2-digit' } as const;
+    const dia = { day: '2-digit', month: '2-digit' } as const;
+    const { disponibleDesde: desde, disponibleHasta: hasta } = premio;
+    if (desde && hasta) {
+      return `Se canjea de ${formato(desde, hora)} a ${formato(hasta, hora)} · ${formato(desde, dia)}`;
+    }
+    if (desde) return `Se canjea desde el ${formato(desde, { ...dia, ...hora })}`;
+    return hasta ? `Se canjea hasta el ${formato(hasta, { ...dia, ...hora })}` : '';
+  }
+
   protected setRequiereCi(valor: boolean): void {
     this.form.set({ ...this.form(), requiereCi: valor });
   }
@@ -407,6 +481,8 @@ export class CatalogoPage implements OnInit {
             maxPorPersona: premio.maxPorPersona === null ? '' : String(premio.maxPorPersona),
             grupoId: premio.grupoId ?? '',
             requiereCi: premio.requiereCi,
+            desde: toLocal(premio.disponibleDesde),
+            hasta: toLocal(premio.disponibleHasta),
           }
         : VACIO,
     );
@@ -426,6 +502,8 @@ export class CatalogoPage implements OnInit {
       maxPorPersona: f.maxPorPersona.trim() === '' ? null : Number(f.maxPorPersona),
       grupoId: f.grupoId || null,
       requiereCi: f.requiereCi,
+      disponibleDesde: toIso(f.desde),
+      disponibleHasta: toIso(f.hasta),
     };
     this.guardando.set(true);
     this.errores.set({});

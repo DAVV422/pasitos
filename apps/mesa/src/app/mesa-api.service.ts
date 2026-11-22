@@ -13,6 +13,8 @@ export interface PremioMesa {
   readonly puntos: number;
   readonly disponible: number;
   readonly pocos: boolean;
+  /** HU-413: *"Desde las 15:00"* o *"Ya no está disponible"*; `null` si se puede ahora. */
+  readonly fueraDeHorario: string | null;
   readonly maxPorPersona: number | null;
   /** HU-325: solo para un grupo. */
   readonly grupo: string | null;

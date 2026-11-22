@@ -270,6 +270,9 @@ export interface PremioPanel {
   readonly grupoId: string | null;
   /** HU-321: la mesa pide el carnet para entregarlo. */
   readonly requiereCi: boolean;
+  /** HU-413: cuándo se puede canjear. */
+  readonly disponibleDesde: string | null;
+  readonly disponibleHasta: string | null;
 }
 
 export interface RetoPanel {

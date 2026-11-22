@@ -119,8 +119,15 @@ export const premios = pgTable(
     grupoId: uuid('grupo_id').references(() => grupos.id),
     // HU-321: la mesa pide el carnet para entregarlo (no bloquea el canje).
     requiereCi: boolean('requiere_ci').notNull().default(false),
+    // HU-413: cuándo se puede canjear. Sin horario, todo el evento.
+    disponibleDesde: timestamp('disponible_desde', { withTimezone: true }),
+    disponibleHasta: timestamp('disponible_hasta', { withTimezone: true }),
   },
   (t) => [
+    check(
+      'premios_horario',
+      sql`${t.disponibleDesde} is null or ${t.disponibleHasta} is null or ${t.disponibleDesde} < ${t.disponibleHasta}`,
+    ),
     check(
       'premios_puntos',
       sql`${t.puntos} between 1 and 100000 or (${t.puntos} = 0 and ${t.grupoId} is not null)`,

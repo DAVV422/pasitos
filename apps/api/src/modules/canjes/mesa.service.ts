@@ -12,7 +12,7 @@ import {
   type Db,
   type Tx,
 } from '@pasitos/db';
-import { maskCi, AppError } from '@pasitos/dominio';
+import { describeHorarioPremio, maskCi, AppError } from '@pasitos/dominio';
 import { isPocosDisponibles } from '@pasitos/dominio/esquemas';
 import { uuidv7 } from 'uuidv7';
 import type { FirmaVerificada } from '../../common/sesion/asistente';
@@ -123,16 +123,30 @@ export class MesaService {
           entregado: premios.stockEntregado,
           maxPorPersona: premios.maxPorPersona,
           grupoId: premios.grupoId,
+          disponibleDesde: premios.disponibleDesde,
+          disponibleHasta: premios.disponibleHasta,
         })
         .from(premios)
         .where(and(eq(premios.eventoId, terminal.evento.id), eq(premios.estado, 'activo')))
         .orderBy(premios.orden, premios.id);
       const delEvento = await mapGruposDelEvento(tx, terminal.evento.id);
+      const [evento] = await tx
+        .select({ zonaHoraria: eventos.zonaHoraria })
+        .from(eventos)
+        .where(eq(eventos.id, terminal.evento.id));
+      const ahora = this.reloj.now();
       return {
         items: filas.map(({ imagenArchivoId, total, reservado, entregado, grupoId, ...p }) => {
           const disponible = Math.max(0, total - reservado - entregado);
+          const { disponibleDesde, disponibleHasta, ...resto } = p;
           return {
-            ...p,
+            ...resto,
+            // HU-413: *"Desde las 15:00"* o *"Ya no está disponible"*; `null` si se puede ahora.
+            fueraDeHorario: describeHorarioPremio(
+              { disponibleDesde, disponibleHasta },
+              ahora,
+              evento?.zonaHoraria ?? 'America/La_Paz',
+            ),
             imagenUrl: imagenArchivoId ? getUrlArchivo(imagenArchivoId, '400') : null,
             disponible,
             pocos: isPocosDisponibles(disponible, total),
@@ -157,7 +171,7 @@ export class MesaService {
     return withOrganizacion(this.db, terminal.organizacionId, (tx) =>
       runIdempotente(tx, `mesa:${terminal.id}`, pedido, async () => {
         const [evento] = await tx
-          .select({ estado: eventos.estado })
+          .select({ estado: eventos.estado, zonaHoraria: eventos.zonaHoraria })
           .from(eventos)
           .where(eq(eventos.id, terminal.evento.id));
         if (evento?.estado !== 'en_curso') {
@@ -182,6 +196,8 @@ export class MesaService {
             entregado: premios.stockEntregado,
             grupoId: premios.grupoId,
             requiereCi: premios.requiereCi,
+            disponibleDesde: premios.disponibleDesde,
+            disponibleHasta: premios.disponibleHasta,
           })
           .from(premios)
           .where(
@@ -195,6 +211,7 @@ export class MesaService {
           )
           .orderBy(asc(premios.id))
           .for('update');
+        checkHorarioPremios(filas, this.reloj.now(), evento.zonaHoraria);
         const porId = new Map(filas.map((p) => [p.id, p]));
         const delEvento = await mapGruposDelEvento(tx, terminal.evento.id);
         const lineas: ItemCobro[] = [];
@@ -386,6 +403,31 @@ export async function createComprobante(tx: Tx, eventoId: string): Promise<strin
     if (!usado) return comprobante;
   }
   throw new AppError('SERVICIO_NO_DISPONIBLE', { detail: 'No hay comprobantes libres.' });
+}
+
+/**
+ * HU-413: los premios fuera de su horario no se canjean (en la mesa, al confirmar en el celular ni
+ * a mano). El texto dice desde cuándo, en la hora del evento.
+ */
+export function checkHorarioPremios(
+  filas: readonly {
+    id: string;
+    nombre: string;
+    disponibleDesde: Date | null;
+    disponibleHasta: Date | null;
+  }[],
+  ahora: Date,
+  zonaHoraria: string,
+): void {
+  for (const premio of filas) {
+    const texto = describeHorarioPremio(premio, ahora, zonaHoraria);
+    if (texto) {
+      throw new AppError('PREMIO_FUERA_DE_HORARIO', {
+        detail: `${premio.nombre}: ${texto.charAt(0).toLowerCase()}${texto.slice(1)}.`,
+        meta: { premio: { id: premio.id, nombre: premio.nombre }, horario: texto },
+      });
+    }
+  }
 }
 
 /** Para el registro y el aviso en vivo de la mesa. */

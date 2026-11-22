@@ -330,6 +330,13 @@
       "when": 1795314210054,
       "tag": "0046_canje_manual",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1795317963338,
+      "tag": "0047_horario_premios",
+      "breakpoints": true
     }
   ]
 }

@@ -84,6 +84,9 @@ export interface EventoApp {
     readonly grupo: GrupoApp | null;
     /** HU-321: *"Lleva tu carnet"*. */
     readonly requiereCi: boolean;
+    /** HU-413: cuándo se puede canjear. */
+    readonly disponibleDesde: string | null;
+    readonly disponibleHasta: string | null;
   }[];
   readonly agenda: readonly {
     readonly id: string;
@@ -160,6 +163,8 @@ export async function getEventoApp(
           maxPorPersona: premios.maxPorPersona,
           grupoId: premios.grupoId,
           requiereCi: premios.requiereCi,
+          disponibleDesde: premios.disponibleDesde,
+          disponibleHasta: premios.disponibleHasta,
         })
         .from(premios)
         .where(
@@ -255,6 +260,8 @@ export async function getEventoApp(
       ...premio,
       grupo: toGrupo(grupoId),
       imagenUrl: imagenArchivoId ? getUrlArchivo(imagenArchivoId, '400') : null,
+      disponibleDesde: premio.disponibleDesde?.toISOString() ?? null,
+      disponibleHasta: premio.disponibleHasta?.toISOString() ?? null,
     })),
     agenda: filasAgenda.map((actividad) => ({
       ...actividad,

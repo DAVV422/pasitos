@@ -41,6 +41,7 @@ export class PremiosService {
     await this.checkImagen(contexto, datos.imagenArchivoId);
     return withOrganizacion(this.db, contexto.organizacionId, async (tx) => {
       await this.checkGrupo(tx, contexto, datos.puntos, datos.grupoId);
+      checkHorario(datos.disponibleDesde, datos.disponibleHasta);
       const [ultimo] = await tx
         .select({ orden: max(premios.orden) })
         .from(premios)
@@ -50,7 +51,7 @@ export class PremiosService {
         id,
         organizacionId: contexto.organizacionId,
         eventoId: contexto.eventoId,
-        ...datos,
+        ...toColumnas(datos),
         orden: Number(ultimo?.orden ?? -1) + 1,
       });
       await this.record(tx, contexto, 'premio.create', id, datos.nombre, undefined, datos);
@@ -68,6 +69,14 @@ export class PremiosService {
         cambios.puntos ?? actual.puntos,
         cambios.grupoId === undefined ? actual.grupoId : cambios.grupoId,
       );
+      checkHorario(
+        cambios.disponibleDesde === undefined
+          ? (actual.disponibleDesde?.toISOString() ?? null)
+          : cambios.disponibleDesde,
+        cambios.disponibleHasta === undefined
+          ? (actual.disponibleHasta?.toISOString() ?? null)
+          : cambios.disponibleHasta,
+      );
       const comprometido = actual.stockReservado + actual.stockEntregado;
       if (cambios.stockTotal !== undefined && cambios.stockTotal < comprometido) {
         throw new AppError('STOCK_MENOR_A_COMPROMETIDO', {
@@ -77,7 +86,7 @@ export class PremiosService {
       }
       await tx
         .update(premios)
-        .set({ ...cambios, updatedAt: this.reloj.now() })
+        .set({ ...toColumnas(cambios), updatedAt: this.reloj.now() })
         .where(eq(premios.id, id));
       const recortado = diff(this.toDatos(actual), { ...this.toDatos(actual), ...cambios });
       if (Object.keys(recortado.despues).length > 0) {
@@ -176,6 +185,8 @@ export class PremiosService {
       maxPorPersona: p.maxPorPersona,
       grupoId: p.grupoId,
       requiereCi: p.requiereCi,
+      disponibleDesde: p.disponibleDesde?.toISOString() ?? null,
+      disponibleHasta: p.disponibleHasta?.toISOString() ?? null,
     };
   }
 
@@ -239,6 +250,35 @@ export class PremiosService {
       objeto: { tipo: 'premio', id, nombre },
       ...(antes ? { antes } : {}),
       ...(despues ? { despues } : {}),
+    });
+  }
+}
+
+/** HU-413: el horario llega como texto ISO; la base guarda fechas. */
+function toColumnas<T extends Partial<DatosPremio>>(datos: T) {
+  const { disponibleDesde, disponibleHasta, ...resto } = datos;
+  return {
+    ...resto,
+    ...(disponibleDesde === undefined
+      ? {}
+      : { disponibleDesde: disponibleDesde ? new Date(disponibleDesde) : null }),
+    ...(disponibleHasta === undefined
+      ? {}
+      : { disponibleHasta: disponibleHasta ? new Date(disponibleHasta) : null }),
+  };
+}
+
+/** HU-413: *Hasta* después de *Desde* (si están los dos). */
+function checkHorario(desde: string | null | undefined, hasta: string | null | undefined): void {
+  if (desde && hasta && !(new Date(desde) < new Date(hasta))) {
+    throw new AppError('VALIDACION', {
+      errors: [
+        {
+          field: 'disponibleHasta',
+          code: 'NO_VALIDO',
+          message: 'El final tiene que ser después del comienzo.',
+        },
+      ],
     });
   }
 }

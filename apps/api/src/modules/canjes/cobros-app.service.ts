@@ -20,7 +20,7 @@ import { runIdempotente } from '../acceso/idempotencia';
 import { hashToken } from '../auth/auth.repository';
 import { Limitador } from '../auth/limitador';
 import type { Reloj } from '../auth/sesiones.service';
-import { listItems, notifyCanje, type ItemCobro } from './mesa.service';
+import { checkHorarioPremios, listItems, notifyCanje, type ItemCobro } from './mesa.service';
 import { listGruposDe, mapGruposDelEvento } from '../grupos/grupos-de';
 
 export interface VistaCobro {
@@ -120,7 +120,7 @@ export class CobrosAppService {
         checkPendiente(canje, ahora);
         // 4. Los canjes también se pausan.
         const [evento] = await tx
-          .select({ estado: eventos.estado })
+          .select({ estado: eventos.estado, zonaHoraria: eventos.zonaHoraria })
           .from(eventos)
           .where(eq(eventos.id, asistente.eventoId));
         if (evento?.estado !== 'en_curso') {
@@ -142,11 +142,15 @@ export class CobrosAppService {
             reservado: premios.stockReservado,
             entregado: premios.stockEntregado,
             grupoId: premios.grupoId,
+            disponibleDesde: premios.disponibleDesde,
+            disponibleHasta: premios.disponibleHasta,
           })
           .from(premios)
           .where(inArray(premios.id, premiosIds))
           .orderBy(asc(premios.id))
           .for('update');
+        // HU-413: el horario se revisa también al confirmar (pudo cerrarse mientras tanto).
+        checkHorarioPremios(filas, ahora, evento.zonaHoraria);
 
         // 4b. HU-325: un premio de un grupo, solo para las personas del grupo.
         const deOtroGrupo = filas.filter((p) => p.grupoId !== null);

@@ -361,4 +361,42 @@ describe('Mesa de canje y canjear (HU-316, HU-313)', () => {
       expect(vista.json().code).toBe('CANJE_VENCIDO');
     });
   });
+
+  describe('horario de los premios (HU-413)', () => {
+    it('antes de «Desde»: la mesa lo ve con su aviso y no lo cobra; después, sí', async () => {
+      const desde = new Date(api.reloj.now().getTime() + 3_600_000);
+      const premioId = await newPremio({ puntos: 20, disponibleDesde: desde });
+      const catalogo = (await getMesa(mesa1, 'catalogo')).json().items as {
+        id: string;
+        fueraDeHorario: string | null;
+      }[];
+      expect(catalogo.find((p) => p.id === premioId)?.fueraDeHorario).toMatch(
+        /^Desde las \d{2}:\d{2}$/,
+      );
+      const antes = await cobrar(mesa1, [{ premioId, cantidad: 1 }]);
+      expect(antes.statusCode).toBe(409);
+      expect(antes.json().code).toBe('PREMIO_FUERA_DE_HORARIO');
+      expect((await getPremio(premioId))?.stockReservado).toBe(0);
+
+      api.reloj.advance(3_600_000);
+      expect((await cobrar(mesa1, [{ premioId, cantidad: 1 }])).statusCode).toBe(201);
+    });
+
+    it('si «Hasta» pasa entre el cobro y la confirmación, el celular no lo confirma', async () => {
+      const hasta = new Date(api.reloj.now().getTime() + 60_000);
+      const premioId = await newPremio({ puntos: 20, disponibleHasta: hasta });
+      const cobro = (await cobrar(mesa1, [{ premioId, cantidad: 1 }])).json();
+      const celular = await newCelular(50);
+      api.reloj.advance(61_000);
+      const respuesta = await confirmar(celular, tokenDe(cobro.qr));
+      expect(respuesta.statusCode).toBe(409);
+      expect(respuesta.json()).toMatchObject({
+        code: 'PREMIO_FUERA_DE_HORARIO',
+        detail: expect.stringMatching(/ya no está disponible/),
+      });
+      expect((await getMesa(mesa1, 'catalogo')).json().items).toContainEqual(
+        expect.objectContaining({ id: premioId, fueraDeHorario: 'Ya no está disponible' }),
+      );
+    });
+  });
 });

@@ -54,7 +54,7 @@ import { MesaApi, type PremioMesa } from '../mesa-api.service';
               [class.border-points]="cantidad(p.id) > 0"
               [class.border-2]="cantidad(p.id) > 0"
               [class.bg-pts-bg/20]="cantidad(p.id) > 0"
-              [class.opacity-60]="p.disponible === 0"
+              [class.opacity-60]="p.disponible === 0 || p.fueraDeHorario"
             >
               <!-- Tocar la foto o el nombre suma uno, como el botón +. -->
               <button
@@ -87,7 +87,10 @@ import { MesaApi, type PremioMesa } from '../mesa-api.service';
                 <px-chip variante="puntos">Solo {{ p.grupo }}</px-chip>
               }
               <p class="text-muted text-sm">
-                @if (p.disponible === 0) {
+                @if (p.fueraDeHorario; as horario) {
+                  <!-- HU-413. -->
+                  <px-chip variante="atenuado">{{ horario }}</px-chip>
+                } @else if (p.disponible === 0) {
                   <px-chip variante="peligro">Agotado</px-chip>
                 } @else {
                   Quedan {{ p.disponible }}
@@ -117,7 +120,7 @@ import { MesaApi, type PremioMesa } from '../mesa-api.service';
                   type="button"
                   class="h-12 w-12"
                   [attr.aria-label]="'Agregar ' + p.nombre"
-                  [deshabilitado]="cantidad(p.id) >= p.disponible"
+                  [deshabilitado]="cantidad(p.id) >= p.disponible || p.fueraDeHorario !== null"
                   (click)="change(p, 1)"
                 >
                   +
@@ -212,6 +215,8 @@ export class NuevoCanjePage {
   }
 
   protected change(premio: PremioMesa, delta: number): void {
+    // HU-413: fuera de horario no se agrega (sí se puede quitar).
+    if (delta > 0 && premio.fueraDeHorario) return;
     const actual = this.cantidad(premio.id);
     const nueva = Math.max(0, Math.min(premio.disponible, actual + delta));
     this.cantidades.set({ ...this.cantidades(), [premio.id]: nueva });

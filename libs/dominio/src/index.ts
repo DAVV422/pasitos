@@ -25,3 +25,4 @@ export * from './app/estado-reto';
 export * from './app/agenda';
 export * from './reporte/reporte';
 export * from './registro/celular';
+export * from './premios/horario';

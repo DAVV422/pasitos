@@ -4,6 +4,7 @@ import {
   asistentes,
   canjeItems,
   canjes,
+  eventos,
   notasMovimiento,
   outbox,
   premios,
@@ -21,7 +22,7 @@ import { hashToken } from '../auth/auth.repository';
 import type { Reloj } from '../auth/sesiones.service';
 import { toActor } from '../bitacora/actores';
 import { BitacoraService } from '../bitacora/bitacora.service';
-import { createComprobante } from '../canjes/mesa.service';
+import { checkHorarioPremios, createComprobante } from '../canjes/mesa.service';
 import { listGruposDe, mapGruposDelEvento } from '../grupos/grupos-de';
 
 type Pedido = Parameters<typeof runIdempotente>[2];
@@ -89,12 +90,20 @@ export class CanjesManualesService {
             entregado: premios.stockEntregado,
             maxPorPersona: premios.maxPorPersona,
             grupoId: premios.grupoId,
+            disponibleDesde: premios.disponibleDesde,
+            disponibleHasta: premios.disponibleHasta,
           })
           .from(premios)
           .where(and(eq(premios.eventoId, contexto.eventoId), inArray(premios.id, ids)))
           .orderBy(asc(premios.id))
           .for('update');
         if (filas.length !== ids.length) throw new AppError('NO_ENCONTRADO');
+        // HU-413: el horario del premio vale también a mano.
+        const [evento] = await tx
+          .select({ zonaHoraria: eventos.zonaHoraria })
+          .from(eventos)
+          .where(eq(eventos.id, contexto.eventoId));
+        checkHorarioPremios(filas, this.reloj.now(), evento?.zonaHoraria ?? 'America/La_Paz');
         const grupos = await mapGruposDelEvento(tx, contexto.eventoId);
         const mios = new Set((await listGruposDe(tx, persona.id)).map((g) => g.id));
         for (const premio of filas) {

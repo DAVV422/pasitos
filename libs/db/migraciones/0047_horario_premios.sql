@@ -1,0 +1,3 @@
+ALTER TABLE "premios" ADD COLUMN "disponible_desde" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "premios" ADD COLUMN "disponible_hasta" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "premios" ADD CONSTRAINT "premios_horario" CHECK ("premios"."disponible_desde" is null or "premios"."disponible_hasta" is null or "premios"."disponible_desde" < "premios"."disponible_hasta");

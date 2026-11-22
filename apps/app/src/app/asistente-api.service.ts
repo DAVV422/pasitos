@@ -99,6 +99,9 @@ export interface EventoApp {
     readonly grupo: GrupoApp | null;
     /** HU-321: *"Lleva tu carnet"*. */
     readonly requiereCi: boolean;
+    /** HU-413: cuándo se puede canjear. */
+    readonly disponibleDesde: string | null;
+    readonly disponibleHasta: string | null;
   }[];
   readonly agenda: readonly ActividadApp[];
 }

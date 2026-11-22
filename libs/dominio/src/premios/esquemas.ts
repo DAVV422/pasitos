@@ -18,6 +18,9 @@ export const esquemaPremio = z.object({
   grupoId: z.uuid().nullable().default(null),
   // HU-321: la mesa pide el carnet para entregarlo.
   requiereCi: z.boolean().default(false),
+  // HU-413: cuándo se puede canjear (cada uno opcional). Sin horario, todo el evento.
+  disponibleDesde: z.iso.datetime({ offset: true }).nullable().default(null),
+  disponibleHasta: z.iso.datetime({ offset: true }).nullable().default(null),
 });
 
 export type DatosPremio = z.infer<typeof esquemaPremio>;

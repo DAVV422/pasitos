@@ -1,5 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { describeHorarioPremio } from '@pasitos/dominio';
 import { BotonDirective, ChipComponent, EstadoComponent, IconoComponent } from '@pasitos/ui';
 import { SesionAsistente } from '../sesion-asistente';
 
@@ -42,7 +50,7 @@ import { SesionAsistente } from '../sesion-asistente';
           @for (p of lista; track p.id) {
             <li
               class="border-line bg-surface flex flex-col justify-between gap-3 rounded-2xl border p-3.5"
-              [class.opacity-60]="p.agotado"
+              [class.opacity-60]="p.agotado || p.horario"
             >
               <div class="flex flex-col gap-2.5">
                 @if (p.imagenUrl) {
@@ -74,12 +82,15 @@ import { SesionAsistente } from '../sesion-asistente';
                 @if (!p.agotado && p.falta > 0) {
                   <p class="text-muted text-xs">Te faltan {{ p.falta }} {{ nombrePuntos() }}</p>
                 }
-                @if (p.grupo || p.agotado || p.pocos) {
+                @if (p.grupo || p.agotado || p.pocos || p.horario) {
                   <div class="flex flex-wrap gap-1.5 pt-0.5">
                     @if (p.grupo) {
                       <px-chip [variante]="$any(p.grupo.color)">{{ p.grupo.nombre }}</px-chip>
                     }
-                    @if (p.agotado) {
+                    @if (p.horario) {
+                      <!-- HU-413: fuera de su horario. -->
+                      <px-chip variante="atenuado">{{ p.horario }}</px-chip>
+                    } @else if (p.agotado) {
                       <px-chip variante="peligro">Agotado</px-chip>
                     } @else if (p.pocos) {
                       <px-chip variante="puntos">Quedan pocos</px-chip>
@@ -105,6 +116,7 @@ import { SesionAsistente } from '../sesion-asistente';
 export class CanjearPage {
   private readonly sesion = inject(SesionAsistente);
   protected readonly saldo = computed(() => this.sesion.estado()?.saldo ?? null);
+  private readonly ahora = signal(new Date());
   protected readonly nombrePuntos = computed(
     () => this.sesion.estado()?.evento.nombrePuntos ?? 'puntos',
   );
@@ -112,11 +124,24 @@ export class CanjearPage {
     const evento = this.sesion.evento();
     if (!evento) return null;
     const saldo = this.saldo();
+    const zona = this.sesion.estado()?.evento.zonaHoraria ?? 'America/La_Paz';
     const stock = new Map((this.sesion.estado()?.premios ?? []).map((p) => [p.id, p]));
     return evento.premios.map((p) => {
       const s = stock.get(p.id);
       const falta = saldo !== null && p.puntos > saldo ? p.puntos - saldo : 0;
-      return { ...p, agotado: s ? s.disponible === 0 : false, pocos: s?.pocos ?? false, falta };
+      return {
+        ...p,
+        agotado: s ? s.disponible === 0 : false,
+        pocos: s?.pocos ?? false,
+        falta,
+        horario: describeHorarioPremio(p, this.ahora(), zona),
+      };
     });
   });
+
+  constructor() {
+    // HU-413: el horario de los premios cambia con la hora, sin recargar.
+    const reloj = setInterval(() => this.ahora.set(new Date()), 30_000);
+    inject(DestroyRef).onDestroy(() => clearInterval(reloj));
+  }
 }
