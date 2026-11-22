@@ -33,9 +33,15 @@ async function entrarComoDuena(page: Page, email: string, password: string): Pro
   await page.getByLabel('Correo').fill(email);
   await page.getByLabel('Contraseña', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.getByRole('button', { name: 'Usar una passkey (recomendado)' }).click();
-  await page.getByRole('button', { name: 'Crear la passkey' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mis eventos');
+  // Con `SEGUNDO_FACTOR_ORGANIZACIONES=apagado` (la demo) entra directo, sin crear la passkey.
+  const passkey = page.getByRole('button', { name: 'Usar una passkey (recomendado)' });
+  const titulo = page.getByRole('heading', { level: 1, name: 'Mis eventos' });
+  await expect(passkey.or(titulo)).toBeVisible();
+  if (await passkey.isVisible()) {
+    await passkey.click();
+    await page.getByRole('button', { name: 'Crear la passkey' }).click();
+  }
+  await expect(titulo).toBeVisible();
 }
 
 test('la dueña marca un stand en el plano y la asistente lo encuentra en la app', async ({

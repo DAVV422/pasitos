@@ -15,7 +15,7 @@ const ZOOMS = [1, 2, 3] as const;
 
 /**
  * *Mapa* (HU-309 §2 y HU-414): el plano con un marcador por lugar. Al tocar uno se ve su ficha
- * (qué es, sus sponsors y sus retos); desde la lista, *Ver en el mapa*. Con zoom para planos
+ * encima del plano (qué es, sus sponsors y sus retos); desde la lista, *Ver en el mapa*. Con zoom para planos
  * grandes. Los lugares sin marca siguen en la lista.
  */
 @Component({
@@ -38,32 +38,81 @@ const ZOOMS = [1, 2, 3] as const;
       } @else {
         @if (evento.info.planoUrl; as plano) {
           <section class="flex flex-col gap-2" id="plano" aria-label="Plano del evento">
-            <div class="border-line bg-surface overflow-auto rounded-xl border">
-              <div class="relative" [style.width.%]="zoom() * 100">
-                <img
-                  [src]="plano"
-                  alt="Plano del evento"
-                  class="block w-full select-none"
-                  draggable="false"
-                />
-                @for (lugar of marcados(); track lugar.id) {
-                  <button
-                    type="button"
-                    class="text-on-points absolute flex h-9 min-w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 px-1.5 text-sm font-bold shadow-md"
-                    [class.bg-points]="lugar.id !== elegidoId()"
-                    [class.bg-danger]="lugar.id === elegidoId()"
-                    [class.border-surface]="true"
-                    [class.scale-125]="lugar.id === elegidoId()"
-                    [style.left.%]="(lugar.mapaX ?? 0) * 100"
-                    [style.top.%]="(lugar.mapaY ?? 0) * 100"
-                    [attr.aria-label]="lugar.nombre"
-                    [attr.aria-pressed]="lugar.id === elegidoId()"
-                    (click)="elegidoId.set(lugar.id)"
-                  >
-                    {{ lugar.etiqueta }}
-                  </button>
-                }
+            <!-- La ficha flota encima del plano: se ve aunque el plano esté con zoom. -->
+            <div class="relative">
+              <div class="border-line bg-surface max-h-[70vh] overflow-auto rounded-xl border">
+                <div class="relative" [style.width.%]="zoom() * 100">
+                  <img
+                    [src]="plano"
+                    alt="Plano del evento"
+                    class="block w-full select-none"
+                    draggable="false"
+                  />
+                  @for (lugar of marcados(); track lugar.id) {
+                    <button
+                      type="button"
+                      class="text-on-points absolute flex h-9 min-w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 px-1.5 text-sm font-bold shadow-md"
+                      [class.bg-points]="lugar.id !== elegidoId()"
+                      [class.bg-danger]="lugar.id === elegidoId()"
+                      [class.border-surface]="true"
+                      [class.scale-125]="lugar.id === elegidoId()"
+                      [style.left.%]="(lugar.mapaX ?? 0) * 100"
+                      [style.top.%]="(lugar.mapaY ?? 0) * 100"
+                      [attr.aria-label]="lugar.nombre"
+                      [attr.aria-pressed]="lugar.id === elegidoId()"
+                      (click)="elegidoId.set(lugar.id)"
+                    >
+                      {{ lugar.etiqueta }}
+                    </button>
+                  }
+                </div>
               </div>
+              @if (elegido(); as lugar) {
+                <article
+                  class="border-points bg-surface absolute inset-x-2 bottom-2 flex max-h-[70%] flex-col gap-2 overflow-y-auto rounded-xl border-2 p-4 shadow-lg"
+                  aria-live="polite"
+                  data-testid="ficha-lugar"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <p class="text-muted text-xs font-semibold uppercase">
+                        {{ nombreTipo(lugar.tipo) }}
+                      </p>
+                      <h2 class="text-lg font-bold">{{ lugar.etiqueta }} · {{ lugar.nombre }}</h2>
+                    </div>
+                    <button
+                      type="button"
+                      class="text-muted min-h-11 min-w-11"
+                      aria-label="Cerrar"
+                      (click)="elegidoId.set(null)"
+                    >
+                      <px-icono nombre="x" [tamano]="20" />
+                    </button>
+                  </div>
+                  @if (lugar.descripcion) {
+                    <p class="text-sm">{{ lugar.descripcion }}</p>
+                  }
+                  @for (sponsor of lugar.sponsors; track sponsor.id) {
+                    <p class="flex items-center gap-2 text-sm">
+                      @if (sponsor.logoUrl) {
+                        <img
+                          [src]="sponsor.logoUrl"
+                          alt=""
+                          class="h-8 w-8 rounded object-contain"
+                        />
+                      }
+                      <b>{{ sponsor.nombre }}</b>
+                    </p>
+                  }
+                  @for (reto of lugar.retos; track reto.id) {
+                    <a
+                      [routerLink]="['/retos', reto.id]"
+                      class="text-points text-sm font-semibold underline"
+                      >{{ reto.nombre }} · +{{ reto.puntos }}</a
+                    >
+                  }
+                </article>
+              }
             </div>
             <div class="flex flex-wrap items-center justify-between gap-2">
               <p class="text-muted text-sm">
@@ -88,48 +137,6 @@ const ZOOMS = [1, 2, 3] as const;
                 }
               </div>
             </div>
-            @if (elegido(); as lugar) {
-              <article
-                class="border-points bg-surface flex flex-col gap-2 rounded-xl border-2 p-4"
-                aria-live="polite"
-                data-testid="ficha-lugar"
-              >
-                <div class="flex items-start justify-between gap-2">
-                  <div>
-                    <p class="text-muted text-xs font-semibold uppercase">
-                      {{ nombreTipo(lugar.tipo) }}
-                    </p>
-                    <h2 class="text-lg font-bold">{{ lugar.etiqueta }} · {{ lugar.nombre }}</h2>
-                  </div>
-                  <button
-                    type="button"
-                    class="text-muted min-h-11 min-w-11"
-                    aria-label="Cerrar"
-                    (click)="elegidoId.set(null)"
-                  >
-                    <px-icono nombre="x" [tamano]="20" />
-                  </button>
-                </div>
-                @if (lugar.descripcion) {
-                  <p class="text-sm">{{ lugar.descripcion }}</p>
-                }
-                @for (sponsor of lugar.sponsors; track sponsor.id) {
-                  <p class="flex items-center gap-2 text-sm">
-                    @if (sponsor.logoUrl) {
-                      <img [src]="sponsor.logoUrl" alt="" class="h-8 w-8 rounded object-contain" />
-                    }
-                    <b>{{ sponsor.nombre }}</b>
-                  </p>
-                }
-                @for (reto of lugar.retos; track reto.id) {
-                  <a
-                    [routerLink]="['/retos', reto.id]"
-                    class="text-points text-sm font-semibold underline"
-                    >{{ reto.nombre }} · +{{ reto.puntos }}</a
-                  >
-                }
-              </article>
-            }
           </section>
         }
         <ul class="flex flex-col gap-2" aria-label="Lugares">
