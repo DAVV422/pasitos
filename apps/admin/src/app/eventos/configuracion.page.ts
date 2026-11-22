@@ -30,6 +30,7 @@ import {
 } from '@pasitos/ui';
 import { ErrorApi } from '@pasitos/web-core';
 import { EventoActualService } from './evento.layout';
+import { SelectorMapaComponent, type PuntoMapa } from './selector-mapa.component';
 import { GruposComponent } from './grupos.component';
 import { EventosApi, type EventoDetalle } from './eventos-api.service';
 import { ReglasPuertaComponent } from './reglas-puerta.component';
@@ -69,6 +70,7 @@ function toIso(local: string): string {
   selector: 'adm-configuracion-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SelectorMapaComponent,
     AvisoComponent,
     BotonDirective,
     FechaHoraDirective,
@@ -247,9 +249,10 @@ function toIso(local: string): string {
                     (input)="setUbicacion('direccion', valorDe($event))"
                   />
                 </px-campo>
+                <!-- Elegir el punto en el mapa; la latitud y la longitud se llenan solas. -->
+                <adm-selector-mapa [punto]="puntoMapa()" (cambio)="setPunto($event)" />
                 <p class="text-muted text-sm">
-                  El punto en el mapa: copia la latitud y la longitud de Google Maps (clic derecho
-                  sobre el lugar). Con las llaves de Google, aquí se marcará en el mapa.
+                  O escribe la latitud y la longitud (en Google Maps: clic derecho sobre el lugar).
                 </p>
                 <div class="grid gap-4 md:grid-cols-2">
                   <px-campo
@@ -395,6 +398,20 @@ export class ConfiguracionPage implements OnInit {
 
   protected setDato(campo: keyof ReturnType<typeof this.datos>, valor: string): void {
     this.datos.set({ ...this.datos(), [campo]: valor });
+  }
+
+  /** El punto escrito, si es un número válido; si no, `null` (el mapa no se mueve). */
+  protected readonly puntoMapa = computed((): PuntoMapa | null => {
+    const { lat, lng } = this.ubicacion();
+    const a = Number(lat.replace(',', '.'));
+    const b = Number(lng.replace(',', '.'));
+    return lat.trim() && lng.trim() && Number.isFinite(a) && Number.isFinite(b)
+      ? { lat: a, lng: b }
+      : null;
+  });
+
+  protected setPunto(punto: PuntoMapa): void {
+    this.ubicacion.set({ ...this.ubicacion(), lat: String(punto.lat), lng: String(punto.lng) });
   }
 
   protected setUbicacion(campo: keyof ReturnType<typeof this.ubicacion>, valor: string): void {

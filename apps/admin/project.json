@@ -11,7 +11,7 @@
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
-        "allowedCommonJsDependencies": ["jsqr"],
+        "allowedCommonJsDependencies": ["jsqr", "leaflet"],
         "outputPath": "dist/apps/admin",
         "browser": "apps/admin/src/main.ts",
         "tsConfig": "apps/admin/tsconfig.app.json",
@@ -19,6 +19,11 @@
           {
             "glob": "**/*",
             "input": "apps/admin/public"
+          },
+          {
+            "glob": "leaflet.css",
+            "input": "node_modules/leaflet/dist",
+            "output": "vendor"
           }
         ],
         "styles": ["apps/admin/src/styles.css"],

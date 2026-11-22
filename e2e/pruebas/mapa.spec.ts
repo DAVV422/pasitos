@@ -1,5 +1,11 @@
 import { devices, expect, test, type Page } from '@playwright/test';
-import { createEmailPrueba, createIpPrueba, createPersona, seedEventoConPlano } from './apoyo/base';
+import {
+  createEmailPrueba,
+  createIpPrueba,
+  createPersona,
+  getUbicacionEvento,
+  seedEventoConPlano,
+} from './apoyo/base';
 
 /**
  * El mapa del evento (HU-414): la dueña marca un stand en el plano y la asistente lo encuentra en
@@ -71,4 +77,31 @@ test('la dueña marca un stand en el plano y la asistente lo encuentra en la app
   await expect(ficha).toContainText(`7 · ${datos.stand}`);
   await expect(ficha).toContainText(datos.sponsor);
   await contexto.close();
+});
+
+test('la ubicación del evento se elige tocando el mapa', async ({ page }) => {
+  // Sin las imágenes de OpenStreetMap: el mapa responde igual a los toques.
+  await page.route('https://tile.openstreetmap.org/**', (ruta) => ruta.abort());
+  const email = createEmailPrueba('ubicacion');
+  const password = 'una frase larga para la ubicación';
+  await createPersona({ email, password, nombre: 'Dueña de la ubicación', dueno: true });
+  const { eventoId } = await seedEventoConPlano({ email }, `Feria con ubicación ${Date.now()}`);
+  await entrarComoDuena(page, email, password);
+
+  await page.goto(`/admin/eventos/${eventoId}/configuracion`);
+  await page.getByRole('tab', { name: 'Ubicación' }).click();
+  await page.getByLabel('Nombre del lugar').fill('Centro de Ejemplo');
+  const mapa = page.getByTestId('selector-mapa');
+  await expect(mapa.locator('.leaflet-container, .leaflet-pane').first()).toBeAttached();
+  const caja = await mapa.boundingBox();
+  if (!caja) throw new Error('No se ve el mapa');
+  await mapa.click({ position: { x: caja.width / 2, y: caja.height / 2 } });
+  await expect(page.getByLabel('Latitud')).not.toHaveValue('');
+  await expect(page.getByLabel('Longitud')).not.toHaveValue('');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect.poll(async () => (await getUbicacionEvento(eventoId)).lat).not.toBeNull();
+  const { lat, lng } = await getUbicacionEvento(eventoId);
+  // El centro inicial es La Paz.
+  expect(lat).toBeCloseTo(-16.5, 0);
+  expect(lng).toBeCloseTo(-68.15, 0);
 });

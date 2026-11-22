@@ -468,3 +468,16 @@ export async function seedEventoConPlano(
     return { eventoId, token, stand, sponsor };
   });
 }
+
+/** La latitud y la longitud guardadas del evento (Configuración → Ubicación). */
+export function getUbicacionEvento(
+  eventoId: string,
+): Promise<{ lat: number | null; lng: number | null }> {
+  return withCliente(async (cliente) => {
+    const { rows } = await cliente.query<{ lat: number | null; lng: number | null }>(
+      'select ubicacion_lat as lat, ubicacion_lng as lng from eventos where id = $1',
+      [eventoId],
+    );
+    return rows[0] ?? { lat: null, lng: null };
+  });
+}
