@@ -25,6 +25,14 @@ export interface CanjeBuscado {
   readonly asistente: { readonly nombre: string; readonly codigo: string } | null;
 }
 
+/** HU-412: el canje manual, ya confirmado. */
+export interface CanjeManualHecho {
+  readonly comprobante: string;
+  readonly items: readonly { premioId: string; nombre: string; cantidad: number }[];
+  readonly total: number;
+  readonly saldo: number;
+}
+
 export interface ResultadoOtorgamiento {
   readonly codigo: string;
   readonly resultado: 'ok' | 'ya_completado' | 'tope' | 'sin_check_in' | 'no_encontrado';
@@ -56,11 +64,30 @@ export class AjustesApi {
   grant(
     retoId: string,
     asistentes: readonly string[],
+    motivo?: string,
   ): Promise<{ resultados: ResultadoOtorgamiento[] }> {
     return firstValueFrom(
       this.http.post<{ resultados: ResultadoOtorgamiento[] }>(
         `${BASE}/retos/${retoId}/otorgamientos`,
-        { asistentes },
+        { asistentes, ...(motivo ? { motivo } : {}) },
+        conClave(),
+      ),
+    );
+  }
+
+  /** HU-412: canjear a mano, sin mesa ni celular. */
+  createCanjeManual(
+    eventoId: string,
+    datos: {
+      asistenteId: string;
+      items: readonly { premioId: string; cantidad: number }[];
+      motivo: string;
+    },
+  ): Promise<CanjeManualHecho> {
+    return firstValueFrom(
+      this.http.post<CanjeManualHecho>(
+        `${BASE}/eventos/${eventoId}/canjes-manuales`,
+        datos,
         conClave(),
       ),
     );

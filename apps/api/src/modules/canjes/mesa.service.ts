@@ -234,7 +234,7 @@ export class MesaService {
         const token = randomBytes(32).toString('base64url');
         const total = lineas.reduce((suma, l) => suma + l.puntos * l.cantidad, 0);
         const expiraAt = new Date(this.reloj.now().getTime() + VIGENCIA_COBRO_MS);
-        const comprobante = await this.newComprobante(tx, terminal.evento.id);
+        const comprobante = await createComprobante(tx, terminal.evento.id);
         await tx.insert(canjes).values({
           id,
           organizacionId: terminal.organizacionId,
@@ -370,26 +370,30 @@ export class MesaService {
       };
     });
   }
+}
 
-  /** *C-4821*: 4 dígitos al azar, únicos en el evento (con reintento; la base es la última defensa). */
-  private async newComprobante(tx: Tx, eventoId: string): Promise<string> {
-    for (let intento = 0; intento < 30; intento++) {
-      const comprobante = `C-${String(randomInt(10_000)).padStart(4, '0')}`;
-      const [usado] = await tx
-        .select({ id: canjes.id })
-        .from(canjes)
-        .where(and(eq(canjes.eventoId, eventoId), eq(canjes.comprobante, comprobante)));
-      if (!usado) return comprobante;
-    }
-    throw new AppError('SERVICIO_NO_DISPONIBLE', { detail: 'No hay comprobantes libres.' });
+/**
+ * *C-4821*: 4 dígitos al azar, únicos en el evento (con reintento; la base es la última defensa).
+ * Lo usan la mesa y el canje manual del panel (HU-412).
+ */
+export async function createComprobante(tx: Tx, eventoId: string): Promise<string> {
+  for (let intento = 0; intento < 30; intento++) {
+    const comprobante = `C-${String(randomInt(10_000)).padStart(4, '0')}`;
+    const [usado] = await tx
+      .select({ id: canjes.id })
+      .from(canjes)
+      .where(and(eq(canjes.eventoId, eventoId), eq(canjes.comprobante, comprobante)));
+    if (!usado) return comprobante;
   }
+  throw new AppError('SERVICIO_NO_DISPONIBLE', { detail: 'No hay comprobantes libres.' });
 }
 
 /** Para el registro y el aviso en vivo de la mesa. */
 export async function notifyCanje(
   tx: Tx,
   tipo: 'canje.confirmado' | 'canje.vencido',
-  datos: { eventoId: string; mesaId: string; canjeId: string; comprobante: string },
+  // HU-412: un canje manual no tiene mesa (`null`): nadie lo recibe en vivo.
+  datos: { eventoId: string; mesaId: string | null; canjeId: string; comprobante: string },
 ): Promise<void> {
   await tx.insert(outbox).values({
     id: uuidv7(),

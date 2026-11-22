@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CATEGORIAS_AJUSTE, TIPOS_MOTIVO_AJUSTE, type TipoMotivoAjuste } from '@pasitos/dominio';
+import { TIPOS_RETO_MANUALES } from '@pasitos/dominio/esquemas';
 import {
   AvisosService,
   EncabezadoPaginaComponent,
@@ -17,14 +18,15 @@ import {
 import {
   AjustesApi,
   type CanjeBuscado,
+  type CanjeManualHecho,
   type MovimientoAjuste,
   type ResultadoOtorgamiento,
 } from './ajustes-api.service';
 import { EventoActualService } from './evento.layout';
-import { EventosApi, type RetoPanel } from './eventos-api.service';
+import { EventosApi, type PremioPanel, type RetoPanel } from './eventos-api.service';
 import { PuertaApi, type ResultadoBusqueda } from './puerta-api.service';
 
-type Pestana = 'ajustar' | 'otorgar' | 'canjes';
+type Pestana = 'ajustar' | 'otorgar' | 'canjear' | 'canjes';
 
 const RESULTADOS: Readonly<Record<ResultadoOtorgamiento['resultado'], string>> = {
   ok: 'Otorgado',
@@ -54,7 +56,7 @@ const RESULTADOS: Readonly<Record<ResultadoOtorgamiento['resultado'], string>> =
   template: `
     <pnl-encabezado-pagina
       titulo="Ajustes"
-      descripcion="Corrige puntos, otorga un reto o anula un canje. Todo queda en el libro y la bitácora."
+      descripcion="Corrige puntos, da por cumplido un reto, canjea un premio a mano o anula un canje. Todo queda en el libro y la bitácora."
     />
     @if (error(); as e) {
       <px-aviso variante="peligro">{{ e }}</px-aviso>
@@ -149,11 +151,28 @@ const RESULTADOS: Readonly<Record<ResultadoOtorgamiento['resultado'], string>> =
               <px-campo #cReto="pxCampo" etiqueta="Reto">
                 <select [id]="cReto.idControl" (change)="retoId.set($any($event.target).value)">
                   <option value="">Elige un reto</option>
-                  @for (r of retos(); track r.id) {
+                  @for (r of retosManuales(); track r.id) {
                     <option [value]="r.id">{{ r.nombre }} · +{{ r.puntos }}</option>
                   }
                 </select>
               </px-campo>
+              @if (pideMotivoReto()) {
+                <!-- HU-412: un reto que no es de tipo otorgado se da por cumplido como excepción. -->
+                <px-campo
+                  #cMotReto="pxCampo"
+                  etiqueta="Motivo"
+                  ayuda="Por ejemplo: «No le funcionó la cámara; lo hizo frente al equipo». Queda en la bitácora."
+                >
+                  <input
+                    [id]="cMotReto.idControl"
+                    [attr.aria-describedby]="cMotReto.idDescripcion"
+                    maxlength="300"
+                    data-testid="motivo-reto"
+                    [value]="motivoReto()"
+                    (input)="motivoReto.set($any($event.target).value)"
+                  />
+                </px-campo>
+              }
               <px-campo
                 #cCodigos="pxCampo"
                 etiqueta="Códigos de asistente"
@@ -170,7 +189,7 @@ const RESULTADOS: Readonly<Record<ResultadoOtorgamiento['resultado'], string>> =
               <button
                 pxBoton
                 type="button"
-                [deshabilitado]="!retoId() || listaCodigos().length === 0"
+                [deshabilitado]="!otorgarListo()"
                 [cargando]="enviando()"
                 (click)="grant()"
               >
@@ -187,6 +206,116 @@ const RESULTADOS: Readonly<Record<ResultadoOtorgamiento['resultado'], string>> =
                     </li>
                   }
                 </ul>
+              }
+            </section>
+          </px-tarjeta>
+        }
+        @case ('canjear') {
+          <!-- HU-412: canjear a mano, cuando la persona no puede confirmar con su celular. -->
+          <px-tarjeta>
+            <section class="flex max-w-lg flex-col gap-3">
+              <px-campo #cBuscarC="pxCampo" etiqueta="Persona" ayuda="Nombre, código o correo.">
+                <input
+                  [id]="cBuscarC.idControl"
+                  [attr.aria-describedby]="cBuscarC.idDescripcion"
+                  type="search"
+                  [value]="q()"
+                  (input)="onBuscar($any($event.target).value)"
+                />
+              </px-campo>
+              @if (!persona()) {
+                <ul class="flex flex-col gap-1">
+                  @for (r of resultados(); track r.id) {
+                    <li>
+                      <button
+                        type="button"
+                        class="border-line hover:bg-surface2 w-full rounded-lg border p-2.5 text-left"
+                        (click)="persona.set(r)"
+                      >
+                        <b>{{ r.nombre }}</b> · {{ r.codigo }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p>
+                  <b>{{ persona()?.nombre }}</b> · {{ persona()?.codigo }}
+                  <button type="button" class="text-points underline" (click)="persona.set(null)">
+                    cambiar
+                  </button>
+                </p>
+                <ul class="flex flex-col gap-2" data-testid="premios-manual">
+                  @for (p of premiosActivos(); track p.id) {
+                    <li
+                      class="border-line flex items-center justify-between gap-3 rounded-lg border p-2.5"
+                    >
+                      <span class="min-w-0">
+                        <b class="block truncate">{{ p.nombre }}</b>
+                        <span class="text-muted text-sm"
+                          >{{ p.puntos === 0 ? 'Gratis' : p.puntos + ' pts' }} · quedan
+                          {{ p.disponible }}</span
+                        >
+                      </span>
+                      <span class="flex items-center gap-2">
+                        <button
+                          type="button"
+                          pxBoton="secundario"
+                          [chico]="true"
+                          [attr.aria-label]="'Quitar ' + p.nombre"
+                          [deshabilitado]="cantidad(p.id) === 0"
+                          (click)="setCantidad(p.id, -1)"
+                        >
+                          −
+                        </button>
+                        <span class="w-6 text-center font-bold tabular-nums">{{
+                          cantidad(p.id)
+                        }}</span>
+                        <button
+                          type="button"
+                          pxBoton="secundario"
+                          [chico]="true"
+                          [attr.aria-label]="'Agregar ' + p.nombre"
+                          [deshabilitado]="cantidad(p.id) >= p.disponible"
+                          (click)="setCantidad(p.id, 1)"
+                        >
+                          +
+                        </button>
+                      </span>
+                    </li>
+                  } @empty {
+                    <li class="text-muted text-sm">No hay premios activos.</li>
+                  }
+                </ul>
+                <px-campo
+                  #cMotCanje="pxCampo"
+                  etiqueta="Motivo"
+                  ayuda="Por ejemplo: «Se le apagó el celular en la mesa». Queda en la bitácora."
+                >
+                  <input
+                    [id]="cMotCanje.idControl"
+                    [attr.aria-describedby]="cMotCanje.idDescripcion"
+                    maxlength="300"
+                    data-testid="motivo-canje"
+                    [value]="motivoCanje()"
+                    (input)="motivoCanje.set($any($event.target).value)"
+                  />
+                </px-campo>
+                <button
+                  pxBoton
+                  type="button"
+                  data-testid="canjear-manual"
+                  [deshabilitado]="!canjeListo()"
+                  [cargando]="enviando()"
+                  (click)="createCanjeManual()"
+                >
+                  Canjear y descontar {{ totalCanje() }} pts
+                </button>
+                @if (canjeHecho(); as c) {
+                  <px-aviso variante="ok" data-testid="canje-hecho">
+                    Comprobante <b>{{ c.comprobante }}</b>: entrega {{ describeItems(c.items) }}. Le
+                    quedan {{ c.saldo }} pts.
+                  </px-aviso>
+                }
               }
             </section>
           </px-tarjeta>
@@ -281,8 +410,9 @@ export class AjustesPage {
 
   protected readonly pestanas: readonly { clave: Pestana; texto: string }[] = [
     { clave: 'ajustar', texto: 'Ajustar puntos' },
-    { clave: 'otorgar', texto: 'Otorgar un reto' },
-    { clave: 'canjes', texto: 'Canjes' },
+    { clave: 'otorgar', texto: 'Dar por cumplido un reto' },
+    { clave: 'canjear', texto: 'Canjear un premio' },
+    { clave: 'canjes', texto: 'Anular un canje' },
   ];
   protected readonly tiposMotivo = TIPOS_MOTIVO_AJUSTE;
   protected readonly categorias = CATEGORIAS_AJUSTE;
@@ -321,6 +451,38 @@ export class AjustesPage {
       ),
     ].slice(0, 200),
   );
+  // HU-412: dar por cumplido (todos menos el del carnet, que tiene su flujo).
+  protected readonly motivoReto = signal('');
+  protected readonly retosManuales = computed(() =>
+    this.retos().filter((r) => (TIPOS_RETO_MANUALES as readonly string[]).includes(r.tipo)),
+  );
+  protected readonly pideMotivoReto = computed(() => {
+    const reto = this.retos().find((r) => r.id === this.retoId());
+    return reto !== undefined && reto.tipo !== 'otorgado';
+  });
+  protected readonly otorgarListo = computed(
+    () =>
+      this.retoId() !== '' &&
+      this.listaCodigos().length > 0 &&
+      (!this.pideMotivoReto() || this.motivoReto().trim().length >= 5),
+  );
+  // HU-412: canjear a mano.
+  protected readonly premios = signal<readonly PremioPanel[]>([]);
+  protected readonly premiosActivos = computed(() =>
+    this.premios().filter((p) => p.estado === 'activo'),
+  );
+  protected readonly cantidades = signal<Readonly<Record<string, number>>>({});
+  protected readonly motivoCanje = signal('');
+  protected readonly canjeHecho = signal<CanjeManualHecho | null>(null);
+  protected readonly totalCanje = computed(() =>
+    this.premios().reduce((suma, p) => suma + p.puntos * (this.cantidades()[p.id] ?? 0), 0),
+  );
+  protected readonly canjeListo = computed(
+    () =>
+      this.persona() !== null &&
+      Object.values(this.cantidades()).some((c) => c > 0) &&
+      this.motivoCanje().trim().length >= 5,
+  );
   // Canjes.
   protected readonly canjes = signal<readonly CanjeBuscado[]>([]);
   protected readonly motivoAnulacion = signal('');
@@ -332,6 +494,48 @@ export class AjustesPage {
       (lista) => this.retos.set(lista),
       () => undefined,
     );
+    void this.loadPremios();
+  }
+
+  private async loadPremios(): Promise<void> {
+    try {
+      this.premios.set(await this.eventos.listPremios(this.eventoId()));
+    } catch {
+      // Sin la lista, la pestaña muestra «No hay premios activos».
+    }
+  }
+
+  protected cantidad(premioId: string): number {
+    return this.cantidades()[premioId] ?? 0;
+  }
+
+  protected setCantidad(premioId: string, cambio: number): void {
+    const nueva = Math.max(0, this.cantidad(premioId) + cambio);
+    this.cantidades.set({ ...this.cantidades(), [premioId]: nueva });
+  }
+
+  protected describeItems(items: CanjeManualHecho['items']): string {
+    return items.map((i) => `${i.cantidad} × ${i.nombre}`).join(', ');
+  }
+
+  protected async createCanjeManual(): Promise<void> {
+    const persona = this.persona();
+    if (!persona || !this.canjeListo()) return;
+    const items = Object.entries(this.cantidades())
+      .filter(([, cantidad]) => cantidad > 0)
+      .map(([premioId, cantidad]) => ({ premioId, cantidad }));
+    await this.run(async () => {
+      const hecho = await this.api.createCanjeManual(this.eventoId(), {
+        asistenteId: persona.id,
+        items,
+        motivo: this.motivoCanje().trim(),
+      });
+      this.canjeHecho.set(hecho);
+      this.avisos.ok(`Canje ${hecho.comprobante}: ${persona.nombre} queda con ${hecho.saldo} pts.`);
+      this.cantidades.set({});
+      this.motivoCanje.set('');
+      await this.loadPremios();
+    });
   }
 
   protected tipoDe(tipo: MovimientoAjuste['tipo']): string {
@@ -378,7 +582,13 @@ export class AjustesPage {
 
   protected async grant(): Promise<void> {
     await this.run(async () => {
-      const { resultados } = await this.api.grant(this.retoId(), this.listaCodigos());
+      const motivo = this.motivoReto().trim();
+      const { resultados } = await this.api.grant(
+        this.retoId(),
+        this.listaCodigos(),
+        motivo || undefined,
+      );
+      this.motivoReto.set('');
       this.otorgados.set(resultados);
       this.avisos.ok(`Otorgado a ${resultados.filter((r) => r.resultado === 'ok').length}.`);
     });

@@ -254,4 +254,165 @@ describe('Ajustes y anulaciones (HU-317)', () => {
       autor: { nombre: 'Carla C.' },
     });
   });
+
+  it('dar por cumplido un reto de foto: pide el motivo; el del carnet, no se puede (HU-412)', async () => {
+    const retoId = uuidv7();
+    await base.sistema.db.insert(retos).values({
+      id: retoId,
+      organizacionId: evento.organizacionId,
+      eventoId: evento.eventoId,
+      nombre: 'Foto con el sponsor',
+      tipo: 'foto',
+      instruccionFoto: 'Saca una foto con el logo del sponsor.',
+      puntos: 20,
+      topeTotal: 100,
+    });
+    const persona = await newAsistente();
+    const sinMotivo = await post(`/retos/${retoId}/otorgamientos`, coorganizadora, {
+      asistentes: [persona.codigo],
+    });
+    expect(sinMotivo.statusCode).toBe(400);
+    expect(sinMotivo.json().errors[0]).toMatchObject({ field: 'motivo' });
+
+    const conMotivo = await post(`/retos/${retoId}/otorgamientos`, coorganizadora, {
+      asistentes: [persona.codigo],
+      motivo: 'No le funcionó la cámara; la sacó frente al equipo.',
+    });
+    expect(conMotivo.json().resultados).toEqual([{ codigo: persona.codigo, resultado: 'ok' }]);
+    const [saldo] = await base.sistema.db
+      .select({ puntos: saldos.puntos })
+      .from(saldos)
+      .where(eq(saldos.asistenteId, persona.id));
+    expect(saldo?.puntos).toBe(20);
+
+    const carnetId = uuidv7();
+    await base.sistema.db.insert(retos).values({
+      id: carnetId,
+      organizacionId: evento.organizacionId,
+      eventoId: evento.eventoId,
+      nombre: 'Verifica tu carnet',
+      tipo: 'verificacion_ci',
+      puntos: 10,
+      topeTotal: 100,
+    });
+    const carnet = await post(`/retos/${carnetId}/otorgamientos`, coorganizadora, {
+      asistentes: [persona.codigo],
+      motivo: 'Lo mostró en la puerta.',
+    });
+    expect(carnet.statusCode).toBe(400);
+    expect(carnet.json().detail).toMatch(/Verificar carnet/);
+  });
+
+  async function newPremio(datos: Partial<typeof premios.$inferInsert> = {}) {
+    const id = uuidv7();
+    await base.sistema.db.insert(premios).values({
+      id,
+      organizacionId: evento.organizacionId,
+      eventoId: evento.eventoId,
+      nombre: `Premio ${id.slice(-4)}`,
+      puntos: 30,
+      stockTotal: 5,
+      estado: 'activo',
+      ...datos,
+    });
+    return id;
+  }
+
+  it('canjear un premio a mano: canje confirmado sin mesa, descuenta puntos y stock (HU-412)', async () => {
+    const persona = await newAsistente(100);
+    const premioId = await newPremio();
+    const respuesta = await post(`/eventos/${evento.eventoId}/canjes-manuales`, coorganizadora, {
+      asistenteId: persona.id,
+      items: [{ premioId, cantidad: 2 }],
+      motivo: 'Se le apagó el celular en la mesa.',
+    });
+    expect(respuesta.statusCode).toBe(201);
+    const hecho = respuesta.json();
+    expect(hecho).toMatchObject({ total: 60, saldo: 40 });
+    expect(hecho.comprobante).toMatch(/^C-\d{4}$/);
+
+    const [canje] = await base.sistema.db.select().from(canjes).where(eq(canjes.id, hecho.id));
+    expect(canje).toMatchObject({
+      estado: 'confirmado',
+      mesaId: null,
+      registradoPor: coorganizadora.usuarioId,
+      asistenteId: persona.id,
+      totalPuntos: 60,
+    });
+    const [premio] = await base.sistema.db
+      .select({ entregado: premios.stockEntregado, reservado: premios.stockReservado })
+      .from(premios)
+      .where(eq(premios.id, premioId));
+    expect(premio).toEqual({ entregado: 2, reservado: 0 });
+    const [movimiento] = await base.sistema.db
+      .select({
+        tipo: movimientos.tipo,
+        puntos: movimientos.puntos,
+        motivo: movimientos.motivo,
+        autor: movimientos.autorId,
+        id: movimientos.id,
+      })
+      .from(movimientos)
+      .where(eq(movimientos.canjeId, hecho.id));
+    // En el libro (y el lote público) solo la categoría; el motivo escrito queda aparte.
+    expect(movimiento).toMatchObject({
+      tipo: 'canje',
+      puntos: -60,
+      motivo: 'Canje manual',
+      autor: coorganizadora.usuarioId,
+    });
+    const [nota] = await base.sistema.db
+      .select({ texto: notasMovimiento.texto })
+      .from(notasMovimiento)
+      .where(eq(notasMovimiento.movimientoId, movimiento?.id ?? ''));
+    expect(nota?.texto).toBe('Se le apagó el celular en la mesa.');
+    const registro = await base.sistema.db
+      .select({ accion: bitacora.accion })
+      .from(bitacora)
+      .where(and(eq(bitacora.objetoId, hecho.id), eq(bitacora.accion, 'canje.manual')));
+    expect(registro).toHaveLength(1);
+
+    // Se anula como cualquier otro canje: vuelven los puntos y el stock.
+    const anulado = await post(`/canjes/${hecho.id}/anular`, coorganizadora, {
+      motivo: 'Se equivocó de premio.',
+    });
+    expect(anulado.statusCode).toBe(200);
+    const [despues] = await base.sistema.db
+      .select({ puntos: saldos.puntos })
+      .from(saldos)
+      .where(eq(saldos.asistenteId, persona.id));
+    expect(despues?.puntos).toBe(100);
+  });
+
+  it('canje manual: sin saldo, sin stock, más del máximo o siendo registrador, no (HU-412)', async () => {
+    const persona = await newAsistente(50);
+    const premioId = await newPremio({ puntos: 40, stockTotal: 1, maxPorPersona: 1 });
+    const canjear = (quien: PersonaDePrueba, cantidad: number, motivo = 'Canje desde el panel.') =>
+      post(`/eventos/${evento.eventoId}/canjes-manuales`, quien, {
+        asistenteId: persona.id,
+        items: [{ premioId, cantidad }],
+        motivo,
+      });
+    expect((await canjear(registrador, 1)).statusCode).toBe(403);
+    expect((await canjear(coorganizadora, 1, 'no')).statusCode).toBe(400);
+    expect((await canjear(coorganizadora, 2)).json().code).toBe('PREMIO_AGOTADO');
+
+    const caro = await newPremio({ puntos: 80 });
+    const sinSaldo = await post(`/eventos/${evento.eventoId}/canjes-manuales`, coorganizadora, {
+      asistenteId: persona.id,
+      items: [{ premioId: caro, cantidad: 1 }],
+      motivo: 'Canje desde el panel.',
+    });
+    expect(sinSaldo.json().code).toBe('SALDO_INSUFICIENTE');
+    // Lo que falló no dejó nada: ni canje ni stock.
+    const [intacto] = await base.sistema.db
+      .select({ entregado: premios.stockEntregado })
+      .from(premios)
+      .where(eq(premios.id, caro));
+    expect(intacto?.entregado).toBe(0);
+
+    expect((await canjear(coorganizadora, 1)).statusCode).toBe(201);
+    const otraVez = await canjear(coorganizadora, 1);
+    expect(['PREMIO_AGOTADO', 'MAXIMO_POR_PERSONA']).toContain(otraVez.json().code);
+  });
 });

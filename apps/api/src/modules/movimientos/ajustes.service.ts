@@ -15,6 +15,7 @@ import {
   type Db,
 } from '@pasitos/db';
 import { AppError, CATEGORIAS_AJUSTE, type TipoMotivoAjuste } from '@pasitos/dominio';
+import { TIPOS_RETO_MANUALES } from '@pasitos/dominio/esquemas';
 import type { LibroService } from '@pasitos/libro';
 import { uuidv7 } from 'uuidv7';
 import type { ContextoEvento } from '../../common/permisos/marcas';
@@ -129,9 +130,22 @@ export class AjustesService {
           .from(retos)
           .where(and(eq(retos.id, retoId), eq(retos.eventoId, contexto.eventoId)));
         if (!reto) throw new AppError('NO_ENCONTRADO');
-        if (reto.tipo !== 'otorgado' && reto.tipo !== 'qr') {
+        // HU-412: D y C dan por cumplido cualquier reto, menos el del carnet (tiene su flujo). Si no
+        // es de tipo `otorgado`, es una excepción: pide el motivo.
+        if (!(TIPOS_RETO_MANUALES as readonly string[]).includes(reto.tipo)) {
           throw new AppError('VALIDACION', {
-            detail: 'Solo se otorgan retos de tipo otorgado o con QR (como compensación).',
+            detail: 'El reto del carnet se cumple en Verificar carnet.',
+          });
+        }
+        if (reto.tipo !== 'otorgado' && (datos.motivo ?? '').trim().length < 5) {
+          throw new AppError('VALIDACION', {
+            errors: [
+              {
+                field: 'motivo',
+                code: 'REQUERIDO',
+                message: 'Cuenta por qué lo das por cumplido (al menos 5 letras).',
+              },
+            ],
           });
         }
         const [evento] = await tx

@@ -106,7 +106,7 @@ Las decisiones de este documento están resumidas en la [sección 12](#12-decisi
 | Buscar invitados y hacer check-in | ✅ | ✅ | ✅ | — | — | — |
 | Registrar en la puerta a quien no estaba inscrito (si está activado) | ✅ | ✅ | ✅ | — | — | — |
 | Vincular o revincular el celular de un asistente | ✅ | ✅ | ✅ | — | — | — |
-| Ajustes manuales de puntos y anular canjes | ✅ | ✅ | — | — | — | — |
+| Ajustes manuales de puntos, dar por cumplido un reto, canjear un premio a mano y anular canjes | ✅ | ✅ | — | — | — | — |
 | Crear y administrar los QR de registro | ✅ | ✅ | — | — | — | — |
 | Crear grupos y agregar personas a un grupo | ✅ | ✅ | — | — | — | — |
 | Verificar el carnet de un asistente ³ | ✅ | ✅ | ✅ | — | — | — |

@@ -57,8 +57,26 @@ export const esquemaAjuste = z.object({
 
 export const esquemaOtorgamiento = z.object({
   asistentes: z.array(z.string().trim().min(1).max(20)).min(1).max(200),
+  // HU-412: obligatorio (5 letras o más) si el reto no es de tipo `otorgado`; lo pide el servicio.
   motivo: z.string().trim().max(300).optional(),
 });
+
+/** Los retos que D y C pueden dar por cumplidos a mano (HU-412). El carnet tiene su flujo. */
+export const TIPOS_RETO_MANUALES = ['otorgado', 'qr', 'encuesta', 'foto'] as const;
+
+/**
+ * Canjear un premio a mano desde el panel (HU-412): la persona, los premios y el motivo. Queda un
+ * canje confirmado con su comprobante, sin mesa.
+ */
+export const esquemaCanjeManual = z.object({
+  asistenteId: z.uuid(),
+  items: z
+    .array(z.object({ premioId: z.uuid(), cantidad: z.number().int().min(1).max(20) }))
+    .min(1, { error: 'Elige al menos un premio.' })
+    .max(10),
+  motivo: z.string().trim().min(5, { error: 'Escribe el motivo (al menos 5 letras).' }).max(300),
+});
+export type DatosCanjeManual = z.infer<typeof esquemaCanjeManual>;
 
 export const esquemaAnularCanje = z.object({
   motivo: z.string().trim().min(5, { error: 'Escribe el motivo (al menos 5 letras).' }).max(300),

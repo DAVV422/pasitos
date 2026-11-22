@@ -12,6 +12,7 @@ import {
 import {
   esquemaAjuste,
   esquemaAnularCanje,
+  esquemaCanjeManual,
   esquemaListarAjustes,
   esquemaOtorgamiento,
 } from '@pasitos/dominio/esquemas';
@@ -20,13 +21,17 @@ import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/ma
 import { getPedidoIdempotente } from '../acceso/idempotencia';
 import { AccionBitacoraDe } from '../bitacora/bitacora.service';
 import { AjustesService } from './ajustes.service';
+import { CanjesManualesService } from './canjes-manuales.service';
 
 type RequestConCuerpo = FastifyRequest & { rawBody?: Buffer };
 
 /** Ajustes y anulaciones (HU-317, API §4.8): D y C, con `Idempotency-Key`. */
 @Controller()
 export class AjustesController {
-  constructor(private readonly ajustes: AjustesService) {}
+  constructor(
+    private readonly ajustes: AjustesService,
+    private readonly canjesManuales: CanjesManualesService,
+  ) {}
 
   @Post('asistentes/:id/ajustes')
   @Permiso('puntos.ajustar', { recurso: 'asistentes' })
@@ -60,6 +65,23 @@ export class AjustesController {
       contexto,
       id,
       esquemaOtorgamiento.parse(cuerpo),
+      getPedidoIdempotente(request),
+    );
+  }
+
+  /** HU-412: canjear a mano, cuando la persona no puede confirmar con su celular. */
+  @Post('eventos/:eventoId/canjes-manuales')
+  @Permiso('puntos.ajustar')
+  @AccionBitacoraDe('canje.manual')
+  @HttpCode(201)
+  createCanjeManual(
+    @Contexto() contexto: ContextoEvento,
+    @Body() cuerpo: unknown,
+    @Req() request: RequestConCuerpo,
+  ) {
+    return this.canjesManuales.create(
+      contexto,
+      esquemaCanjeManual.parse(cuerpo),
       getPedidoIdempotente(request),
     );
   }

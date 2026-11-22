@@ -63,6 +63,8 @@ export const ACCIONES_BITACORA = {
   'puntos.ajustar': 'Ajustó puntos',
   'reto.otorgar': 'Otorgó un reto a mano',
   'canje.anular': 'Anuló un canje',
+  // HU-412.
+  'canje.manual': 'Canjeó un premio a mano',
   'mesa.create': 'Creó una mesa',
   'mesa.update': 'Editó una mesa',
   'mesa.connect': 'Conectó una mesa',

@@ -32,7 +32,7 @@ const FLUJOS_2_4: Readonly<Record<AccionEvento, string>> = {
   'invitados.update': 'DC', // Cargar invitados y enviar invitaciones
   'invitados.export': 'DC', // Descargar datos personales
   'puerta.use': 'DCR', // Buscar invitados, check-in, registrar, vincular
-  'puntos.ajustar': 'DC', // Ajustes manuales y anular canjes
+  'puntos.ajustar': 'DC', // Ajustes, dar por cumplido un reto, canje manual y anular canjes
   'grupos.update': 'DC', // Crear grupos y agregar personas
   'ci.verify': 'DCR', // Verificar el carnet (y quien tenga «Verifica carnets»)
   'fotos.review': 'DC', // Revisar las fotos (y los responsables de cada reto, las suyas)

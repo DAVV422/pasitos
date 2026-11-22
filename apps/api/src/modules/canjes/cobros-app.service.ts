@@ -277,10 +277,10 @@ export class CobrosAppService {
     const [canje] = bloquear ? await consulta.for('update') : await consulta;
     // Un token inventado responde igual que uno vencido.
     if (!canje) throw new AppError('CANJE_VENCIDO');
-    const [mesa] = await tx
-      .select({ nombre: mesas.nombre })
-      .from(mesas)
-      .where(eq(mesas.id, canje.mesaId));
+    // HU-412: un canje manual no tiene mesa (y su token nunca se entrega).
+    const [mesa] = canje.mesaId
+      ? await tx.select({ nombre: mesas.nombre }).from(mesas).where(eq(mesas.id, canje.mesaId))
+      : [];
     return { ...canje, mesa: mesa?.nombre ?? 'La mesa' };
   }
 }

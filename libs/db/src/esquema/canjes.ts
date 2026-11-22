@@ -32,9 +32,8 @@ export const canjes = pgTable(
     eventoId: uuid('evento_id')
       .notNull()
       .references(() => eventos.id),
-    mesaId: uuid('mesa_id')
-      .notNull()
-      .references(() => mesas.id),
+    // HU-412: `null` en un canje manual del panel (sin mesa).
+    mesaId: uuid('mesa_id').references(() => mesas.id),
     asistenteId: uuid('asistente_id').references(() => asistentes.id),
     tokenHash: bytea('token_hash').notNull().unique(),
     /** *C-4821*: lo que miran la mesa y el celular para entregar. */
@@ -47,6 +46,8 @@ export const canjes = pgTable(
     // HU-401: el cobro pendiente que se canceló al cerrar el evento.
     canceladoPorCierre: boolean('cancelado_por_cierre').notNull().default(false),
     canceladoPor: uuid('cancelado_por').references(() => usuarios.id),
+    // HU-412: quién lo hizo a mano desde el panel (D o C).
+    registradoPor: uuid('registrado_por').references(() => usuarios.id),
     anuladoAt: timestamp('anulado_at', { withTimezone: true }),
     anuladoPor: uuid('anulado_por').references(() => usuarios.id),
     motivoAnulacion: text('motivo_anulacion'),
@@ -63,6 +64,7 @@ export const canjes = pgTable(
       sql`${t.estado} in ('pendiente', 'confirmado', 'vencido', 'cancelado', 'anulado')`,
     ),
     check('canjes_total', sql`${t.totalPuntos} >= 0`),
+    check('canjes_origen', sql`${t.mesaId} is not null or ${t.registradoPor} is not null`),
     check('canjes_comprobante', sql`${t.comprobante} ~ '^C-[0-9]{4}$'`),
     unique('canjes_comprobante_evento').on(t.eventoId, t.comprobante),
     index('canjes_mesa').on(t.mesaId, t.createdAt),
