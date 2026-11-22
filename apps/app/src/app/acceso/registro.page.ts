@@ -81,11 +81,37 @@ const TEXTOS_ERROR: Readonly<Record<string, string>> = {
         </section>
       }
       @case ('computadora') {
-        <section class="flex flex-col items-center gap-4 text-center">
-          <h1 class="text-2xl font-extrabold">Sigue en tu celular</h1>
-          <p>Tu entrada vive en tu celular. Escanea este código con la cámara del celular.</p>
-          <px-qr [texto]="enlace" [tamano]="220" descripcion="Código QR de tu enlace" />
-        </section>
+        <!-- Una tablet en modo escritorio parece una computadora: se avisa, pero se puede seguir. -->
+        @if (!cancelado()) {
+          <section class="flex flex-col gap-4" data-testid="no-es-celular">
+            <h1 class="text-2xl font-extrabold">¿Seguir en este dispositivo?</h1>
+            <px-aviso variante="advertencia">
+              Este dispositivo no parece un celular (por ejemplo, una computadora o una tablet en
+              modo escritorio). Tu entrada queda guardada en este navegador: para escanear los retos
+              y canjear tus premios, vas a necesitar este mismo dispositivo.
+            </px-aviso>
+            <button pxBoton type="button" [bloque]="true" (click)="seguirAqui()">
+              Seguir en este dispositivo
+            </button>
+            <button
+              pxBoton="secundario"
+              type="button"
+              [bloque]="true"
+              (click)="cancelado.set(true)"
+            >
+              Cancelar
+            </button>
+          </section>
+        } @else {
+          <section class="flex flex-col items-center gap-4 text-center">
+            <h1 class="text-2xl font-extrabold">Sigue en tu celular</h1>
+            <p>Escanea este código con la cámara de tu celular.</p>
+            <px-qr [texto]="enlace" [tamano]="220" descripcion="Código QR de tu enlace" />
+            <button pxBoton="fantasma" type="button" (click)="cancelado.set(false)">
+              Mejor sigo en este dispositivo
+            </button>
+          </section>
+        }
       }
       @case ('viejo') {
         <section class="flex flex-col gap-4">
@@ -227,6 +253,8 @@ export class RegistroPage implements OnInit {
   protected readonly esperandoRed = signal(false);
   protected readonly incognito = signal(false);
   protected readonly copiado = signal(false);
+  /** Eligió seguir en su celular en lugar de este dispositivo. */
+  protected readonly cancelado = signal(false);
   protected readonly enlace = location.href;
   protected readonly esAndroid = /Android/.test(navigator.userAgent);
   protected readonly enlaceChrome = `intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
@@ -247,6 +275,17 @@ export class RegistroPage implements OnInit {
       this.paso.set('computadora');
       return;
     }
+    await this.continuar();
+  }
+
+  /** No parece un celular, pero la persona elige seguir aquí (una tablet, por ejemplo). */
+  protected seguirAqui(): void {
+    this.paso.set('revisando');
+    void this.continuar();
+  }
+
+  private async continuar(): Promise<void> {
+    const agente = navigator.userAgent;
     if (!isNavegadorSoportado(agente)) {
       this.paso.set('viejo');
       return;
