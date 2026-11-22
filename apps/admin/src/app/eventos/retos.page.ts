@@ -160,7 +160,9 @@ function toIso(local: string): string | null {
                   (change)="set('tipo', 'qr')"
                 />
                 <span class="pnl-opcion__titulo">Con QR</span>
-                <span class="pnl-opcion__detalle">La persona escanea el QR de una pantalla.</span>
+                <span class="pnl-opcion__detalle"
+                  >La persona escanea el QR que muestran las pantallas del lugar del reto.</span
+                >
               </label>
               <label class="pnl-opcion">
                 <input
@@ -170,7 +172,10 @@ function toIso(local: string): string | null {
                   (change)="set('tipo', 'otorgado')"
                 />
                 <span class="pnl-opcion__titulo">Otorgado</span>
-                <span class="pnl-opcion__detalle">Lo da el equipo a mano.</span>
+                <span class="pnl-opcion__detalle"
+                  >Sin QR: no aparece en las pantallas. El equipo lo da por cumplido en
+                  Ajustes.</span
+                >
               </label>
               <label class="pnl-opcion">
                 <input
@@ -471,7 +476,7 @@ function toIso(local: string): string | null {
                         ? 'Con foto'
                         : reto.tipo === 'verificacion_ci'
                           ? 'Verificación de carnet'
-                          : 'Otorgado'
+                          : 'Otorgado · sin QR, se da en Ajustes'
                   }}
                   @if (reto.disponibleDesde) {
                     · {{ reto.disponibleDesde | date: 'dd/MM HH:mm' }}–{{

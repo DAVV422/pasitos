@@ -124,6 +124,12 @@ function newNonce(): string {
               <p class="text-2xl">
                 El próximo reto empieza a las {{ hora(p.desde) }}: {{ p.nombre }}
               </p>
+            } @else {
+              <!-- Para el equipo: la pantalla solo muestra retos con QR de su lugar. -->
+              <p class="text-muted max-w-xl text-lg" data-testid="sin-reto">
+                No hay un reto con QR activo para este lugar. Revisa en el panel que el reto sea
+                «Con QR», tenga este lugar y esté en horario.
+              </p>
             }
           </section>
         }

@@ -332,3 +332,52 @@ export function seedEventoCerrado(
     return { eventoId, slug };
   });
 }
+
+/**
+ * Un evento en curso de la organización de esa persona (dueña), con una asistente presente con
+ * 100 puntos, un reto de foto y un premio de 30 puntos, para *Ajustes* (HU-412). Datos inventados.
+ */
+export function seedEventoParaAjustes(
+  duena: { email: string },
+  nombre: string,
+): Promise<{ eventoId: string; codigo: string; asistente: string; premio: string; reto: string }> {
+  return withCliente(async (cliente) => {
+    const { rows } = await cliente.query<{ organizacion_id: string }>(
+      `select m.organizacion_id from miembros_organizacion m join usuarios u on u.id = m.usuario_id
+        where u.email = $1 and m.rol = 'dueno'`,
+      [duena.email],
+    );
+    const organizacionId = rows[0]?.organizacion_id;
+    if (!organizacionId) throw new Error('La persona no es dueña de una organización');
+    const eventoId = uuidv7();
+    const asistenteId = uuidv7();
+    const asistente = 'Paula Inventada';
+    const premio = 'Taza de ejemplo';
+    const reto = 'Foto en el stand de ejemplo';
+    await cliente.query(
+      `insert into eventos (id, organizacion_id, slug, nombre, tipo, estado, inicio_at, fin_at,
+                            retos_requieren_check_in)
+       values ($1, $2, $3, $4, 'real', 'en_curso', now() - interval '1 hour',
+               now() + interval '6 hours', false)`,
+      [eventoId, organizacionId, `ajustes-e2e-${eventoId.slice(-12)}`, nombre],
+    );
+    await cliente.query(
+      `insert into retos (id, organizacion_id, evento_id, numero, nombre, tipo, instruccion_foto,
+                          puntos, tope_total)
+       values ($1, $2, $3, 1, $4, 'foto', 'Una foto en el stand de ejemplo.', 20, 100)`,
+      [uuidv7(), organizacionId, eventoId, reto],
+    );
+    await cliente.query(
+      `insert into premios (id, organizacion_id, evento_id, nombre, puntos, stock_total, estado)
+       values ($1, $2, $3, $4, 30, 10, 'activo')`,
+      [uuidv7(), organizacionId, eventoId, premio],
+    );
+    await cliente.query(
+      `insert into asistentes (id, organizacion_id, evento_id, codigo_asistente, nombre, estado)
+       values ($1, $2, $3, 'A-0001', $4, 'presente')`,
+      [asistenteId, organizacionId, eventoId, asistente],
+    );
+    await cliente.query('update saldos set puntos = 100 where asistente_id = $1', [asistenteId]);
+    return { eventoId, codigo: 'A-0001', asistente, premio, reto };
+  });
+}
