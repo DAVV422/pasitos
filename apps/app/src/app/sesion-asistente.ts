@@ -165,9 +165,14 @@ export class SesionAsistente {
     conexion.on('foto.revisada', (aviso) => {
       const datos = aviso.datos as { estado?: string; puntos?: number; motivo?: string } | null;
       if (datos?.estado === 'aprobada') {
+        // Sin puntos: ya los tenía (dados a mano por el equipo).
+        const puntos = datos.puntos ?? 0;
         this.avisoFoto.set({
           variante: 'ok',
-          texto: `¡Tu foto fue aprobada! +${datos.puntos ?? 0} ${this.estado()?.evento.nombrePuntos ?? 'puntos'}`,
+          texto:
+            puntos > 0
+              ? `¡Tu foto fue aprobada! +${puntos} ${this.estado()?.evento.nombrePuntos ?? 'puntos'}`
+              : '¡Tu foto fue aprobada!',
         });
       } else if (datos?.estado === 'rechazada' || datos?.estado === 'rechazada_sistema') {
         this.avisoFoto.set({

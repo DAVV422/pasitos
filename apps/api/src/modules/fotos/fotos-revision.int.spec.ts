@@ -253,6 +253,54 @@ describe('Revisión de fotos (HU-323)', () => {
     }
   });
 
+  it('si ya tenía el reto dado a mano, la foto se aprueba sin sumar; si ya tenía otra foto, es repetida', async () => {
+    const retoId = await newReto({ topeTotal: 10 });
+    const foto = await newFoto(retoId);
+    const [persona] = await base.sistema.db
+      .select({ codigo: asistentes.codigoAsistente })
+      .from(asistentes)
+      .where(eq(asistentes.id, foto.asistenteId));
+    // Ajustes → Dar por cumplido un reto, con la foto todavía en revisión.
+    const otorgado = await pedir('POST', `/retos/${retoId}/otorgamientos`, duena, {
+      asistentes: [persona?.codigo ?? ''],
+      motivo: 'Mostró la foto en el stand',
+    });
+    expect(otorgado.statusCode).toBe(200);
+    expect(await getSaldo(foto.asistenteId)).toBe(20);
+
+    const aprobada = await pedir('POST', `/fotos/${foto.id}/aprobar`, duena);
+    expect(aprobada.json()).toMatchObject({ estado: 'aprobada', puntos: 0, yaTenia: true });
+    expect(await getSaldo(foto.asistenteId)).toBe(20);
+    const [fila] = await base.sistema.db
+      .select({ estado: enviosFoto.estado, movimientoId: enviosFoto.movimientoId })
+      .from(enviosFoto)
+      .where(eq(enviosFoto.id, foto.id));
+    expect(fila).toMatchObject({ estado: 'aprobada' });
+    expect(fila?.movimientoId).not.toBeNull();
+
+    // Otra foto de la misma persona en el mismo reto: los puntos ya tienen su foto → repetida.
+    const otra = uuidv7();
+    const [primera] = await base.sistema.db
+      .select({ archivoId: enviosFoto.archivoId })
+      .from(enviosFoto)
+      .where(eq(enviosFoto.id, foto.id));
+    await base.sistema.db.insert(enviosFoto).values({
+      id: otra,
+      organizacionId: evento.organizacionId,
+      eventoId: evento.eventoId,
+      retoId,
+      asistenteId: foto.asistenteId,
+      intento: 2,
+      archivoId: primera?.archivoId ?? '',
+      origen: 'galeria',
+      estado: 'en_revision',
+      autorizaUso: true,
+    });
+    const repetida = await pedir('POST', `/fotos/${otra}/aprobar`, duena);
+    expect(repetida.json()).toMatchObject({ estado: 'rechazada', motivo: 'repetida' });
+    expect(await getSaldo(foto.asistenteId)).toBe(20);
+  });
+
   it('rechazar pide un motivo (con «otro», la nota); «inapropiada» oculta la foto y crea una alerta', async () => {
     const retoId = await newReto({}, [responsableId]);
     const foto = await newFoto(retoId);

@@ -220,7 +220,9 @@ export class FotosRevisarPage implements OnInit {
       const resultado = await this.api.approve(actual.envio.id);
       this.avisos.ok(
         resultado.estado === 'aprobada'
-          ? `Aprobada · ${resultado.asistente} +${resultado.puntos}`
+          ? resultado.yaTenia
+            ? `Aprobada · ${resultado.asistente}: ya tenía los puntos del reto, no se suman otra vez.`
+            : `Aprobada · ${resultado.asistente} +${resultado.puntos}`
           : resultado.motivo === 'agotado'
             ? 'El reto se agotó: las fotos pendientes se rechazaron.'
             : `Rechazada · ${resultado.asistente}: ya había completado el reto.`,

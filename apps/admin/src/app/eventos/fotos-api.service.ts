@@ -29,7 +29,13 @@ export interface FotoParaRevisar {
 }
 
 export type ResultadoRevision =
-  | { readonly estado: 'aprobada'; readonly puntos: number; readonly asistente: string }
+  | {
+      readonly estado: 'aprobada';
+      readonly puntos: number;
+      readonly asistente: string;
+      /** Ya tenía los puntos del reto (dados a mano): aprobada sin sumar. */
+      readonly yaTenia?: true;
+    }
   | { readonly estado: 'rechazada'; readonly motivo: string; readonly asistente: string };
 
 /** Una foto en la lista (HU-324). */

@@ -1,11 +1,25 @@
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { normalize, resolve, sep } from 'node:path';
-import { and, asc, count, desc, eq, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  lt,
+  ne,
+  notExists,
+  or,
+  sql,
+} from 'drizzle-orm';
 import {
   archivos,
   asistentes,
   enviosFoto,
+  movimientos,
   outbox,
   retoResponsables,
   retos,
@@ -52,7 +66,13 @@ export interface FotoParaRevisar {
 }
 
 export type ResultadoRevision =
-  | { readonly estado: 'aprobada'; readonly puntos: number; readonly asistente: string }
+  | {
+      readonly estado: 'aprobada';
+      readonly puntos: number;
+      readonly asistente: string;
+      /** Ya tenía los puntos del reto (dados a mano): la foto se aprueba sin sumar. */
+      readonly yaTenia?: true;
+    }
   | { readonly estado: 'rechazada'; readonly motivo: string; readonly asistente: string };
 
 /**
@@ -199,37 +219,29 @@ export class FotosRevisionService {
               return { estado: 'rechazada' as const, motivo: 'agotado', asistente: nombre };
             }
             if (error instanceof AppError && error.code === 'RETO_YA_COMPLETADO') {
+              // ¿Ya tenía los puntos dados a mano (Ajustes → Dar por cumplido) y sin foto? La foto
+              // se aprueba con esos puntos, sin sumar otra vez. Si no, es de verdad repetida.
+              const aMano = await this.findCumplidoSinFoto(tx, envio);
+              if (aMano) {
+                await this.markAprobada(tx, contexto, envio, nombre, aMano, 0, ahora);
+                return { estado: 'aprobada' as const, puntos: 0, asistente: nombre, yaTenia: true };
+              }
               await this.decide(tx, contexto, envio, 'rechazada', 'repetida', null);
               return { estado: 'rechazada' as const, motivo: 'repetida', asistente: nombre };
             }
             throw error;
           }
-          await tx
-            .update(enviosFoto)
-            .set({
-              estado: 'aprobada',
-              revisadaPor: contexto.usuarioId,
-              revisadaAt: ahora,
-              movimientoId: movimiento.movimiento.id,
-              tomadaPor: null,
-              tomadaHasta: null,
-              updatedAt: ahora,
-            })
-            .where(eq(enviosFoto.id, envio.id));
-          await this.notify(tx, envio, 'aprobada', { puntos: movimiento.movimiento.puntos });
-          await this.bitacora.record(tx, {
-            actor: toActor(contexto),
-            accion: 'foto.aprobar',
-            organizacionId: contexto.organizacionId,
-            eventoId: contexto.eventoId,
-            objeto: { tipo: 'envio_foto', id: envio.id, nombre },
-            despues: { retoId: envio.retoId, puntos: movimiento.movimiento.puntos },
-          });
-          return {
-            estado: 'aprobada' as const,
-            puntos: movimiento.movimiento.puntos,
-            asistente: nombre,
-          };
+          const puntos = movimiento.movimiento.puntos;
+          await this.markAprobada(
+            tx,
+            contexto,
+            envio,
+            nombre,
+            movimiento.movimiento.id,
+            puntos,
+            ahora,
+          );
+          return { estado: 'aprobada' as const, puntos, asistente: nombre };
         },
         200,
       ),
@@ -442,6 +454,70 @@ export class FotosRevisionService {
       },
       despues: { retoId: envio.retoId, motivo, ...(nota ? { nota } : {}) },
     });
+  }
+
+  /** La foto queda aprobada con su movimiento del libro (nuevo, o el que ya tenía a mano). */
+  private async markAprobada(
+    tx: Tx,
+    contexto: ContextoEvento,
+    envio: Envio,
+    nombre: string,
+    movimientoId: string,
+    puntos: number,
+    ahora: Date,
+  ): Promise<void> {
+    await tx
+      .update(enviosFoto)
+      .set({
+        estado: 'aprobada',
+        revisadaPor: contexto.usuarioId,
+        revisadaAt: ahora,
+        movimientoId,
+        tomadaPor: null,
+        tomadaHasta: null,
+        updatedAt: ahora,
+      })
+      .where(eq(enviosFoto.id, envio.id));
+    await this.notify(tx, envio, 'aprobada', { puntos });
+    await this.bitacora.record(tx, {
+      actor: toActor(contexto),
+      accion: 'foto.aprobar',
+      organizacionId: contexto.organizacionId,
+      eventoId: contexto.eventoId,
+      objeto: { tipo: 'envio_foto', id: envio.id, nombre },
+      despues: { retoId: envio.retoId, puntos, ...(puntos === 0 ? { yaTenia: true } : {}) },
+    });
+  }
+
+  /**
+   * Los puntos de este reto que la persona ya tiene sin una foto: dados a mano desde el panel
+   * (no anulados y sin otra foto enlazada). El más antiguo, o `null`.
+   */
+  private async findCumplidoSinFoto(tx: Tx, envio: Envio): Promise<string | null> {
+    const anulacion = tx
+      .select({ id: sql`1` })
+      .from(sql`movimientos as anulacion`)
+      .where(sql`anulacion.anula_movimiento_id = ${movimientos.id}`);
+    const conFoto = tx
+      .select({ id: enviosFoto.id })
+      .from(enviosFoto)
+      .where(eq(enviosFoto.movimientoId, movimientos.id));
+    const [fila] = await tx
+      .select({ id: movimientos.id })
+      .from(movimientos)
+      .where(
+        and(
+          eq(movimientos.tipo, 'reto'),
+          eq(movimientos.retoId, envio.retoId),
+          eq(movimientos.asistenteId, envio.asistenteId),
+          eq(movimientos.origen, 'equipo'),
+          notExists(anulacion),
+          notExists(conFoto),
+        ),
+      )
+      .orderBy(asc(movimientos.createdAt))
+      .limit(1);
+    return fila?.id ?? null;
   }
 
   /** Con el tope alcanzado, todas las pendientes del reto pasan a *Agotado*. */
