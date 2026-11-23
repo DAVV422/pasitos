@@ -7,6 +7,7 @@ import {
   asistentes,
   bitacora,
   enviosFoto,
+  eventos,
   invitaciones,
   operaciones,
   retoResponsables,
@@ -78,11 +79,17 @@ describe('Seguimiento de fotos y descarga (HU-324)', () => {
     await rm(archivosDir, { recursive: true, force: true });
   }, 60_000);
 
-  function pedir(metodo: 'GET' | 'POST', url: string, persona: PersonaDePrueba) {
+  function pedir(
+    metodo: 'GET' | 'POST',
+    url: string,
+    persona: PersonaDePrueba,
+    cuerpo?: Record<string, unknown>,
+  ) {
     return api.app.inject({
       method: metodo,
       url: `/api/v1${url}`,
       headers: { cookie: persona.cookie },
+      ...(cuerpo ? { payload: cuerpo } : {}),
     });
   }
 
@@ -192,7 +199,7 @@ describe('Seguimiento de fotos y descarga (HU-324)', () => {
     expect(
       todas.items.filter((f: { reto: { id: string } }) => [retoSuyo, retoOtro].includes(f.reto.id)),
     ).toHaveLength(3);
-    expect(todas.contadores).toMatchObject({ aprobadas: 2, conAutorizacion: 1 });
+    expect(todas.contadores).toMatchObject({ aprobadas: 2, conAutorizacion: 1, descargables: 1 });
     const suyas = (await pedir('GET', `/eventos/${evento.eventoId}/fotos`, responsable)).json();
     expect(suyas.items.map((f: { reto: { id: string } }) => f.reto.id)).toEqual([
       retoSuyo,
@@ -333,5 +340,45 @@ describe('Seguimiento de fotos y descarga (HU-324)', () => {
       (await pedir('POST', `/plataforma/eventos/${evento.eventoId}/fotos/descargas`, duena))
         .statusCode,
     ).toBe(404);
+  });
+
+  it('con el evento cerrado se descargan, todas o las de un reto; un reto ajeno no', async () => {
+    await base.sistema.db
+      .update(eventos)
+      .set({ estado: 'cerrado', cerradoAt: new Date() })
+      .where(eq(eventos.id, evento.eventoId));
+    const url = `/eventos/${evento.eventoId}/fotos/descargas`;
+
+    const todas = await pedir('POST', url, duena);
+    expect(todas.statusCode).toBe(202);
+    const delReto = await pedir('POST', url, duena, { retoId: retoSuyo });
+    expect(delReto.statusCode).toBe(202);
+    const parametros = await base.sistema.db
+      .select({ id: operaciones.id, parametros: operaciones.parametros })
+      .from(operaciones)
+      .where(eq(operaciones.id, (delReto.json() as { operacionId: string }).operacionId));
+    expect(parametros[0]?.parametros).toEqual({ desde: 'panel', retoId: retoSuyo });
+
+    // Un reto que no es de este evento, o un id que no es un reto.
+    const otroEvento = await createEventoDePrueba(base, { estado: 'en_curso' });
+    const retoAjeno = uuidv7();
+    await base.sistema.db.insert(retos).values({
+      id: retoAjeno,
+      organizacionId: otroEvento.organizacionId,
+      eventoId: otroEvento.eventoId,
+      nombre: 'Foto ajena',
+      tipo: 'foto',
+      puntos: 20,
+      topeTotal: 100,
+      instruccionFoto: 'Otra foto',
+    });
+    expect((await pedir('POST', url, duena, { retoId: retoAjeno })).statusCode).toBe(404);
+    expect((await pedir('POST', url, duena, { retoId: 'no-es-un-id' })).statusCode).toBe(400);
+
+    // La lista dice cuántas bajaría *Descargar* con el filtro de reto.
+    const lista = (
+      await pedir('GET', `/eventos/${evento.eventoId}/fotos?reto=${retoOtro}`, duena)
+    ).json();
+    expect(lista.contadores.descargables).toBe(0);
   });
 });

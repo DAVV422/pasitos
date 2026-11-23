@@ -110,7 +110,6 @@ export const ACCIONES_ESCRITURA: ReadonlySet<AccionEvento> = new Set<AccionEvent
   'grupos.update',
   'ci.verify',
   'fotos.review',
-  'fotos.descargar',
 ]);
 
 /** Acciones que, para los operadores, valen solo en sus terminales asignadas (²). */

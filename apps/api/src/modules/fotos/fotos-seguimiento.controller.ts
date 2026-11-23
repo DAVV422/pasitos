@@ -1,6 +1,16 @@
-import { Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { AppError, VARIANTES_IMAGEN, type VarianteImagen } from '@pasitos/dominio';
-import { esquemaListarFotos } from '@pasitos/dominio/esquemas';
+import { esquemaDescargarFotos, esquemaListarFotos } from '@pasitos/dominio/esquemas';
 import type { FastifyReply } from 'fastify';
 import { Contexto, Permiso, type ContextoEvento } from '../../common/permisos/marcas';
 import { Asistente, AsistenteActual, type ContextoAsistente } from '../../common/sesion/asistente';
@@ -39,13 +49,17 @@ export class FotosSeguimientoController {
     return this.seguimiento.listDeAsistente(contexto, id);
   }
 
-  /** *Descargar para redes*: la operación `export-fotos`; el enlace sale de `GET /operaciones/:id`. */
+  /**
+   * *Descargar para redes*: la operación `export-fotos`; el enlace sale de `GET /operaciones/:id`.
+   * Todas (cada reto en su carpeta) o las de un reto. También con el evento cerrado: no cambia nada.
+   */
   @Post('eventos/:eventoId/fotos/descargas')
   @Permiso('fotos.descargar')
   @AccionBitacoraDe('foto.descargar')
   @HttpCode(202)
-  createDescarga(@Contexto() contexto: ContextoEvento) {
-    return this.operaciones.createExportacionFotos(contexto, contexto.usuarioId, 'panel');
+  createDescarga(@Contexto() contexto: ContextoEvento, @Body() cuerpo: unknown) {
+    const { retoId } = esquemaDescargarFotos.parse(cuerpo ?? {});
+    return this.operaciones.createExportacionFotos(contexto, contexto.usuarioId, 'panel', retoId);
   }
 }
 

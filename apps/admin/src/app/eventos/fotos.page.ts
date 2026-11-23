@@ -54,7 +54,7 @@ type Filtro = 'reto' | 'estado' | 'revisor' | 'origen' | 'autoriza';
             [cargando]="descargando()"
             (click)="download()"
           >
-            Descargar para redes
+            {{ retoFiltrado() ? 'Descargar las de este reto' : 'Descargar para redes' }}
           </button>
         }
       </header>
@@ -191,6 +191,11 @@ export class FotosPage implements OnInit {
   );
   protected readonly filtros = signal<Partial<Record<Filtro, string>>>({});
   protected readonly descargando = signal(false);
+  /** El reto del filtro, si hay uno: *Descargar* baja solo las de ese reto. */
+  protected readonly retoFiltrado = computed(() => {
+    const id = this.filtros().reto;
+    return id ? (this.retos().find((r) => r.id === id) ?? null) : null;
+  });
   protected readonly cargandoMas = signal(false);
   protected readonly mensaje = signal<{
     variante: 'info' | 'peligro';
@@ -274,20 +279,23 @@ export class FotosPage implements OnInit {
     }
   }
 
-  /** Solo las aprobadas con autorización vigente; la descarga queda en la bitácora. */
+  /**
+   * Solo las aprobadas con autorización vigente; la descarga queda en la bitácora. Con el filtro de
+   * reto, solo las de ese reto; si no, todas, cada reto en su carpeta del ZIP.
+   */
   protected async download(): Promise<void> {
-    const conAutorizacion = this.lista()?.contadores?.conAutorizacion ?? 0;
-    if (
-      !window.confirm(
-        `Se descargan ${conAutorizacion} fotos aprobadas que autorizan su uso. La descarga queda en la bitácora. ¿Seguir?`,
-      )
-    ) {
+    const cantidad = this.lista()?.contadores?.descargables ?? 0;
+    const reto = this.retoFiltrado();
+    const cuales = reto
+      ? `${cantidad} fotos aprobadas del reto «${reto.nombre}» que autorizan su uso`
+      : `${cantidad} fotos aprobadas que autorizan su uso, cada reto en su carpeta`;
+    if (!window.confirm(`Se descargan ${cuales}. La descarga queda en la bitácora. ¿Seguir?`)) {
       return;
     }
     this.descargando.set(true);
     this.mensaje.set(null);
     try {
-      const { operacionId } = await this.api.createDescarga(this.eventoId());
+      const { operacionId } = await this.api.createDescarga(this.eventoId(), reto?.id);
       for (let intento = 0; intento < 120; intento++) {
         const operacion = await this.eventosApi.getOperacion(operacionId);
         if (operacion.descarga) {

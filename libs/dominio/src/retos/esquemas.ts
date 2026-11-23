@@ -78,6 +78,11 @@ export const esquemaRechazarFoto = z
 export const esquemaAnularFoto = z.object({ motivo: z.string().trim().min(5).max(300) });
 
 /** HU-324: la lista de fotos, con sus filtros. */
+/** *Descargar para redes* (HU-324): todas, o solo las de un reto. */
+export const esquemaDescargarFotos = z.object({
+  retoId: z.uuid().optional(),
+});
+
 export const esquemaListarFotos = z.object({
   reto: z.uuid().optional(),
   estado: z

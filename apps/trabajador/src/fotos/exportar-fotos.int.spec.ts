@@ -79,7 +79,7 @@ describe('exportar y borrar fotos', () => {
       id: uuidv7(),
       organizacionId,
       eventoId,
-      retoId,
+      retoId: datos.retoId ?? retoId,
       asistenteId,
       intento: 1,
       archivoId,
@@ -123,10 +123,52 @@ describe('exportar y borrar fotos', () => {
     );
     const fotos = entradas.filter((e) => e.nombre.startsWith('fotos/'));
     expect(fotos).toHaveLength(1);
+    // Cada reto en su carpeta.
+    expect(fotos[0]?.nombre).toMatch(/^fotos\/\d{2}-foto-con-la-mascota\/[^/]+\.webp$/);
     expect(fotos[0]?.datos.toString()).toBe(`imagen ${autorizada.archivoId}`);
     const csv = entradas.find((e) => e.nombre === 'fotos.csv')?.datos.toString() ?? '';
     expect(csv).toContain('Foto con la mascota');
     expect(csv.split('\n').filter((l) => l.trim().length > 0)).toHaveLength(2);
+  });
+
+  it('todas: una carpeta por reto; con un reto, solo las de ese reto', async () => {
+    const otroReto = uuidv7();
+    await base.sistema.db.insert(retos).values({
+      id: otroReto,
+      organizacionId,
+      eventoId,
+      nombre: 'Foto en la charla',
+      tipo: 'foto',
+      puntos: 20,
+      topeTotal: 100,
+      instruccionFoto: 'Una foto en la charla',
+    });
+    const [a, b] = personas;
+    await newFoto(a ?? '', { intento: 2 });
+    await newFoto(b ?? '', { retoId: otroReto });
+    const exportar = async (parametros: Record<string, unknown>) => {
+      const id = uuidv7();
+      await base.sistema.db.insert(operaciones).values({
+        id,
+        tipo: 'export-fotos',
+        organizacionId,
+        eventoId,
+        parametros,
+        expiraAt: new Date(Date.now() + DIA_MS),
+      });
+      await new ExportarFotosService(
+        base.sistema.db,
+        archivosDir,
+        createReloj(),
+      ).processPendientes();
+      const zip = readZip(await readFile(join(archivosDir, 'exportaciones', `${id}.zip`)));
+      return zip.filter((e) => e.nombre.startsWith('fotos/')).map((e) => e.nombre.split('/')[1]);
+    };
+    // La carpeta es el número del reto (lo pone la base) y su nombre.
+    const sinNumero = (carpetas: (string | undefined)[]) =>
+      [...new Set(carpetas.map((c) => c?.replace(/^\d{2}-/, '')))].sort();
+    expect(sinNumero(await exportar({}))).toEqual(['foto-con-la-mascota', 'foto-en-la-charla']);
+    expect(sinNumero(await exportar({ retoId: otroReto }))).toEqual(['foto-en-la-charla']);
   });
 
   it('el borrado respeta los 7, 30 y 90 días después del cierre, y deja la fila sin la imagen', async () => {

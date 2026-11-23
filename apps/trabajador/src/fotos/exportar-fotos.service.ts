@@ -18,7 +18,7 @@ import { buildZip } from './zip';
 
 const DIA_MS = 86_400_000;
 
-/** `"Foto con la mascota"` → `"foto-con-la-mascota"`, para el nombre del archivo en el ZIP. */
+/** `"Foto con la mascota"` → `"foto-con-la-mascota"`, para la carpeta del reto en el ZIP. */
 function toSlug(texto: string): string {
   return (
     texto
@@ -65,7 +65,12 @@ export class ExportarFotosService {
       });
       if (!operacion) return hechas;
       try {
-        await this.export(operacion.id, operacion.eventoId);
+        const { retoId } = (operacion.parametros ?? {}) as { retoId?: unknown };
+        await this.export(
+          operacion.id,
+          operacion.eventoId,
+          typeof retoId === 'string' ? retoId : null,
+        );
       } catch (error) {
         this.logger.error(
           {
@@ -89,14 +94,20 @@ export class ExportarFotosService {
 
   /**
    * **Solo las aprobadas con autorización vigente**, en la variante original, y un `fotos.csv`
-   * con el archivo, el reto, el nombre, la fecha y si la autorización era requerida.
+   * con el archivo, el reto, el nombre, la fecha y si la autorización era requerida. Cada reto en
+   * su carpeta (`fotos/01-foto-con-la-mascota/…`); con `retoId`, solo las de ese reto.
    */
-  private async export(operacionId: string, eventoId: string): Promise<void> {
+  private async export(
+    operacionId: string,
+    eventoId: string,
+    retoId: string | null,
+  ): Promise<void> {
     const filas = await this.db
       .select({
         id: enviosFoto.id,
         fecha: enviosFoto.createdAt,
         reto: retos.nombre,
+        numeroReto: retos.numero,
         requerida: retos.autorizacionUso,
         nombre: asistentes.nombre,
         codigo: asistentes.codigoAsistente,
@@ -113,6 +124,7 @@ export class ExportarFotosService {
           eq(enviosFoto.autorizaUso, true),
           isNull(enviosFoto.autorizaUsoRetiradaAt),
           eq(archivos.estado, 'aprobado'),
+          retoId ? eq(enviosFoto.retoId, retoId) : undefined,
         ),
       )
       .orderBy(asc(retos.numero), asc(enviosFoto.createdAt));
@@ -124,7 +136,8 @@ export class ExportarFotosService {
       if (!relativa) continue;
       const ruta = normalize(resolve(this.archivosDir, relativa));
       if (!ruta.startsWith(carpeta + sep)) continue;
-      const nombreArchivo = `${toSlug(fila.reto)}-${fila.codigo}-${fila.id.slice(-6)}.webp`;
+      const carpetaReto = `${String(fila.numeroReto).padStart(2, '0')}-${toSlug(fila.reto)}`;
+      const nombreArchivo = `${carpetaReto}/${fila.codigo}-${fila.id.slice(-6)}.webp`;
       entradas.push({ nombre: `fotos/${nombreArchivo}`, datos: await readFile(ruta) });
       csv.push([
         nombreArchivo,

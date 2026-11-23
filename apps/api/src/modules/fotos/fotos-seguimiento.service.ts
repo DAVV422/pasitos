@@ -108,6 +108,7 @@ export class FotosSeguimientoService {
       // Los contadores de arriba: *"86 aprobadas · 41 con autorización"*.
       const todas = await tx
         .select({
+          retoId: enviosFoto.retoId,
           estado: enviosFoto.estado,
           autoriza: enviosFoto.autorizaUso,
           retirada: enviosFoto.autorizaUsoRetiradaAt,
@@ -115,6 +116,7 @@ export class FotosSeguimientoService {
         .from(enviosFoto)
         .where(and(eq(enviosFoto.eventoId, contexto.eventoId), inArray(enviosFoto.retoId, mios)));
       const aprobadas = todas.filter((t) => t.estado === 'aprobada');
+      const conAutorizacion = aprobadas.filter((a) => a.autoriza && !a.retirada);
       const [evento] = await tx
         .select({ cerradoAt: eventos.cerradoAt })
         .from(eventos)
@@ -126,7 +128,11 @@ export class FotosSeguimientoService {
         },
         contadores: {
           aprobadas: aprobadas.length,
-          conAutorizacion: aprobadas.filter((a) => a.autoriza && !a.retirada).length,
+          conAutorizacion: conAutorizacion.length,
+          // Las que bajaría *Descargar*: con el filtro de reto, solo las de ese reto.
+          descargables: filtros.reto
+            ? conAutorizacion.filter((a) => a.retoId === filtros.reto).length
+            : conAutorizacion.length,
         },
         // *"Las fotos autorizadas se borran el 21/02"* (HU-324 §3).
         borradoAutorizadas: evento?.cerradoAt

@@ -1,7 +1,15 @@
 import { readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { and, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
-import { asistentes, eventos, operaciones, withOrganizacion, type Db, type Tx } from '@pasitos/db';
+import {
+  asistentes,
+  eventos,
+  operaciones,
+  retos,
+  withOrganizacion,
+  type Db,
+  type Tx,
+} from '@pasitos/db';
 import { AppError } from '@pasitos/dominio';
 import {
   VIGENCIA_DESCARGA_MS,
@@ -55,13 +63,32 @@ export class OperacionesService {
     return this.create(contexto, 'export-asistentes', estado ? { estado } : {});
   }
 
-  /** HU-324: el ZIP de las fotos autorizadas (lo arma el trabajador). */
-  createExportacionFotos(
+  /**
+   * HU-324: el ZIP de las fotos autorizadas (lo arma el trabajador), cada reto en su carpeta. Con
+   * `retoId`, solo las de ese reto (un reto de foto de este evento).
+   */
+  async createExportacionFotos(
     evento: { readonly organizacionId: string; readonly eventoId: string },
     usuarioId: string,
     desde: 'panel' | 'consola',
+    retoId?: string,
   ) {
-    return this.create({ ...evento, usuarioId }, 'export-fotos', { desde });
+    if (retoId) {
+      const [reto] = await withOrganizacion(this.db, evento.organizacionId, (tx) =>
+        tx
+          .select({ id: retos.id })
+          .from(retos)
+          .where(
+            and(eq(retos.id, retoId), eq(retos.eventoId, evento.eventoId), eq(retos.tipo, 'foto')),
+          ),
+      );
+      if (!reto) throw new AppError('NO_ENCONTRADO');
+    }
+    return this.create(
+      { ...evento, usuarioId },
+      'export-fotos',
+      retoId ? { desde, retoId } : { desde },
+    );
   }
 
   /**

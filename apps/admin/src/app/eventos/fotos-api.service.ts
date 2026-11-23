@@ -54,7 +54,12 @@ export interface FotoPanel {
 export interface ListaFotos {
   readonly items: readonly FotoPanel[];
   readonly pagination: { readonly nextCursor: string | null };
-  readonly contadores: { readonly aprobadas: number; readonly conAutorizacion: number } | null;
+  readonly contadores: {
+    readonly aprobadas: number;
+    readonly conAutorizacion: number;
+    /** Las que bajaría *Descargar* con el filtro de reto actual. */
+    readonly descargables: number;
+  } | null;
   readonly borradoAutorizadas: string | null;
 }
 
@@ -119,9 +124,13 @@ export class FotosApi {
     );
   }
 
-  createDescarga(eventoId: string): Promise<{ operacionId: string }> {
+  /** Todas (cada reto en su carpeta del ZIP) o, con `retoId`, solo las de ese reto. */
+  createDescarga(eventoId: string, retoId?: string): Promise<{ operacionId: string }> {
     return firstValueFrom(
-      this.http.post<{ operacionId: string }>(`${BASE}/eventos/${eventoId}/fotos/descargas`, {}),
+      this.http.post<{ operacionId: string }>(
+        `${BASE}/eventos/${eventoId}/fotos/descargas`,
+        retoId ? { retoId } : {},
+      ),
     );
   }
 
