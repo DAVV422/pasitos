@@ -390,7 +390,13 @@ export function seedEventoParaAjustes(
 export async function seedEventoConPlano(
   duena: { email: string },
   nombre: string,
-): Promise<{ eventoId: string; token: string; stand: string; sponsor: string }> {
+): Promise<{
+  eventoId: string;
+  token: string;
+  stand: string;
+  vecino: string;
+  sponsor: string;
+}> {
   const { default: sharp } = await import('sharp');
   return withCliente(async (cliente) => {
     const { rows } = await cliente.query<{ organizacion_id: string }>(
@@ -441,6 +447,13 @@ export async function seedEventoConPlano(
        values ($1, $2, $3, 'stand', $4, 7)`,
       [lugarId, organizacionId, eventoId, stand],
     );
+    // Un stand pegado al lado de donde la prueba marca el 7 (a un cuarto del ancho, a la mitad).
+    const vecino = 'Stand de Té Ejemplo';
+    await cliente.query(
+      `insert into lugares (id, organizacion_id, evento_id, tipo, nombre, numero_mapa, mapa_x, mapa_y)
+       values ($1, $2, $3, 'stand', $4, 8, 0.27, 0.5)`,
+      [uuidv7(), organizacionId, eventoId, vecino],
+    );
     await cliente.query(
       `insert into sponsors (id, organizacion_id, evento_id, nombre, lugar_id)
        values ($1, $2, $3, $4, $5)`,
@@ -465,7 +478,7 @@ export async function seedEventoConPlano(
         Buffer.from('cifrado-de-prueba'),
       ],
     );
-    return { eventoId, token, stand, sponsor };
+    return { eventoId, token, stand, vecino, sponsor };
   });
 }
 

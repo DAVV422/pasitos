@@ -26,3 +26,4 @@ export * from './app/agenda';
 export * from './reporte/reporte';
 export * from './registro/celular';
 export * from './premios/horario';
+export * from './eventos/mapa';

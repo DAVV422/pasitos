@@ -2,12 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
   inject,
   type OnInit,
   signal,
+  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { canDo } from '@pasitos/dominio';
+import { canDo, DISTANCIA_ENCIMADOS, findLugaresCercanos, ZOOMS_MAPA } from '@pasitos/dominio';
 import {
   AvisosService,
   EncabezadoPaginaComponent,
@@ -34,6 +36,10 @@ const NOMBRES_TIPO: Readonly<Record<string, string>> = {
   servicio: 'Servicio',
 };
 
+/** Lo que mueve una flecha del teclado (de 0 a 1); con Mayúsculas, más. */
+const PASO_TECLADO = 0.002;
+const PASO_TECLADO_LARGO = 0.01;
+
 function toLugar(fila: FilaContenido): LugarMapa {
   return {
     id: fila.id,
@@ -45,10 +51,16 @@ function toLugar(fila: FilaContenido): LugarMapa {
   };
 }
 
+function redondear(n: number): number {
+  return Math.round(Math.min(1, Math.max(0, n)) * 10_000) / 10_000;
+}
+
 /**
  * *Mapa del evento* (HU-414): el plano con una marca por lugar (stands, salas, mesas, servicios).
- * Se elige un lugar y se toca el plano para ponerlo; la gente lo ve en *Mapa* de la app. La posición
- * se guarda de 0 a 1 del ancho y del alto: sirve con el plano en cualquier tamaño.
+ * Se elige un lugar y se toca el plano para ponerlo, o se arrastra su número (o se mueve con las
+ * flechas). Con zoom para los stands pegados y aviso si dos números quedan encimados en el celular.
+ * La gente lo ve en *Mapa* de la app. La posición se guarda de 0 a 1 del ancho y del alto: sirve con
+ * el plano en cualquier tamaño.
  */
 @Component({
   selector: 'adm-mapa-page',
@@ -95,33 +107,79 @@ function toLugar(fila: FilaContenido): LugarMapa {
                 </button>
               </px-aviso>
             }
-            <div class="border-line relative overflow-hidden rounded-xl border">
-              <img [src]="plano()" alt="Plano del evento" class="block w-full select-none" />
-              @if (elegido(); as l) {
-                <!-- Toda la imagen es el botón para marcar (con el teclado, queda en el centro). -->
-                <button
-                  type="button"
-                  class="absolute inset-0 cursor-crosshair"
-                  data-testid="plano"
-                  [attr.aria-label]="'Marcar ' + l.nombre + ' en el plano'"
-                  (click)="marcar($event)"
-                ></button>
-              }
-              @for (l of marcados(); track l.id) {
-                <span
-                  class="text-on-points pointer-events-none absolute flex h-8 min-w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full px-1.5 text-sm font-bold shadow-md"
-                  [class.bg-points]="l.id !== elegidoId()"
-                  [class.bg-danger]="l.id === elegidoId()"
-                  [style.left.%]="(l.mapaX ?? 0) * 100"
-                  [style.top.%]="(l.mapaY ?? 0) * 100"
-                  [attr.title]="l.nombre"
-                  >{{ etiqueta(l) }}</span
-                >
-              }
+            <div
+              class="border-line max-h-[75vh] overflow-auto rounded-xl border [scrollbar-gutter:stable]"
+            >
+              <div #lienzo class="relative" [style.width.%]="zoom() * 100">
+                <img
+                  [src]="plano()"
+                  alt="Plano del evento"
+                  class="block w-full select-none"
+                  draggable="false"
+                  (load)="setProporcion($event)"
+                />
+                @if (elegido(); as l) {
+                  <!-- Toda la imagen es el botón para marcar (con el teclado, queda en el centro). -->
+                  <button
+                    type="button"
+                    class="absolute inset-0 cursor-crosshair"
+                    data-testid="plano"
+                    [attr.aria-label]="'Marcar ' + l.nombre + ' en el plano'"
+                    (click)="marcar($event)"
+                  ></button>
+                }
+                @for (l of marcados(); track l.id) {
+                  <!-- El centro del número es el punto exacto: se arrastra o se mueve con las flechas. -->
+                  <button
+                    type="button"
+                    class="text-on-points border-surface absolute flex h-7 min-w-7 -translate-x-1/2 -translate-y-1/2 touch-none items-center justify-center rounded-full border-2 px-1 text-xs font-bold shadow-md"
+                    [class.bg-points]="l.id !== elegidoId() && !encimados().has(l.id)"
+                    [class.bg-danger]="l.id === elegidoId() || encimados().has(l.id)"
+                    [class.z-10]="l.id === elegidoId()"
+                    [class.cursor-grab]="puedeEditar()"
+                    [style.left.%]="getX(l) * 100"
+                    [style.top.%]="getY(l) * 100"
+                    [attr.title]="l.nombre"
+                    [attr.aria-label]="etiqueta(l) + ' · ' + l.nombre"
+                    [attr.data-testid]="'marca-' + l.id"
+                    [disabled]="!puedeEditar()"
+                    (pointerdown)="startArrastre($event, l)"
+                    (pointermove)="moveArrastre($event)"
+                    (pointerup)="endArrastre(l)"
+                    (pointercancel)="cancelArrastre()"
+                    (keydown)="moveConTeclado($event, l)"
+                  >
+                    {{ etiqueta(l) }}
+                  </button>
+                }
+              </div>
             </div>
-            <p class="text-muted text-sm">
-              {{ marcados().length }} de {{ lista.length }} lugares en el plano.
-            </p>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-muted text-sm">
+                {{ marcados().length }} de {{ lista.length }} lugares en el plano. Arrastra un
+                número para ajustarlo (o tócalo y usa las flechas).
+              </p>
+              <div class="flex gap-1" role="group" aria-label="Zoom del plano">
+                @for (z of zooms; track z) {
+                  <button
+                    type="button"
+                    [pxBoton]="zoom() === z ? 'primario' : 'secundario'"
+                    [chico]="true"
+                    [attr.aria-pressed]="zoom() === z"
+                    (click)="zoom.set(z)"
+                  >
+                    {{ z }}×
+                  </button>
+                }
+              </div>
+            </div>
+            @if (encimados().size > 0) {
+              <px-aviso variante="advertencia" data-testid="aviso-encimados">
+                Los números en rojo se enciman en el celular, aun con el zoom más grande. Si son
+                lugares distintos, sepáralos un poco. Si de verdad están pegados, déjalos: en la
+                app, al tocar uno se ven los de al lado (<i>Muy cerca</i>).
+              </px-aviso>
+            }
           </section>
 
           <ul class="flex flex-col gap-2" aria-label="Lugares">
@@ -133,6 +191,11 @@ function toLugar(fila: FilaContenido): LugarMapa {
                 <span class="min-w-0">
                   <b class="block truncate">{{ etiqueta(l) }} · {{ l.nombre }}</b>
                   <span class="text-muted text-sm">{{ nombreTipo(l.tipo) }}</span>
+                  @if (encimados().get(l.id); as vecinos) {
+                    <span class="text-danger block text-xs font-semibold">
+                      Encimado con {{ etiquetas(vecinos) }}
+                    </span>
+                  }
                 </span>
                 <span class="flex shrink-0 items-center gap-1.5">
                   @if (l.mapaX !== null) {
@@ -179,6 +242,14 @@ export class MapaPage implements OnInit {
   protected readonly lugares = signal<readonly LugarMapa[] | null>(null);
   protected readonly elegidoId = signal<string | null>(null);
   protected readonly error = signal<string | null>(null);
+  protected readonly zooms = ZOOMS_MAPA;
+  protected readonly zoom = signal<(typeof ZOOMS_MAPA)[number]>(1);
+  /** Alto / ancho del plano: para medir bien la distancia entre números. */
+  private readonly proporcion = signal(1);
+  /** Mientras se arrastra un número: dónde va (todavía sin guardar). */
+  private readonly enMovimiento = signal<{ id: string; x: number; y: number } | null>(null);
+  private arrastre: { id: string; x0: number; y0: number; movio: boolean } | null = null;
+  private readonly lienzo = viewChild<ElementRef<HTMLElement>>('lienzo');
 
   private readonly eventoId = computed(() => this.actual.evento()?.id ?? '');
   protected readonly plano = computed(() => {
@@ -194,6 +265,10 @@ export class MapaPage implements OnInit {
   );
   protected readonly marcados = computed(() =>
     (this.lugares() ?? []).filter((l) => l.mapaX !== null && l.mapaY !== null),
+  );
+  /** Los números que se enciman en el celular aun con el zoom más grande. */
+  protected readonly encimados = computed(() =>
+    findLugaresCercanos(this.lugares() ?? [], DISTANCIA_ENCIMADOS, this.proporcion()),
   );
 
   async ngOnInit(): Promise<void> {
@@ -216,33 +291,123 @@ export class MapaPage implements OnInit {
     return String(indice + 1);
   }
 
+  protected etiquetas(lugares: readonly LugarMapa[]): string {
+    return lugares.map((l) => this.etiqueta(l)).join(', ');
+  }
+
   protected nombreTipo(tipo: string): string {
     return NOMBRES_TIPO[tipo] ?? tipo;
+  }
+
+  protected setProporcion(evento: Event): void {
+    const img = evento.target as HTMLImageElement;
+    if (img.naturalWidth > 0) this.proporcion.set(img.naturalHeight / img.naturalWidth);
+  }
+
+  protected getX(lugar: LugarMapa): number {
+    const movil = this.enMovimiento();
+    return movil?.id === lugar.id ? movil.x : (lugar.mapaX ?? 0);
+  }
+
+  protected getY(lugar: LugarMapa): number {
+    const movil = this.enMovimiento();
+    return movil?.id === lugar.id ? movil.y : (lugar.mapaY ?? 0);
+  }
+
+  /** Del punto de la pantalla al punto de 0 a 1 del plano. */
+  private toPunto(clientX: number, clientY: number): { x: number; y: number } | null {
+    const caja = this.lienzo()?.nativeElement.getBoundingClientRect();
+    if (!caja || caja.width === 0) return null;
+    return {
+      x: redondear((clientX - caja.left) / caja.width),
+      y: redondear((clientY - caja.top) / caja.height),
+    };
   }
 
   /** Del toque al punto de 0 a 1. Con el teclado (sin posición), el centro del plano. */
   protected async marcar(evento: MouseEvent): Promise<void> {
     const lugar = this.elegido();
     if (!lugar) return;
-    const caja = (evento.currentTarget as HTMLElement).getBoundingClientRect();
     const conPuntero = evento.clientX !== 0 || evento.clientY !== 0;
-    const x = conPuntero ? (evento.clientX - caja.left) / caja.width : 0.5;
-    const y = conPuntero ? (evento.clientY - caja.top) / caja.height : 0.5;
-    const redondear = (n: number) => Math.round(Math.min(1, Math.max(0, n)) * 10_000) / 10_000;
-    await this.save(lugar, redondear(x), redondear(y));
+    const punto = conPuntero ? this.toPunto(evento.clientX, evento.clientY) : { x: 0.5, y: 0.5 };
+    if (!punto) return;
+    await this.save(lugar, punto.x, punto.y);
     this.elegidoId.set(null);
   }
 
-  protected async save(lugar: LugarMapa, x: number | null, y: number | null): Promise<void> {
+  protected startArrastre(evento: PointerEvent, lugar: LugarMapa): void {
+    if (!this.puedeEditar() || evento.button !== 0) return;
+    evento.preventDefault();
+    (evento.currentTarget as HTMLElement).setPointerCapture(evento.pointerId);
+    this.arrastre = { id: lugar.id, x0: evento.clientX, y0: evento.clientY, movio: false };
+  }
+
+  protected moveArrastre(evento: PointerEvent): void {
+    const arrastre = this.arrastre;
+    if (!arrastre) return;
+    // Unos píxeles de tolerancia: un toque no es un arrastre.
+    const distancia = Math.hypot(evento.clientX - arrastre.x0, evento.clientY - arrastre.y0);
+    if (!arrastre.movio && distancia < 4) return;
+    arrastre.movio = true;
+    const punto = this.toPunto(evento.clientX, evento.clientY);
+    if (punto) this.enMovimiento.set({ id: arrastre.id, ...punto });
+  }
+
+  protected async endArrastre(lugar: LugarMapa): Promise<void> {
+    const arrastre = this.arrastre;
+    this.arrastre = null;
+    if (!arrastre) return;
+    const punto = this.enMovimiento();
+    if (!arrastre.movio || !punto) {
+      // Un toque: elegirlo, para moverlo tocando el plano o con las flechas.
+      this.elegidoId.set(lugar.id);
+      return;
+    }
+    await this.save(lugar, punto.x, punto.y, true);
+    this.enMovimiento.set(null);
+  }
+
+  protected cancelArrastre(): void {
+    this.arrastre = null;
+    this.enMovimiento.set(null);
+  }
+
+  protected async moveConTeclado(evento: KeyboardEvent, lugar: LugarMapa): Promise<void> {
+    const paso = evento.shiftKey ? PASO_TECLADO_LARGO : PASO_TECLADO;
+    const deltas: Readonly<Record<string, readonly [number, number]>> = {
+      ArrowLeft: [-paso, 0],
+      ArrowRight: [paso, 0],
+      ArrowUp: [0, -paso],
+      ArrowDown: [0, paso],
+    };
+    const delta = deltas[evento.key];
+    if (!delta || !this.puedeEditar() || lugar.mapaX === null || lugar.mapaY === null) return;
+    evento.preventDefault();
+    await this.save(
+      lugar,
+      redondear(lugar.mapaX + delta[0]),
+      redondear(lugar.mapaY + delta[1]),
+      true,
+    );
+  }
+
+  protected async save(
+    lugar: LugarMapa,
+    x: number | null,
+    y: number | null,
+    silencioso = false,
+  ): Promise<void> {
     this.error.set(null);
     try {
       const fila = toLugar(
         await this.api.updateContenido('lugares', lugar.id, { mapaX: x, mapaY: y }),
       );
       this.lugares.set((this.lugares() ?? []).map((l) => (l.id === fila.id ? fila : l)));
-      this.avisos.ok(
-        x === null ? `Quitamos ${lugar.nombre} del plano.` : `Listo: ${lugar.nombre}.`,
-      );
+      if (!silencioso) {
+        this.avisos.ok(
+          x === null ? `Quitamos ${lugar.nombre} del plano.` : `Listo: ${lugar.nombre}.`,
+        );
+      }
     } catch (error) {
       this.error.set(getMensajeError(error));
     }

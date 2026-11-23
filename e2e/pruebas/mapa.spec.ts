@@ -54,15 +54,20 @@ test('la dueña marca un stand en el plano y la asistente lo encuentra en la app
   const datos = await seedEventoConPlano({ email }, `Feria con mapa ${Date.now()}`);
   await entrarComoDuena(page, email, password);
 
-  // Panel: marcar el stand a un cuarto del ancho y a la mitad del alto.
+  // Panel: marcar el stand a un cuarto del ancho y a la mitad del alto, pegado al 8. Con 1× el 8
+  // tapa ese punto: con 2× se puede marcar al lado.
   await page.goto(`/admin/eventos/${datos.eventoId}/mapa`);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mapa del evento');
+  await page.getByRole('button', { name: '2×' }).click();
   await page.getByRole('button', { name: `Marcar ${datos.stand}`, exact: true }).click();
   const plano = page.getByTestId('plano');
   const caja = await plano.boundingBox();
   if (!caja) throw new Error('No se ve el plano');
   await plano.click({ position: { x: caja.width * 0.25, y: caja.height * 0.5 } });
-  await expect(page.getByText('En el plano', { exact: true })).toBeVisible();
+  await expect(page.getByText('En el plano', { exact: true }).first()).toBeVisible();
+  // Quedó pegado al 8: los dos en rojo y el aviso.
+  await expect(page.getByTestId('aviso-encimados')).toBeVisible();
+  await expect(page.getByText('Encimado con 8')).toBeVisible();
 
   // App: la asistente entra con su invitación y toca el 7 en el plano.
   const contexto = await browser.newContext({
@@ -76,13 +81,36 @@ test('la dueña marca un stand en el plano y la asistente lo encuentra en la app
   await celular.getByRole('button', { name: 'Entrar' }).click();
   await expect(celular).toHaveURL(/\/app\/inicio/);
   await celular.goto('/app/mapa');
-  const marcador = celular.getByRole('button', { name: datos.stand, exact: true });
-  await expect(marcador).toHaveText('7');
-  await marcador.click();
+  // En el celular el 8 tapa al 7 (están pegados): se toca el 8 y desde *Muy cerca*, el 7.
+  await expect(celular.getByRole('button', { name: datos.stand, exact: true })).toHaveText('7');
+  await celular.getByRole('button', { name: datos.vecino, exact: true }).click();
   const ficha = celular.getByTestId('ficha-lugar');
+  await expect(ficha).toContainText(`8 · ${datos.vecino}`);
+  await ficha
+    .getByTestId('cercanos')
+    .getByRole('button', { name: `7 · ${datos.stand}` })
+    .click();
   await expect(ficha).toContainText(`7 · ${datos.stand}`);
   await expect(ficha).toContainText(datos.sponsor);
   await contexto.close();
+
+  // Panel: arrastrar el 7 lejos del 8; se guarda y el aviso se va.
+  const marca = page.getByRole('button', { name: `7 · ${datos.stand}`, exact: true });
+  const desde = await marca.boundingBox();
+  const lienzo = await page.getByRole('img', { name: 'Plano del evento' }).boundingBox();
+  if (!desde || !lienzo) throw new Error('No se ve el número');
+  await page.mouse.move(desde.x + desde.width / 2, desde.y + desde.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(lienzo.x + lienzo.width * 0.6, lienzo.y + lienzo.height * 0.5, {
+    steps: 8,
+  });
+  await page.mouse.up();
+  await expect(page.getByTestId('aviso-encimados')).toBeHidden();
+  await page.reload();
+  await expect(
+    page.getByRole('button', { name: `8 · ${datos.vecino}`, exact: true }),
+  ).toBeVisible();
+  await expect(page.getByTestId('aviso-encimados')).toBeHidden();
 });
 
 test('la ubicación del evento se elige tocando el mapa', async ({ page }) => {

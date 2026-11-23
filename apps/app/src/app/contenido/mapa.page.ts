@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { DISTANCIA_CERCANOS, findLugaresCercanos, ZOOMS_MAPA } from '@pasitos/dominio';
 import { EstadoComponent, IconoComponent } from '@pasitos/ui';
 import { getRetosVista } from '../retos-vista';
 import { SesionAsistente } from '../sesion-asistente';
@@ -11,12 +12,11 @@ const NOMBRES_TIPO: Readonly<Record<string, string>> = {
   servicio: 'Servicio',
 };
 
-const ZOOMS = [1, 2, 3] as const;
-
 /**
  * *Mapa* (HU-309 §2 y HU-414): el plano con un marcador por lugar. Al tocar uno se ve su ficha
- * encima del plano (qué es, sus sponsors y sus retos); desde la lista, *Ver en el mapa*. Con zoom para planos
- * grandes. Los lugares sin marca siguen en la lista.
+ * encima del plano (qué es, sus sponsors, sus retos y los lugares *Muy cerca*, por si su número
+ * quedó tapado); desde la lista, *Ver en el mapa*. Con zoom para planos grandes o stands pegados.
+ * Los lugares sin marca siguen en la lista.
  */
 @Component({
   selector: 'app-mapa-page',
@@ -40,13 +40,16 @@ const ZOOMS = [1, 2, 3] as const;
           <section class="flex flex-col gap-2" id="plano" aria-label="Plano del evento">
             <!-- La ficha flota encima del plano: se ve aunque el plano esté con zoom. -->
             <div class="relative">
-              <div class="border-line bg-surface max-h-[70vh] overflow-auto rounded-xl border">
+              <div
+                class="border-line bg-surface max-h-[70vh] overflow-auto rounded-xl border [scrollbar-gutter:stable]"
+              >
                 <div class="relative" [style.width.%]="zoom() * 100">
                   <img
                     [src]="plano"
                     alt="Plano del evento"
                     class="block w-full select-none"
                     draggable="false"
+                    (load)="setProporcion($event)"
                   />
                   @for (lugar of marcados(); track lugar.id) {
                     <button
@@ -56,11 +59,13 @@ const ZOOMS = [1, 2, 3] as const;
                       [class.bg-danger]="lugar.id === elegidoId()"
                       [class.border-surface]="true"
                       [class.scale-125]="lugar.id === elegidoId()"
+                      [class.z-10]="lugar.id === elegidoId()"
+                      [attr.data-lugar]="lugar.id"
                       [style.left.%]="(lugar.mapaX ?? 0) * 100"
                       [style.top.%]="(lugar.mapaY ?? 0) * 100"
                       [attr.aria-label]="lugar.nombre"
                       [attr.aria-pressed]="lugar.id === elegidoId()"
-                      (click)="elegidoId.set(lugar.id)"
+                      (click)="elegir(lugar.id)"
                     >
                       {{ lugar.etiqueta }}
                     </button>
@@ -110,6 +115,25 @@ const ZOOMS = [1, 2, 3] as const;
                       class="text-points text-sm font-semibold underline"
                       >{{ reto.nombre }} · +{{ reto.puntos }}</a
                     >
+                  }
+                  @if (cercanosDelElegido().length > 0) {
+                    <div
+                      class="border-line flex flex-col gap-1 border-t pt-2"
+                      data-testid="cercanos"
+                    >
+                      <p class="text-muted text-xs font-semibold uppercase">Muy cerca</p>
+                      <div class="flex flex-wrap gap-1.5">
+                        @for (vecino of cercanosDelElegido(); track vecino.id) {
+                          <button
+                            type="button"
+                            class="border-line min-h-11 rounded-full border px-3 text-sm font-semibold"
+                            (click)="elegir(vecino.id)"
+                          >
+                            {{ vecino.etiqueta }} · {{ vecino.nombre }}
+                          </button>
+                        }
+                      </div>
+                    </div>
                   }
                 </article>
               }
@@ -184,8 +208,10 @@ const ZOOMS = [1, 2, 3] as const;
 })
 export class MapaPage {
   protected readonly sesion = inject(SesionAsistente);
-  protected readonly zooms = ZOOMS;
-  protected readonly zoom = signal<(typeof ZOOMS)[number]>(1);
+  protected readonly zooms = ZOOMS_MAPA;
+  protected readonly zoom = signal<(typeof ZOOMS_MAPA)[number]>(1);
+  /** Alto / ancho del plano: para medir bien qué lugares están cerca. */
+  private readonly proporcion = signal(1);
   protected readonly elegidoId = signal<string | null>(null);
 
   protected readonly lugares = computed(() => {
@@ -205,6 +231,26 @@ export class MapaPage {
   protected readonly elegido = computed(
     () => this.lugares().find((l) => l.id === this.elegidoId()) ?? null,
   );
+
+  /** Los lugares pegados al elegido: su número puede quedar tapado en el plano. */
+  protected readonly cercanosDelElegido = computed(() => {
+    const id = this.elegidoId();
+    if (!id) return [];
+    return findLugaresCercanos(this.lugares(), DISTANCIA_CERCANOS, this.proporcion()).get(id) ?? [];
+  });
+
+  protected setProporcion(evento: Event): void {
+    const img = evento.target as HTMLImageElement;
+    if (img.naturalWidth > 0) this.proporcion.set(img.naturalHeight / img.naturalWidth);
+  }
+
+  /** Elegir un lugar y, con zoom, mover el plano hasta su número. */
+  protected elegir(id: string): void {
+    this.elegidoId.set(id);
+    document
+      .querySelector(`[data-lugar="${id}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
 
   protected nombreTipo(tipo: string): string {
     return NOMBRES_TIPO[tipo] ?? tipo;
