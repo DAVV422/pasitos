@@ -27,7 +27,7 @@ async function bootstrap(): Promise<void> {
   await boss.start();
   const stopColas = await startColas({
     boss,
-    pool: composicion.conexion.pool,
+    pool: composicion.candados,
     db: composicion.conexion.db,
     sellador: composicion.sellador,
     contrato: composicion.contrato,
@@ -52,6 +52,7 @@ async function bootstrap(): Promise<void> {
     stopColas();
     await boss.stop({ graceful: true, timeout: 30_000 });
     await composicion.conexion.pool.end();
+    await composicion.candados.end();
     await app.close();
     process.exit(0);
   };

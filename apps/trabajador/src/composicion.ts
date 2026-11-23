@@ -3,6 +3,7 @@ import { AlertasDiferidasService } from './acceso/alertas-diferidas.service';
 import { VencerCobrosService } from './canjes/vencer-cobros.service';
 import { BorradoDispositivosService } from './acceso/borrado-dispositivos.service';
 import { buildCifrador, createConexion, type ConexionDb } from '@pasitos/db';
+import type { Pool } from 'pg';
 import { RpcStellar, TransaccionesStellarRepository, type StellarPort } from '@pasitos/stellar';
 import { AlertasEnLogs } from './comun/alertas-operacion';
 import { RELOJ_SISTEMA, type Reloj } from './comun/reloj';
@@ -25,6 +26,8 @@ import { OPCIONES_SELLADOR_POR_DEFECTO, SelladorService } from './sellador/sella
 
 export interface Composicion {
   readonly conexion: ConexionDb;
+  /** Solo para los candados de las colas (`withCandado`): ver `buildComposicion`. */
+  readonly candados: Pool;
   readonly stellar: StellarPort;
   readonly sellador: SelladorService;
   readonly contrato: ContratoService;
@@ -54,11 +57,21 @@ export function buildComposicion(
   } = {},
 ): Composicion {
   const reloj = opciones.reloj ?? RELOJ_SISTEMA;
+  // Sin conexión libre en 30 s, el trabajo falla (y queda en el log) en vez de esperar para siempre.
   const conexion = createConexion(
     config.DATABASE_URL_SISTEMA,
-    { max: 5 },
+    { max: 5, connectionTimeoutMillis: 30_000 },
     opciones.alErrorInactivo,
   );
+  // Cada cola retiene una conexión con su candado mientras trabaja. En el mismo pool que los
+  // trabajos, si arrancaban cinco juntas se quedaban con las cinco conexiones y esperaban para
+  // siempre una para trabajar (23/11/2026: la descarga de fotos quedó en cola). Por eso, aparte, y
+  // con lugar para todas las colas a la vez.
+  const candados = createConexion(
+    config.DATABASE_URL_SISTEMA,
+    { max: 12 },
+    opciones.alErrorInactivo,
+  ).pool;
   const stellar =
     opciones.stellar ??
     new RpcStellar({
@@ -125,6 +138,7 @@ export function buildComposicion(
   const apertura = new AperturaEventosService(conexion.db, alertas, reloj);
   return {
     conexion,
+    candados,
     stellar,
     sellador,
     contrato,
