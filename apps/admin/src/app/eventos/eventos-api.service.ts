@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { RolEvento } from '@pasitos/dominio';
+import type { EnlaceReto, RolEvento } from '@pasitos/dominio';
 import type { ItemChequeo } from '@pasitos/dominio/esquemas';
 import { firstValueFrom } from 'rxjs';
 
@@ -280,6 +280,7 @@ export interface RetoPanel {
   readonly numero: number;
   readonly nombre: string;
   readonly descripcion: string | null;
+  readonly enlaces?: readonly EnlaceReto[];
   readonly tipo: 'qr' | 'otorgado' | 'foto' | 'verificacion_ci';
   readonly modoQr: 'por_tiempo' | 'un_uso';
   readonly rotacionSegundos: 15 | 30 | 60;

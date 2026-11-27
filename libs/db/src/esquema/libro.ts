@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { EnlaceReto } from '@pasitos/dominio';
 import {
   bigint,
   boolean,
@@ -126,6 +127,7 @@ export const retos = pgTable(
     registradoEnStellarAt: timestamp('registrado_en_stellar_at', { withTimezone: true }),
     // HU-207: cómo se completa y dónde. Los modos de P2 quedan en el CHECK para después.
     descripcion: text('descripcion'),
+    enlaces: jsonb('enlaces').$type<readonly EnlaceReto[]>().notNull().default([]),
     modoQr: text('modo_qr').notNull().default('por_tiempo'),
     rotacionSegundos: integer('rotacion_segundos').notNull().default(30),
     // Las pantallas de este lugar lo muestran (HU-209). Sin FK aquí: `lugares` está en contenido.ts.
@@ -172,6 +174,7 @@ export const retos = pgTable(
       'retos_horario',
       sql`${t.disponibleDesde} is null or ${t.disponibleHasta} is null or ${t.disponibleDesde} < ${t.disponibleHasta}`,
     ),
+    check('retos_enlaces', sql`jsonb_typeof(${t.enlaces}) = 'array'`),
   ],
 );
 

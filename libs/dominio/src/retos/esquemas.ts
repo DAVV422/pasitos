@@ -23,6 +23,23 @@ export const NOMBRES_MODO_QR: Readonly<
 
 const fecha = z.iso.datetime({ offset: true });
 
+export const esquemaEnlaceReto = z.object({
+  url: z
+    .string()
+    .trim()
+    .max(300)
+    .refine((u) => /^https:\/\/[^\s]+$/.test(u), {
+      error: 'El enlace tiene que empezar con https://',
+    }),
+  etiqueta: z
+    .string()
+    .trim()
+    .max(40)
+    .transform((t) => (t.length === 0 ? null : t))
+    .nullable()
+    .default(null),
+});
+
 export const esquemaReto = z.object({
   nombre: z.string().trim().min(3).max(80),
   descripcion: z
@@ -32,6 +49,7 @@ export const esquemaReto = z.object({
     .transform((t) => (t.length === 0 ? null : t))
     .nullable()
     .default(null),
+  enlaces: z.array(esquemaEnlaceReto).max(6).default([]),
   tipo: z.enum(TIPOS_RETO),
   modoQr: z.enum(MODOS_QR).default('por_tiempo'),
   rotacionSegundos: z.union([z.literal(15), z.literal(30), z.literal(60)]).default(30),

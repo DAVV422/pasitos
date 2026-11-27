@@ -83,8 +83,16 @@ describe('Retos (HU-207)', () => {
       tipo: 'otorgado',
       puntos: 5,
       topeTotal: 30,
+      enlaces: [
+        { url: 'https://www.instagram.com/pasitos', etiqueta: 'Nuestro Instagram' },
+        { url: 'https://www.tiktok.com/@pasitos', etiqueta: null },
+      ],
     });
     expect(otorgado.statusCode).toBe(201);
+    expect(otorgado.json().enlaces).toEqual([
+      { url: 'https://www.instagram.com/pasitos', etiqueta: 'Nuestro Instagram' },
+      { url: 'https://www.tiktok.com/@pasitos', etiqueta: null },
+    ]);
     const lista = await pedir('GET', `/eventos/${evento.eventoId}/retos`);
     expect(lista.json().items.find((r: { id: string }) => r.id === qr.json().id)).toMatchObject({
       lugar: { nombre: 'Sala A' },

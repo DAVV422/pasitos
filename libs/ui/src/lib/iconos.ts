@@ -205,6 +205,21 @@ export const ICONOS = {
     },
     { t: 'path', d: 'm9 12 2 2 4-4' },
   ],
+  facebook: [
+    {
+      t: 'path',
+      d: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z',
+    },
+  ],
+  instagram: [
+    { t: 'rect', width: '20', height: '20', x: '2', y: '2', rx: '5' },
+    { t: 'path', d: 'M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z' },
+    { t: 'path', d: 'M17.5 6.5h.01' },
+  ],
+  tiktok: [{ t: 'path', d: 'M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5' }],
+  x_social: [
+    { t: 'path', d: 'M4 4l6.5 8L4 20h2l5.5-6.8L16 20h4l-6.8-8.5L19.5 4h-2l-5 6.2L8 4H4z' },
+  ],
 } as const satisfies Record<string, readonly ElementoSvg[]>;
 
 export type NombreIcono = keyof typeof ICONOS;

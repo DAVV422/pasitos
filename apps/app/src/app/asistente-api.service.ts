@@ -1,6 +1,6 @@
 import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { EstadoRetoAsistente, TipoAcceso } from '@pasitos/dominio';
+import type { EnlaceReto, EstadoRetoAsistente, TipoAcceso } from '@pasitos/dominio';
 import type { LlavePublicaEc } from '@pasitos/firmas';
 import { CLAVE_IDEMPOTENCIA, FIRMAR } from '@pasitos/web-core';
 import { firstValueFrom } from 'rxjs';
@@ -154,6 +154,7 @@ export interface DefinicionReto {
   readonly id: string;
   readonly nombre: string;
   readonly descripcion: string | null;
+  readonly enlaces?: readonly EnlaceReto[];
   readonly puntos: number;
   readonly tipo: string;
   readonly lugar: string | null;

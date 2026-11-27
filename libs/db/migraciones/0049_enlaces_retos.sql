@@ -1,0 +1,2 @@
+ALTER TABLE "retos" ADD COLUMN "enlaces" jsonb DEFAULT '[]'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "retos" ADD CONSTRAINT "retos_enlaces" CHECK (jsonb_typeof("retos"."enlaces") = 'array');

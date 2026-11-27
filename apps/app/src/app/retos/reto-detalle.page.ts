@@ -1,11 +1,26 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { EstadoComponent, IconoComponent } from '@pasitos/ui';
+import {
+  detectRedEnlace,
+  getEtiquetaEnlace,
+  splitTextoConEnlaces,
+  type EnlaceReto,
+  type RedEnlaceReto,
+} from '@pasitos/dominio';
+import { EstadoComponent, IconoComponent, type NombreIcono } from '@pasitos/ui';
 import { formatDiaYHora, formatHora } from '../formato';
 import { getComoSeCompleta, getRetosVista } from '../retos-vista';
 import { SesionAsistente } from '../sesion-asistente';
 import { FotoRetoComponent } from './foto-reto.component';
 import { RetoTarjetaComponent } from './reto-tarjeta.component';
+
+const ICONO_POR_RED: Readonly<Record<RedEnlaceReto, NombreIcono>> = {
+  facebook: 'facebook',
+  instagram: 'instagram',
+  tiktok: 'tiktok',
+  x: 'x_social',
+  web: 'ext',
+};
 
 /**
  * El detalle de un reto (`/retos/:id`, HU-309 §2): su estado, cómo se completa, dónde, cuándo y de
@@ -26,8 +41,38 @@ import { RetoTarjetaComponent } from './reto-tarjeta.component';
     } @else if (reto(); as r) {
       @let zona = sesion.estado()?.evento?.zonaHoraria ?? 'America/La_Paz';
       <app-reto-tarjeta [reto]="r" [zona]="zona" [accion]="puedeActuar()" [enlace]="false" />
-      @if (r.descripcion) {
-        <p class="whitespace-pre-line">{{ r.descripcion }}</p>
+      @if (fragmentosDescripcion().length > 0) {
+        <p class="whitespace-pre-line" data-testid="descripcion-reto">
+          @for (f of fragmentosDescripcion(); track $index) {
+            @if (f.tipo === 'enlace' && f.url) {
+              <a
+                [href]="f.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-points font-semibold break-all underline"
+                >{{ f.texto }}</a
+              >
+            } @else {
+              {{ f.texto }}
+            }
+          }
+        </p>
+      }
+      @if (enlaces().length > 0) {
+        <div class="flex flex-wrap gap-2" data-testid="enlaces-reto">
+          @for (e of enlaces(); track $index) {
+            <a
+              [href]="e.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="border-line-strong bg-surface inline-flex min-h-11 items-center gap-2 rounded-xl border px-3.5 text-sm font-bold"
+            >
+              <px-icono [nombre]="e.icono" [tamano]="18" />
+              <span>{{ e.texto }}</span>
+              <px-icono nombre="ext" [tamano]="14" />
+            </a>
+          }
+        </div>
       }
       @if (r.tipo === 'foto') {
         <!-- HU-322: el achicador y la subida se cargan solo en los retos de foto. -->
@@ -94,6 +139,17 @@ export class RetoDetallePage {
     const reto = this.reto();
     return reto ? getComoSeCompleta(reto) : '';
   });
+  protected readonly fragmentosDescripcion = computed(() => {
+    const descripcion = this.reto()?.descripcion;
+    return descripcion ? splitTextoConEnlaces(descripcion) : [];
+  });
+  protected readonly enlaces = computed(() =>
+    (this.reto()?.enlaces ?? []).map((enlace: EnlaceReto) => ({
+      url: enlace.url,
+      texto: getEtiquetaEnlace(enlace),
+      icono: ICONO_POR_RED[detectRedEnlace(enlace.url)],
+    })),
+  );
   private readonly zona = computed(
     () => this.sesion.estado()?.evento.zonaHoraria ?? 'America/La_Paz',
   );

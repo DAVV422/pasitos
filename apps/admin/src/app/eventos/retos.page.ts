@@ -35,9 +35,15 @@ import { EventosApi, type FilaContenido, type RetoPanel } from './eventos-api.se
 
 const PUBLICADOS = new Set(['publicado', 'en_curso', 'pausado']);
 
+interface EnlaceForm {
+  url: string;
+  etiqueta: string;
+}
+
 interface FormularioReto {
   nombre: string;
   descripcion: string;
+  enlaces: readonly EnlaceForm[];
   tipo: 'qr' | 'otorgado' | 'foto';
   modoQr: 'por_tiempo' | 'un_uso';
   rotacionSegundos: string;
@@ -60,6 +66,7 @@ interface FormularioReto {
 const VACIO: FormularioReto = {
   nombre: '',
   descripcion: '',
+  enlaces: [],
   tipo: 'qr',
   modoQr: 'por_tiempo',
   rotacionSegundos: '30',
@@ -137,7 +144,7 @@ function toIso(local: string): string | null {
           <px-campo
             etiqueta="Cómo se completa"
             [opcional]="true"
-            ayuda='Por ejemplo: "Escanea el QR de la pantalla al final de la charla".'
+            ayuda='Por ejemplo: "Escanea el QR de la pantalla al final de la charla". Si pegas un enlace https://, se podrá abrir.'
             #f2="pxCampo"
           >
             <textarea
@@ -149,6 +156,78 @@ function toIso(local: string): string | null {
               (input)="set('descripcion', valorDe($event))"
             ></textarea>
           </px-campo>
+          <fieldset class="flex flex-col gap-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <legend class="font-semibold">
+                Enlaces o redes sociales <span class="text-muted font-normal">(opcional)</span>
+              </legend>
+              @if (form().enlaces.length < 6) {
+                <button
+                  type="button"
+                  pxBoton="secundario"
+                  [chico]="true"
+                  (click)="addEnlace()"
+                  data-testid="agregar-enlace-reto"
+                >
+                  Agregar enlace
+                </button>
+              }
+            </div>
+            <p class="text-muted text-sm">
+              Para ir directo a una publicación o perfil de Facebook, Instagram, TikTok, X u otra
+              página.
+            </p>
+            @for (enlace of form().enlaces; track $index; let i = $index) {
+              <div class="border-line bg-surface flex flex-col gap-2 rounded-xl border p-3">
+                <px-campo
+                  [etiqueta]="'Enlace ' + (i + 1)"
+                  ayuda="Con https://, por ejemplo https://www.instagram.com/..."
+                  [error]="errores()['enlaces.' + i + '.url'] ?? null"
+                  #feUrl="pxCampo"
+                >
+                  <input
+                    [id]="feUrl.idControl"
+                    [attr.aria-describedby]="feUrl.idDescripcion"
+                    type="url"
+                    maxlength="300"
+                    placeholder="https://..."
+                    [value]="enlace.url"
+                    (input)="setEnlace(i, 'url', valorDe($event))"
+                  />
+                </px-campo>
+                <div class="flex flex-wrap items-end gap-2">
+                  <px-campo
+                    class="min-w-0 flex-1"
+                    etiqueta="Texto del botón"
+                    [opcional]="true"
+                    ayuda="Si lo dejas vacío, mostramos el nombre de la red."
+                    [error]="errores()['enlaces.' + i + '.etiqueta'] ?? null"
+                    #feEti="pxCampo"
+                  >
+                    <input
+                      [id]="feEti.idControl"
+                      [attr.aria-describedby]="feEti.idDescripcion"
+                      maxlength="40"
+                      placeholder="Ej. Ver publicación en Instagram"
+                      [value]="enlace.etiqueta"
+                      (input)="setEnlace(i, 'etiqueta', valorDe($event))"
+                    />
+                  </px-campo>
+                  <button
+                    type="button"
+                    pxBoton="peligro-contorno"
+                    [chico]="true"
+                    (click)="removeEnlace(i)"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              </div>
+            }
+            @if (errores()['enlaces']; as errEnlace) {
+              <p class="text-danger text-sm" role="alert">{{ errEnlace }}</p>
+            }
+          </fieldset>
           <fieldset class="flex flex-col gap-2">
             <legend class="mb-1 font-semibold">Tipo</legend>
             <div class="pnl-opciones">
@@ -598,6 +677,28 @@ export class RetosPage implements OnInit {
     });
   }
 
+  protected addEnlace(): void {
+    if (this.form().enlaces.length >= 6) return;
+    this.form.set({
+      ...this.form(),
+      enlaces: [...this.form().enlaces, { url: '', etiqueta: '' }],
+    });
+  }
+
+  protected setEnlace(indice: number, campo: keyof EnlaceForm, valor: string): void {
+    this.form.set({
+      ...this.form(),
+      enlaces: this.form().enlaces.map((e, i) => (i === indice ? { ...e, [campo]: valor } : e)),
+    });
+  }
+
+  protected removeEnlace(indice: number): void {
+    this.form.set({
+      ...this.form(),
+      enlaces: this.form().enlaces.filter((_, i) => i !== indice),
+    });
+  }
+
   protected start(reto: RetoPanel | null): void {
     this.errores.set({});
     this.editando.set(reto ?? 'nuevo');
@@ -606,6 +707,10 @@ export class RetosPage implements OnInit {
         ? {
             nombre: reto.nombre,
             descripcion: reto.descripcion ?? '',
+            enlaces: (reto.enlaces ?? []).map((e) => ({
+              url: e.url,
+              etiqueta: e.etiqueta ?? '',
+            })),
             tipo: reto.tipo === 'verificacion_ci' ? 'otorgado' : reto.tipo,
             modoQr: reto.modoQr,
             rotacionSegundos: String(reto.rotacionSegundos),
@@ -635,6 +740,12 @@ export class RetosPage implements OnInit {
     const datos = {
       nombre: f.nombre.trim(),
       descripcion: f.descripcion,
+      enlaces: f.enlaces
+        .filter((e) => e.url.trim().length > 0 || e.etiqueta.trim().length > 0)
+        .map((e) => ({
+          url: e.url.trim(),
+          etiqueta: e.etiqueta.trim() || null,
+        })),
       tipo: f.tipo,
       modoQr: f.modoQr,
       rotacionSegundos: Number(f.rotacionSegundos),
@@ -675,6 +786,8 @@ export class RetosPage implements OnInit {
         'lugarId',
         'disponibleDesde',
         'disponibleHasta',
+        'enlaces',
+        ...f.enlaces.flatMap((_, i) => [`enlaces.${i}.url`, `enlaces.${i}.etiqueta`]),
       ];
       this.errores.set(Object.fromEntries(campos.map((c) => [c, getErrorCampo(error, c)])));
       if (error instanceof ErrorApi && error.code === 'TOPE_NO_BAJA') {

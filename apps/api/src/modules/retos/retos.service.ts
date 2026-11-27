@@ -35,6 +35,7 @@ function errorCampo(field: string, message: string): AppError {
 const CAMPOS_PUBLICOS = [
   'nombre',
   'descripcion',
+  'enlaces',
   'tipo',
   'modoQr',
   'rotacionSegundos',
@@ -372,6 +373,7 @@ export class RetosService {
     return {
       nombre: datos.nombre,
       descripcion: datos.descripcion,
+      enlaces: datos.enlaces,
       tipo: datos.tipo,
       modoQr: datos.modoQr,
       rotacionSegundos: datos.rotacionSegundos,
@@ -394,6 +396,7 @@ export class RetosService {
     return {
       nombre: reto.nombre,
       descripcion: reto.descripcion,
+      enlaces: [...(reto.enlaces ?? [])],
       tipo: reto.tipo as DatosReto['tipo'],
       modoQr: reto.modoQr as DatosReto['modoQr'],
       rotacionSegundos: reto.rotacionSegundos as DatosReto['rotacionSegundos'],

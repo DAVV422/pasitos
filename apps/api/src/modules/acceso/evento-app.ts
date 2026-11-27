@@ -9,7 +9,7 @@ import {
   sponsors,
   type Tx,
 } from '@pasitos/db';
-import { AppError } from '@pasitos/dominio';
+import { AppError, type EnlaceReto } from '@pasitos/dominio';
 import { getUrlArchivo } from '../archivos/archivos.service';
 import { mapGruposDelEvento, whereParaLaPersona } from '../grupos/grupos-de';
 
@@ -65,6 +65,7 @@ export interface EventoApp {
     readonly id: string;
     readonly nombre: string;
     readonly descripcion: string | null;
+    readonly enlaces: readonly EnlaceReto[];
     readonly puntos: number;
     readonly tipo: string;
     readonly lugar: string | null;
@@ -141,6 +142,7 @@ export async function getEventoApp(
           id: retos.id,
           nombre: retos.nombre,
           descripcion: retos.descripcion,
+          enlaces: retos.enlaces,
           puntos: retos.puntos,
           tipo: retos.tipo,
           lugar: lugares.nombre,
